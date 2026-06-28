@@ -10,6 +10,7 @@ import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import { Link, useLocation } from "react-router-dom";
 import type { ProjectResponse } from "@bb/server-contract";
+import { Button } from "@/components/ui/button.js";
 import { Icon } from "@/components/ui/icon.js";
 import {
   SidebarInset,
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/sidebar.js";
 import { AppSidebar } from "@/components/sidebar/AppSidebar";
 import { AppPageHeader, HEADER_ICON_BUTTON_CLASS } from "./AppPageHeader";
+import { CREATE_LOOP_PROMPT } from "@/components/promptbox/PromptBoxActionsMenu";
 import { stripProjectThreads } from "@/hooks/queries/project-queries";
 import { useAutomationDetail } from "@/hooks/queries/automation-queries";
 import { useSidebarNavigation } from "@/hooks/queries/sidebar-navigation-query";
@@ -232,6 +234,7 @@ interface AppHeaderProps {
   usesDesktopChrome: boolean;
   isArchivedView: boolean;
   isSettingsView: boolean;
+  isAutomationsListView: boolean;
   projectId?: string;
   project?: ProjectResponse;
   meta: {
@@ -246,6 +249,7 @@ function AppHeader({
   usesDesktopChrome,
   isArchivedView,
   isSettingsView,
+  isAutomationsListView,
   projectId,
   project,
   meta,
@@ -350,6 +354,16 @@ function AppHeader({
           />
         ) : null}
       </>
+    ) : isAutomationsListView ? (
+      <Button asChild variant="secondary" size="sm">
+        <Link
+          to={getRootComposeRoutePath()}
+          state={{ focusPrompt: true, initialPrompt: CREATE_LOOP_PROMPT }}
+        >
+          <Icon name="MessageSquarePlus" className="size-4" />
+          Create via chat
+        </Link>
+      </Button>
     ) : null;
 
   return (
@@ -375,6 +389,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     isArchivedView,
     isSettingsView,
     isRootView,
+    isAutomationsView,
     isAutomationDetailView,
     automationId,
     automationProjectId,
@@ -643,6 +658,9 @@ export function AppLayout({ children }: AppLayoutProps) {
                   }
                   isArchivedView={isArchivedView}
                   isSettingsView={isSettingsView}
+                  isAutomationsListView={
+                    isAutomationsView && !isAutomationDetailView
+                  }
                   projectId={projectId}
                   project={project}
                   meta={meta}

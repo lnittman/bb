@@ -344,7 +344,7 @@ function StarterLoopRow({ starter, onCreateAutomation }: StarterLoopRowProps) {
     <button
       type="button"
       className={cn(
-        "flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left hover:bg-state-hover",
+        "flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left hover:bg-state-hover/60",
         LIST_HOVER_TRANSITION,
       )}
       onClick={() => onCreateAutomation(starter.prompt)}
@@ -377,20 +377,6 @@ export function AutomationsOverview({
   return (
     <PageShell contentClassName="pt-4 md:pt-5">
       <div className="w-full space-y-5">
-        <div className="flex min-w-0 items-center justify-between gap-3">
-          <h1 className="min-w-0 truncate text-sm font-medium text-foreground">
-            Automations
-          </h1>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => onCreateAutomation()}
-          >
-            <Icon name="MessageSquarePlus" className="size-4" />
-            Create via chat
-          </Button>
-        </div>
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading...</p>
         ) : hasInitialLoadError ? (
@@ -404,15 +390,20 @@ export function AutomationsOverview({
                 Automations run a prompt on a schedule, spinning up an agent run
                 in a project.
               </p>
-              <div className="space-y-1">
-                {AUTOMATION_STARTER_LOOPS.map((starter) => (
-                  <StarterLoopRow
-                    key={starter.name}
-                    starter={starter}
-                    onCreateAutomation={onCreateAutomation}
-                  />
-                ))}
-              </div>
+              <section>
+                <p className="text-xs font-medium uppercase text-muted-foreground">
+                  Templates
+                </p>
+                <div className="mt-1.5 space-y-1">
+                  {AUTOMATION_STARTER_LOOPS.map((starter) => (
+                    <StarterLoopRow
+                      key={starter.name}
+                      starter={starter}
+                      onCreateAutomation={onCreateAutomation}
+                    />
+                  ))}
+                </div>
+              </section>
             </div>
           </EmptyStatePanel>
         ) : (
