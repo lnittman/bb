@@ -4,6 +4,7 @@ import { PERSONAL_PROJECT_ID } from "@bb/domain";
 import type { Automation } from "@bb/server-contract";
 import { describe, expect, it } from "vitest";
 import {
+  AUTOMATION_STARTER_LOOPS,
   AutomationsOverview,
   buildAutomationRowMenuItems,
   type AutomationRowActions,
@@ -86,11 +87,11 @@ function renderOverview(
   );
 }
 
-
 describe("AutomationsOverview", () => {
-  it("leaves the page title to the app chrome", () => {
+  it("renders the page title and create action in the header", () => {
     const markup = renderOverview({ entries: [] });
-    expect(markup).not.toContain(">Automations<");
+    expect(markup).toContain(">Automations<");
+    expect(markup).toContain("Create via chat");
   });
 
   it("groups automations by status into Active and Paused sections", () => {
@@ -156,27 +157,64 @@ describe("AutomationsOverview", () => {
     expect(agentMarkup).not.toContain(">Script<");
   });
 
-  it("omits the personal project label and shows real project names", () => {
+  it("shows project names for each row", () => {
     const markup = renderOverview({
       entries: [
         makeEntry(
-          makeAutomation({ id: "auto_personal", projectId: PERSONAL_PROJECT_ID }),
+          makeAutomation({
+            id: "auto_personal",
+            projectId: PERSONAL_PROJECT_ID,
+          }),
           { id: PERSONAL_PROJECT_ID, name: "Personal" },
         ),
-        makeEntry(
-          makeAutomation({ id: "auto_app", projectId: "proj_app" }),
-          { id: "proj_app", name: "App" },
-        ),
+        makeEntry(makeAutomation({ id: "auto_app", projectId: "proj_app" }), {
+          id: "proj_app",
+          name: "App",
+        }),
       ],
     });
 
-    expect(markup).not.toContain(">Personal<");
+    expect(markup).toContain(">Personal<");
     expect(markup).toContain(">App<");
   });
 
-  it("shows the empty state when there are no automations", () => {
+  it("shows the starter loops when there are no automations", () => {
     const markup = renderOverview({ entries: [] });
-    expect(markup).toContain("No automations yet.");
+    expect(markup).toContain(
+      "Automations run a prompt on a schedule, spinning up an agent run in a project.",
+    );
+    expect(markup).toContain("Daily dependency audit");
+    expect(markup).toContain("Weekday standup digest");
+    expect(markup).toContain("Scheduled check &amp; alert");
+    expect(markup).toContain(">Daily 8am<");
+    expect(markup).toContain(">Weekdays 9am<");
+    expect(markup).toContain(">Hourly<");
+  });
+
+  it("defines exactly three starters with create-via-chat prompts", () => {
+    expect(AUTOMATION_STARTER_LOOPS).toEqual([
+      {
+        name: "Daily dependency audit",
+        description: "Audit dependencies and write a summary.",
+        schedule: "Daily 8am",
+        prompt:
+          "Create a new bb loop to audit dependencies every morning and write a summary.",
+      },
+      {
+        name: "Weekday standup digest",
+        description: "Summarize overnight thread activity.",
+        schedule: "Weekdays 9am",
+        prompt:
+          "Create a new bb loop to summarize overnight thread activity on weekday mornings.",
+      },
+      {
+        name: "Scheduled check & alert",
+        description: "Run a check on a schedule and alert on change.",
+        schedule: "Hourly",
+        prompt:
+          "Create a new bb loop to run a check on a schedule and alert me when something changes.",
+      },
+    ]);
   });
 
   it("shows a muted loading state", () => {
@@ -242,7 +280,10 @@ describe("buildAutomationRowMenuItems", () => {
   });
 
   it("always offers Run now and a destructive Delete", () => {
-    const items = buildAutomationRowMenuItems(makeEntry(makeAutomation()), ACTIONS);
+    const items = buildAutomationRowMenuItems(
+      makeEntry(makeAutomation()),
+      ACTIONS,
+    );
     const labels = items.map((item) => item.label);
     expect(labels).toContain("Run now");
     const deleteItem = items.find((item) => item.key === "delete");

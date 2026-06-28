@@ -1,6 +1,5 @@
 import { Fragment, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { PERSONAL_PROJECT_ID } from "@bb/domain";
 import type {
   Automation,
   AutomationsOverviewResponse,
@@ -19,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu.js";
 import { EmptyStatePanel } from "@/components/ui/empty-state.js";
 import { Icon } from "@/components/ui/icon.js";
+import { LIST_HOVER_TRANSITION } from "@/components/ui/motion.js";
 import { PageShell } from "@/components/ui/page-shell.js";
 import { Pill } from "@/components/ui/pill.js";
 import { CREATE_LOOP_PROMPT } from "@/components/promptbox/PromptBoxActionsMenu";
@@ -30,7 +30,10 @@ import {
   useResumeAutomation,
   useRunAutomation,
 } from "@/hooks/queries/automation-queries";
-import { formatScheduleStatusLabel } from "@/lib/format-schedule";
+import {
+  formatCronCadence,
+  formatScheduleStatusLabel,
+} from "@/lib/format-schedule";
 import {
   getAutomationDetailRoutePath,
   getRootComposeRoutePath,
@@ -47,6 +50,39 @@ interface AutomationStatusGroup {
   label: string;
   entries: AutomationOverviewEntry[];
 }
+
+type CreateAutomationHandler = (initialPrompt?: string) => void;
+
+interface AutomationStarterLoop {
+  name: string;
+  description: string;
+  schedule: string;
+  prompt: string;
+}
+
+export const AUTOMATION_STARTER_LOOPS: readonly AutomationStarterLoop[] = [
+  {
+    name: "Daily dependency audit",
+    description: "Audit dependencies and write a summary.",
+    schedule: "Daily 8am",
+    prompt:
+      "Create a new bb loop to audit dependencies every morning and write a summary.",
+  },
+  {
+    name: "Weekday standup digest",
+    description: "Summarize overnight thread activity.",
+    schedule: "Weekdays 9am",
+    prompt:
+      "Create a new bb loop to summarize overnight thread activity on weekday mornings.",
+  },
+  {
+    name: "Scheduled check & alert",
+    description: "Run a check on a schedule and alert on change.",
+    schedule: "Hourly",
+    prompt:
+      "Create a new bb loop to run a check on a schedule and alert me when something changes.",
+  },
+];
 
 /** Per-row action callbacks, supplied by the container so the presentational
  * overview stays free of mutation hooks (and renderable in tests). */
@@ -67,7 +103,7 @@ export interface AutomationsOverviewProps {
   isLoading: boolean;
   hasInitialLoadError: boolean;
   actions: AutomationRowActions;
-  onCreateAutomation: () => void;
+  onCreateAutomation: CreateAutomationHandler;
 }
 
 /**
@@ -169,70 +205,162 @@ function AutomationRowActionItems({ entry, actions }: AutomationRowProps) {
   );
 }
 
+interface LastRunStatusView {
+  label: string;
+  tone: "ok" | "fail" | "muted";
+}
+
+const LAST_RUN_TONE_CLASS: Record<
+  LastRunStatusView["tone"],
+  { dot: string; text: string }
+> = {
+  ok: { dot: "bg-foreground", text: "text-foreground" },
+  fail: { dot: "bg-destructive", text: "text-destructive" },
+  muted: { dot: "bg-muted-foreground/50", text: "text-muted-foreground" },
+};
+
+function getLastRunStatusView(automation: Automation): LastRunStatusView {
+  switch (automation.lastRunStatus) {
+    case "succeeded":
+      return { label: "Succeeded", tone: "ok" };
+    case "failed":
+      return { label: "Failed", tone: "fail" };
+    case "running":
+      return { label: "Running", tone: "muted" };
+    case "skipped":
+      return { label: "Skipped", tone: "muted" };
+    case null:
+      return { label: "No runs", tone: "muted" };
+    default: {
+      const _exhaustive: never = automation.lastRunStatus;
+      return _exhaustive;
+    }
+  }
+}
+
 function AutomationRow({ entry, actions }: AutomationRowProps) {
   const { automation, project } = entry;
-  const projectLabel =
-    project.id === PERSONAL_PROJECT_ID ? null : project.name;
+  const lastRun = getLastRunStatusView(automation);
+  const lastRunTone = LAST_RUN_TONE_CLASS[lastRun.tone];
+  const scheduleStatus = formatScheduleStatusLabel({
+    enabled: automation.enabled,
+    nextRunAt: automation.nextRunAt,
+  });
+  const cadence = formatCronCadence(automation.trigger.cron);
+
   return (
-    <div className="group flex h-9 items-center gap-3 rounded-md px-3 text-sm transition-colors hover:bg-state-hover">
-      <span
-        aria-hidden="true"
-        className={cn(
-          "size-1.5 shrink-0 rounded-full",
-          automation.enabled ? "bg-success" : "bg-muted-foreground/50",
-        )}
-      />
+    <div
+      className={cn(
+        "group relative rounded-md text-sm hover:bg-state-hover",
+        LIST_HOVER_TRANSITION,
+      )}
+    >
       <Link
         to={getAutomationDetailRoutePath({
           projectId: automation.projectId,
           automationId: automation.id,
         })}
-        className="min-w-0 flex-1 truncate hover:underline"
-      >
-        {automation.name}
-      </Link>
-      {projectLabel ? (
-        <Pill variant="outline" className="shrink-0">
-          {projectLabel}
-        </Pill>
-      ) : null}
-      {automation.execution.mode === "script" ? (
-        <Pill variant="outline" className="shrink-0">
-          Script
-        </Pill>
-      ) : null}
-      {automation.origin === "agent" ? (
-        <Pill variant="secondary" className="shrink-0">
-          API
-        </Pill>
-      ) : null}
-      <span className="shrink-0 text-xs text-muted-foreground">
-        {formatScheduleStatusLabel({
-          enabled: automation.enabled,
-          nextRunAt: automation.nextRunAt,
-        })}
-      </span>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-6 shrink-0 rounded-md p-0 text-muted-foreground data-[state=open]:bg-state-active data-[state=open]:text-foreground"
-            aria-label={`${automation.name} actions`}
-          >
-            <Icon name="MoreHorizontal" className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          className="w-40"
-          mobileTitle={`${automation.name} actions`}
+        aria-label={`Open ${automation.name}`}
+        className="absolute inset-0 rounded-md outline-none ring-ring focus-visible:ring-1"
+      />
+      <div className="pointer-events-none relative z-10 grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3 py-2 sm:grid-cols-[minmax(0,1.2fr)_minmax(9rem,0.8fr)_minmax(5.5rem,auto)_1.75rem]">
+        <div className="min-w-0 space-y-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <span
+              aria-hidden="true"
+              className={cn(
+                "size-1.5 shrink-0 rounded-full",
+                automation.enabled ? "bg-success" : "bg-muted-foreground/50",
+              )}
+            />
+            <span className="min-w-0 truncate font-medium text-foreground">
+              {automation.name}
+            </span>
+          </div>
+          <div className="flex min-w-0 items-center gap-1.5 pl-3.5 text-xs text-muted-foreground">
+            <span className="min-w-0 truncate">{project.name}</span>
+            {automation.execution.mode === "script" ? (
+              <Pill variant="outline" size="sm" className="shrink-0">
+                Script
+              </Pill>
+            ) : null}
+            {automation.origin === "agent" ? (
+              <Pill variant="secondary" size="sm" className="shrink-0">
+                API
+              </Pill>
+            ) : null}
+          </div>
+        </div>
+        <div className="col-span-2 min-w-0 pl-3.5 text-xs text-muted-foreground sm:col-span-1 sm:pl-0">
+          <p className="truncate text-foreground/85">{cadence}</p>
+          <p className="truncate">{scheduleStatus}</p>
+        </div>
+        <div
+          className={cn(
+            "col-start-1 flex min-w-0 items-center gap-1.5 pl-3.5 text-xs font-medium sm:col-start-auto sm:pl-0",
+            lastRunTone.text,
+          )}
         >
-          <AutomationRowActionItems entry={entry} actions={actions} />
-        </DropdownMenuContent>
-      </DropdownMenu>
+          <span
+            aria-hidden="true"
+            className={cn("size-1.5 shrink-0 rounded-full", lastRunTone.dot)}
+          />
+          <span className="truncate">{lastRun.label}</span>
+        </div>
+        <div className="pointer-events-auto col-start-2 row-start-1 flex justify-end sm:col-start-auto sm:row-start-auto">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-7 shrink-0 rounded-md p-0 text-muted-foreground data-[state=open]:bg-state-active data-[state=open]:text-foreground"
+                aria-label={`${automation.name} actions`}
+              >
+                <Icon name="MoreHorizontal" className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="w-40"
+              mobileTitle={`${automation.name} actions`}
+            >
+              <AutomationRowActionItems entry={entry} actions={actions} />
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
     </div>
+  );
+}
+
+interface StarterLoopRowProps {
+  starter: AutomationStarterLoop;
+  onCreateAutomation: CreateAutomationHandler;
+}
+
+function StarterLoopRow({ starter, onCreateAutomation }: StarterLoopRowProps) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left hover:bg-state-hover",
+        LIST_HOVER_TRANSITION,
+      )}
+      onClick={() => onCreateAutomation(starter.prompt)}
+    >
+      <span className="min-w-0 flex-1 space-y-0.5">
+        <span className="block truncate text-sm font-medium text-foreground">
+          {starter.name}
+        </span>
+        <span className="block truncate text-xs text-muted-foreground">
+          {starter.description}
+        </span>
+      </span>
+      <Pill variant="outline" className="shrink-0">
+        {starter.schedule}
+      </Pill>
+    </button>
   );
 }
 
@@ -244,18 +372,20 @@ export function AutomationsOverview({
   onCreateAutomation,
 }: AutomationsOverviewProps) {
   const groups = groupAutomationsByStatus(entries);
-  const isEmpty =
-    !isLoading && !hasInitialLoadError && entries.length === 0;
+  const isEmpty = !isLoading && !hasInitialLoadError && entries.length === 0;
 
   return (
     <PageShell contentClassName="pt-4 md:pt-5">
-      <div className="mx-auto w-full max-w-3xl space-y-6">
-        <div className="flex items-center justify-end">
+      <div className="w-full space-y-5">
+        <div className="flex min-w-0 items-center justify-between gap-3">
+          <h1 className="min-w-0 truncate text-sm font-medium text-foreground">
+            Automations
+          </h1>
           <Button
             type="button"
-            variant="default"
+            variant="secondary"
             size="sm"
-            onClick={onCreateAutomation}
+            onClick={() => onCreateAutomation()}
           >
             <Icon name="MessageSquarePlus" className="size-4" />
             Create via chat
@@ -268,11 +398,25 @@ export function AutomationsOverview({
             Failed to load automations.
           </p>
         ) : isEmpty ? (
-          <EmptyStatePanel className="py-6">
-            No automations yet.
+          <EmptyStatePanel className="px-3 py-3 text-left">
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Automations run a prompt on a schedule, spinning up an agent run
+                in a project.
+              </p>
+              <div className="space-y-1">
+                {AUTOMATION_STARTER_LOOPS.map((starter) => (
+                  <StarterLoopRow
+                    key={starter.name}
+                    starter={starter}
+                    onCreateAutomation={onCreateAutomation}
+                  />
+                ))}
+              </div>
+            </div>
           </EmptyStatePanel>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-5">
             {groups.map((group) => (
               <section key={group.status}>
                 <p className="text-xs font-medium uppercase text-muted-foreground">
@@ -312,8 +456,7 @@ export function AutomationsView() {
 
   const data: AutomationsOverviewResponse | undefined = automationsQuery.data;
   const entries = data?.automations ?? [];
-  const hasInitialLoadError =
-    automationsQuery.isError && data === undefined;
+  const hasInitialLoadError = automationsQuery.isError && data === undefined;
   const isLoading =
     automationsQuery.isFetching && data === undefined && !hasInitialLoadError;
 
@@ -367,11 +510,17 @@ export function AutomationsView() {
     );
   }, [closeDeleteDialog, deleteDialog.target, deleteMutate]);
 
-  const handleCreateAutomation = useCallback(() => {
-    navigate(getRootComposeRoutePath(), {
-      state: { focusPrompt: true, initialPrompt: CREATE_LOOP_PROMPT },
-    });
-  }, [navigate]);
+  const handleCreateAutomation = useCallback(
+    (initialPrompt?: string) => {
+      navigate(getRootComposeRoutePath(), {
+        state: {
+          focusPrompt: true,
+          initialPrompt: initialPrompt ?? CREATE_LOOP_PROMPT,
+        },
+      });
+    },
+    [navigate],
+  );
 
   return (
     <>

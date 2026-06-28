@@ -1,5 +1,6 @@
-import { useCallback } from "react";
+import { useCallback, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { PERSONAL_PROJECT_ID } from "@bb/domain";
 import type { Automation, AutomationRun } from "@bb/server-contract";
 import { Button } from "@/components/ui/button.js";
 import {
@@ -8,6 +9,7 @@ import {
 } from "@/components/dialogs/ConfirmDeleteDialog.js";
 import { EmptyStatePanel } from "@/components/ui/empty-state.js";
 import { Icon } from "@/components/ui/icon.js";
+import { LIST_HOVER_TRANSITION } from "@/components/ui/motion.js";
 import { PageShell } from "@/components/ui/page-shell.js";
 import { Pill } from "@/components/ui/pill.js";
 import { useDialogState } from "@/hooks/useDialogState";
@@ -19,11 +21,11 @@ import {
   useResumeAutomation,
   useRunAutomation,
 } from "@/hooks/queries/automation-queries";
-import { formatCronCadence } from "@/lib/format-schedule";
 import {
-  getAutomationsRoutePath,
-  getThreadRoutePath,
-} from "@/lib/route-paths";
+  formatCronCadence,
+  formatScheduleStatusLabel,
+} from "@/lib/format-schedule";
+import { getAutomationsRoutePath, getThreadRoutePath } from "@/lib/route-paths";
 import { cn } from "@/lib/utils";
 
 const RUN_TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
@@ -87,6 +89,12 @@ const RUN_STATUS_TONE_CLASS: Record<RunStatusLabel["tone"], string> = {
   muted: "text-muted-foreground",
 };
 
+const RUN_STATUS_DOT_CLASS: Record<RunStatusLabel["tone"], string> = {
+  ok: "bg-foreground",
+  fail: "bg-destructive",
+  muted: "bg-muted-foreground/50",
+};
+
 function describeEnvironment(automation: Automation): string {
   const { environment } = automation;
   if (environment.type === "reuse") {
@@ -119,6 +127,26 @@ function describeExecution(automation: Automation): string {
   return `Script · ${interpreter} ${target} · ${timeoutSeconds}s timeout`;
 }
 
+function describeProject(projectId: string): string {
+  return projectId === PERSONAL_PROJECT_ID ? "Personal" : projectId;
+}
+
+interface ConfigRowProps {
+  label: string;
+  children: ReactNode;
+}
+
+function ConfigRow({ label, children }: ConfigRowProps) {
+  return (
+    <div className="grid gap-1 py-2 sm:grid-cols-[7rem_minmax(0,1fr)]">
+      <dt className="text-xs font-medium uppercase text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="min-w-0 text-sm text-foreground">{children}</dd>
+    </div>
+  );
+}
+
 interface RunRowProps {
   run: AutomationRun;
   projectId: string;
@@ -128,32 +156,66 @@ function RunRow({ run, projectId }: RunRowProps) {
   const status = getRunStatusLabel(run);
   const duration = formatRunDuration(run);
   const silent = isSilentRun(run);
+  const threadPath =
+    run.runMode === "agent" && run.threadId
+      ? getThreadRoutePath({ projectId, threadId: run.threadId })
+      : null;
   const showOutput =
     run.runMode === "script" &&
     (run.output !== null || run.error !== null || silent);
 
   return (
-    <div className="overflow-hidden rounded-md border border-border">
-      <div className="flex items-center gap-2 px-3 py-2 text-sm">
-        <span className={cn("font-medium", RUN_STATUS_TONE_CLASS[status.tone])}>
-          {status.label}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          {formatRunTimestamp(run.startedAt)}
-          {duration ? ` · ${duration}` : ""}
-        </span>
-        {run.runMode === "agent" && run.threadId ? (
-          <Link
-            to={getThreadRoutePath({ projectId, threadId: run.threadId })}
-            className="ml-auto text-xs text-muted-foreground hover:text-foreground hover:underline"
+    <div className="overflow-hidden border-b border-border last:border-b-0">
+      <div
+        className={cn(
+          "grid min-h-12 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3 py-2 text-sm",
+          threadPath && "hover:bg-state-hover",
+          threadPath && LIST_HOVER_TRANSITION,
+        )}
+      >
+        <div className="min-w-0">
+          <p className="truncate font-medium text-foreground">
+            {formatRunTimestamp(run.startedAt)}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {run.trigger === "manual" ? "Manual run" : "Scheduled run"}
+          </p>
+        </div>
+        <div className="flex items-center justify-end gap-3">
+          <span
+            className={cn(
+              "inline-flex min-w-0 items-center gap-1.5 text-xs font-medium",
+              RUN_STATUS_TONE_CLASS[status.tone],
+            )}
           >
-            View thread
-          </Link>
-        ) : run.runMode === "script" && run.exitCode !== null ? (
-          <span className="ml-auto font-mono text-xs text-muted-foreground">
-            exit {run.exitCode}
+            <span
+              aria-hidden="true"
+              className={cn(
+                "size-1.5 shrink-0 rounded-full",
+                RUN_STATUS_DOT_CLASS[status.tone],
+              )}
+            />
+            <span className="truncate">{status.label}</span>
           </span>
-        ) : null}
+          <span className="w-14 shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground">
+            {duration ?? "running"}
+          </span>
+          {threadPath ? (
+            <Link
+              to={threadPath}
+              className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-state-hover hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              aria-label="Open run thread"
+            >
+              <Icon name="ArrowRight" className="size-4" />
+            </Link>
+          ) : run.runMode === "script" && run.exitCode !== null ? (
+            <span className="w-16 shrink-0 text-right font-mono text-xs text-muted-foreground">
+              exit {run.exitCode}
+            </span>
+          ) : (
+            <span className="size-7 shrink-0" aria-hidden="true" />
+          )}
+        </div>
       </div>
       {run.skipReason ? (
         <p className="border-t border-border-seam px-3 py-2 text-xs text-muted-foreground">
@@ -206,104 +268,156 @@ export function AutomationDetailContent({
   onDelete,
   actionsPending,
 }: AutomationDetailContentProps) {
+  const scheduleStatus = formatScheduleStatusLabel({
+    enabled: automation.enabled,
+    nextRunAt: automation.nextRunAt,
+  });
+
   return (
     <PageShell contentClassName="pt-4 md:pt-5">
-      <div className="mx-auto w-full max-w-3xl space-y-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span
-              aria-hidden="true"
-              className={cn(
-                "size-1.5 shrink-0 rounded-full",
-                automation.enabled ? "bg-success" : "bg-muted-foreground/50",
-              )}
-            />
-            <h1 className="min-w-0 flex-1 truncate text-base font-semibold">
-              {automation.name}
-            </h1>
-            {automation.execution.mode === "script" ? (
-              <Pill variant="outline" className="shrink-0">
-                Script
+      <div className="w-full space-y-5">
+        <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 space-y-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <h1 className="min-w-0 truncate text-sm font-medium text-foreground">
+                {automation.name}
+              </h1>
+              <Pill
+                variant={automation.enabled ? "emphasis" : "outline"}
+                size="sm"
+                className={
+                  automation.enabled ? undefined : "text-muted-foreground"
+                }
+              >
+                {automation.enabled ? "Active" : "Paused"}
               </Pill>
-            ) : null}
-            {automation.origin === "agent" ? (
-              <Pill variant="secondary" className="shrink-0">
-                API
-              </Pill>
-            ) : null}
+            </div>
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="truncate">
+                Project {describeProject(automation.projectId)}
+              </span>
+              <span aria-hidden="true">·</span>
+              <span className="truncate">
+                {formatCronCadence(automation.trigger.cron)}
+              </span>
+            </div>
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+              {automation.execution.mode === "script" ? (
+                <Pill variant="outline" size="sm" className="shrink-0">
+                  Script
+                </Pill>
+              ) : null}
+              {automation.origin === "agent" ? (
+                <Pill variant="secondary" size="sm" className="shrink-0">
+                  API
+                </Pill>
+              ) : null}
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {formatCronCadence(automation.trigger.cron)} ·{" "}
-            {automation.trigger.timezone}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {describeExecution(automation)}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {describeEnvironment(automation)}
-          </p>
-          {automation.execution.mode === "agent" ? (
-            <p className="whitespace-pre-wrap break-words text-xs text-muted-foreground">
-              {automation.execution.prompt}
-            </p>
-          ) : null}
-        </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {automation.enabled ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-label="Pause"
+                disabled={actionsPending}
+                onClick={onPause}
+              >
+                <Icon name="Pause" className="size-4" />
+                Pause
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-label="Resume"
+                disabled={actionsPending}
+                onClick={onResume}
+              >
+                <Icon name="Play" className="size-4" />
+                Resume
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-label="Run now"
+              disabled={actionsPending}
+              onClick={onRun}
+            >
+              <Icon name="Zap" className="size-4" />
+              Run now
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              aria-label="Delete automation"
+              disabled={actionsPending}
+              onClick={onDelete}
+            >
+              <Icon name="Trash2" className="size-4" />
+              Delete
+            </Button>
+          </div>
+        </header>
 
-        <div className="flex items-center gap-2">
-          {automation.enabled ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              aria-label="Pause"
-              disabled={actionsPending}
-              onClick={onPause}
-            >
-              <Icon name="Pause" className="size-4" />
-              Pause
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              aria-label="Resume"
-              disabled={actionsPending}
-              onClick={onResume}
-            >
-              <Icon name="Play" className="size-4" />
-              Resume
-            </Button>
-          )}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            aria-label="Run now"
-            disabled={actionsPending}
-            onClick={onRun}
+        <section
+          aria-labelledby="automation-config-heading"
+          className="space-y-2"
+        >
+          <h2
+            id="automation-config-heading"
+            className="text-xs font-medium uppercase text-muted-foreground"
           >
-            <Icon name="Zap" className="size-4" />
-            Run now
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            aria-label="Delete automation"
-            disabled={actionsPending}
-            onClick={onDelete}
-          >
-            <Icon name="Trash2" className="size-4" />
-            Delete
-          </Button>
-        </div>
+            Config
+          </h2>
+          <dl className="divide-y divide-border border-y border-border">
+            <ConfigRow label="Schedule">
+              <div className="space-y-0.5">
+                <p className="truncate">
+                  {formatCronCadence(automation.trigger.cron)}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {automation.trigger.timezone} · {scheduleStatus}
+                </p>
+              </div>
+            </ConfigRow>
+            <ConfigRow label="Environment">
+              <span className="break-words">
+                {describeEnvironment(automation)}
+              </span>
+            </ConfigRow>
+            <ConfigRow label="Execution">
+              <span className="break-words">
+                {describeExecution(automation)}
+              </span>
+            </ConfigRow>
+            {automation.execution.mode === "agent" ? (
+              <ConfigRow label="Prompt">
+                <span className="whitespace-pre-wrap break-words text-xs text-muted-foreground">
+                  {automation.execution.prompt}
+                </span>
+              </ConfigRow>
+            ) : null}
+          </dl>
+        </section>
 
         <section className="space-y-2">
-          <p className="text-xs font-medium uppercase text-muted-foreground">
-            Run history
-          </p>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-xs font-medium uppercase text-muted-foreground">
+              Run history
+            </h2>
+            {runs.length > 0 ? (
+              <span className="text-xs text-muted-foreground">
+                {runs.length} {runs.length === 1 ? "run" : "runs"}
+              </span>
+            ) : null}
+          </div>
           {runsError ? (
             <p className="text-sm text-destructive">Failed to load runs.</p>
           ) : runsLoading ? (
@@ -311,7 +425,7 @@ export function AutomationDetailContent({
           ) : runs.length === 0 ? (
             <EmptyStatePanel className="py-6">No runs yet.</EmptyStatePanel>
           ) : (
-            <div className="space-y-2">
+            <div className="overflow-hidden rounded-md border border-border">
               {runs.map((run) => (
                 <RunRow
                   key={run.id}

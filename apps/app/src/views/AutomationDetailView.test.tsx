@@ -80,9 +80,10 @@ function renderContent(
 }
 
 describe("AutomationDetailContent", () => {
-  it("renders the header with name, Script and API pills", () => {
+  it("renders the header with name, status, Script and API pills", () => {
     const markup = renderContent({ automation: makeAutomation() });
     expect(markup).toContain("Disk space watchdog");
+    expect(markup).toContain(">Active<");
     expect(markup).toContain(">Script<");
     expect(markup).toContain(">API<");
   });
@@ -90,6 +91,7 @@ describe("AutomationDetailContent", () => {
   it("renders the config summary with schedule, execution, and environment", () => {
     const markup = renderContent({ automation: makeAutomation() });
     expect(markup).toContain("America/New_York");
+    expect(markup).toContain("Next ");
     expect(markup).toContain("bash disk.sh");
     expect(markup).toContain("30s timeout");
     expect(markup).toContain("Personal workspace");
@@ -176,7 +178,7 @@ describe("AutomationDetailContent", () => {
       ],
     });
     expect(markup).toContain('href="/threads/thr_run"');
-    expect(markup).toContain("View thread");
+    expect(markup).toContain("Open run thread");
   });
 
   it("shows a skip reason for skipped runs", () => {
