@@ -16,12 +16,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.js";
-import { EmptyStatePanel } from "@/components/ui/empty-state.js";
 import { Icon } from "@/components/ui/icon.js";
 import { LIST_HOVER_TRANSITION } from "@/components/ui/motion.js";
 import { PageShell } from "@/components/ui/page-shell.js";
 import { Pill } from "@/components/ui/pill.js";
-import { CREATE_LOOP_PROMPT } from "@/components/promptbox/PromptBoxActionsMenu";
 import { useDialogState } from "@/hooks/useDialogState";
 import {
   useAutomations,
@@ -51,7 +49,7 @@ interface AutomationStatusGroup {
   entries: AutomationOverviewEntry[];
 }
 
-type CreateAutomationHandler = (initialPrompt?: string) => void;
+type CreateAutomationHandler = (initialPrompt: string) => void;
 
 interface AutomationStarterLoop {
   name: string;
@@ -384,28 +382,26 @@ export function AutomationsOverview({
             Failed to load automations.
           </p>
         ) : isEmpty ? (
-          <EmptyStatePanel className="px-3 py-3 text-left">
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Automations run a prompt on a schedule, spinning up an agent run
-                in a project.
+          <div className="space-y-3 px-3 py-3">
+            <p className="text-sm text-muted-foreground">
+              Automations run a prompt on a schedule, spinning up an agent run
+              in a project.
+            </p>
+            <section>
+              <p className="text-xs font-medium uppercase text-muted-foreground">
+                Templates
               </p>
-              <section>
-                <p className="text-xs font-medium uppercase text-muted-foreground">
-                  Templates
-                </p>
-                <div className="mt-1.5 space-y-1">
-                  {AUTOMATION_STARTER_LOOPS.map((starter) => (
-                    <StarterLoopRow
-                      key={starter.name}
-                      starter={starter}
-                      onCreateAutomation={onCreateAutomation}
-                    />
-                  ))}
-                </div>
-              </section>
-            </div>
-          </EmptyStatePanel>
+              <div className="mt-1.5 space-y-1">
+                {AUTOMATION_STARTER_LOOPS.map((starter) => (
+                  <StarterLoopRow
+                    key={starter.name}
+                    starter={starter}
+                    onCreateAutomation={onCreateAutomation}
+                  />
+                ))}
+              </div>
+            </section>
+          </div>
         ) : (
           <div className="space-y-5">
             {groups.map((group) => (
@@ -502,11 +498,11 @@ export function AutomationsView() {
   }, [closeDeleteDialog, deleteDialog.target, deleteMutate]);
 
   const handleCreateAutomation = useCallback(
-    (initialPrompt?: string) => {
+    (initialPrompt: string) => {
       navigate(getRootComposeRoutePath(), {
         state: {
           focusPrompt: true,
-          initialPrompt: initialPrompt ?? CREATE_LOOP_PROMPT,
+          initialPrompt,
         },
       });
     },

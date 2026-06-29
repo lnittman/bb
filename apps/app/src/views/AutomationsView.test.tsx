@@ -88,10 +88,10 @@ function renderOverview(
 }
 
 describe("AutomationsOverview", () => {
-  it("renders the page title and create action in the header", () => {
+  it("renders starter templates in the empty overview body", () => {
     const markup = renderOverview({ entries: [] });
-    expect(markup).toContain(">Automations<");
-    expect(markup).toContain("Create via chat");
+    expect(markup).toContain(">Templates<");
+    expect(markup).toContain("Daily dependency audit");
   });
 
   it("groups automations by status into Active and Paused sections", () => {
@@ -248,9 +248,9 @@ describe("AutomationsOverview", () => {
     expect(markup).toContain("Watcher actions");
   });
 
-  it("renders a single create-via-chat button without a script option", () => {
+  it("does not render script or agent automation picker options", () => {
     const markup = renderOverview({ entries: [] });
-    expect(markup).toContain("Create via chat");
+    expect(markup).toContain(">Templates<");
     expect(markup).not.toContain("Script automation");
     expect(markup).not.toContain("Agent automation");
   });

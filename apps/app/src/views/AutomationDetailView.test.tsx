@@ -88,6 +88,15 @@ describe("AutomationDetailContent", () => {
     expect(markup).toContain(">API<");
   });
 
+  it("does not render raw project ids in the header metadata", () => {
+    const markup = renderContent({
+      automation: makeAutomation({ projectId: "proj_app" }),
+    });
+    expect(markup).not.toContain("Project proj_app");
+    expect(markup).not.toContain("proj_app");
+    expect(markup).toContain("Every 15 minutes");
+  });
+
   it("renders the config summary with schedule, execution, and environment", () => {
     const markup = renderContent({ automation: makeAutomation() });
     expect(markup).toContain("America/New_York");

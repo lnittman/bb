@@ -11,6 +11,10 @@ import { atomWithStorage } from "jotai/utils";
 import { Link, useLocation } from "react-router-dom";
 import type { ProjectResponse } from "@bb/server-contract";
 import { Button } from "@/components/ui/button.js";
+import {
+  COARSE_POINTER_COMPACT_ROW_HEIGHT_CLASS,
+  COARSE_POINTER_ICON_SIZE_CLASS,
+} from "@/components/ui/coarse-pointer-sizing.js";
 import { Icon } from "@/components/ui/icon.js";
 import {
   SidebarInset,
@@ -359,13 +363,16 @@ function AppHeader({
         asChild
         variant="secondary"
         size="sm"
-        className="h-7 max-md:pointer-coarse:h-9"
+        className={COARSE_POINTER_COMPACT_ROW_HEIGHT_CLASS}
       >
         <Link
           to={getRootComposeRoutePath()}
           state={{ focusPrompt: true, initialPrompt: CREATE_LOOP_PROMPT }}
         >
-          <Icon name="MessageSquarePlus" className="size-4" />
+          <Icon
+            name="MessageSquarePlus"
+            className={COARSE_POINTER_ICON_SIZE_CLASS}
+          />
           Create via chat
         </Link>
       </Button>

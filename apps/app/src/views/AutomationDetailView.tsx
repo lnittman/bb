@@ -1,6 +1,5 @@
 import { useCallback, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { PERSONAL_PROJECT_ID } from "@bb/domain";
 import type { Automation, AutomationRun } from "@bb/server-contract";
 import { Button } from "@/components/ui/button.js";
 import {
@@ -125,10 +124,6 @@ function describeExecution(automation: Automation): string {
   const target = execution.scriptFile ?? "inline script";
   const timeoutSeconds = Math.round(execution.timeoutMs / 1000);
   return `Script · ${interpreter} ${target} · ${timeoutSeconds}s timeout`;
-}
-
-function describeProject(projectId: string): string {
-  return projectId === PERSONAL_PROJECT_ID ? "Personal" : projectId;
 }
 
 interface ConfigRowProps {
@@ -293,10 +288,6 @@ export function AutomationDetailContent({
               </Pill>
             </div>
             <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="truncate">
-                Project {describeProject(automation.projectId)}
-              </span>
-              <span aria-hidden="true">·</span>
               <span className="truncate">
                 {formatCronCadence(automation.trigger.cron)}
               </span>
