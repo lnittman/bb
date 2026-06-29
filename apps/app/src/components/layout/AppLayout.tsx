@@ -355,7 +355,12 @@ function AppHeader({
         ) : null}
       </>
     ) : isAutomationsListView ? (
-      <Button asChild variant="secondary" size="sm">
+      <Button
+        asChild
+        variant="secondary"
+        size="sm"
+        className="h-7 max-md:pointer-coarse:h-9"
+      >
         <Link
           to={getRootComposeRoutePath()}
           state={{ focusPrompt: true, initialPrompt: CREATE_LOOP_PROMPT }}
