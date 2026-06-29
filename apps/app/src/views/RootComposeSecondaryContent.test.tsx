@@ -68,15 +68,24 @@ vi.mock("@/components/ui/responsive-overlay.js", async () => {
 
   const ResponsiveDrawerShell = ({
     children,
+    contentClassName,
+    handleOnly,
     open,
+    repositionInputs,
   }: {
     children?: ReactNode;
+    contentClassName?: string;
+    handleOnly?: boolean;
     open: boolean;
+    repositionInputs?: boolean;
   }) =>
     React.createElement(
       "div",
       {
+        "data-content-class-name": contentClassName,
+        "data-handle-only": String(handleOnly),
         "data-open": String(open),
+        "data-reposition-inputs": String(repositionInputs),
         "data-testid": "responsive-drawer-shell",
       },
       children,
@@ -221,5 +230,20 @@ describe("RootComposeSecondaryContent desktop layout", () => {
     expect(
       screen.getByTestId("drawer-secondary-panel").getAttribute("data-open"),
     ).toBe("true");
+    expect(
+      screen
+        .getByTestId("responsive-drawer-shell")
+        .getAttribute("data-content-class-name"),
+    ).toBe("flex h-[92dvh] max-h-[92dvh] min-h-0 flex-col overflow-hidden");
+    expect(
+      screen
+        .getByTestId("responsive-drawer-shell")
+        .getAttribute("data-handle-only"),
+    ).toBe("true");
+    expect(
+      screen
+        .getByTestId("responsive-drawer-shell")
+        .getAttribute("data-reposition-inputs"),
+    ).toBe("false");
   });
 });

@@ -37,6 +37,10 @@ import { dispatchBrowserViewBoundsSync } from "@/lib/browser-view-bounds-sync";
 const CLOSED_TIMELINE_PANEL_SIZE_PERCENT = 100;
 const COLLAPSED_TIMELINE_PANEL_SIZE_PERCENT = 0;
 const TIMELINE_PANEL_MIN_SIZE_PERCENT = 30;
+const RIGHT_PANEL_DRAWER_CONTENT_CLASS =
+  "flex h-[92dvh] max-h-[92dvh] min-h-0 flex-col overflow-hidden";
+const RIGHT_PANEL_DRAWER_BODY_CLASS =
+  "flex h-full min-h-0 flex-1 flex-col overflow-hidden";
 
 type ThreadTimelinePaneProps = Omit<
   ComponentProps<typeof ThreadTimelinePane>,
@@ -516,7 +520,7 @@ export function ThreadDetailSecondaryContent({
             if (!open) stableThreadSecondaryPanelProps.onClose();
           }}
           srLabel="Thread details"
-          contentClassName="h-[92dvh] max-h-[92dvh]"
+          contentClassName={RIGHT_PANEL_DRAWER_CONTENT_CLASS}
           onContentAnimationEnd={handleDrawerContentAnimationEnd}
           // `handleOnly` keeps vaul from binding its pointerdown handler on
           // the drawer body. Without it, vaul calls setPointerCapture on the
@@ -528,7 +532,7 @@ export function ThreadDetailSecondaryContent({
           // reacts to any focused input, including nested search fields.
           repositionInputs={false}
         >
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className={RIGHT_PANEL_DRAWER_BODY_CLASS}>
             {drawerSecondaryPanelContent}
           </div>
         </ResponsiveDrawerShell>

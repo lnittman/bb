@@ -26,6 +26,10 @@ import { cn } from "@/lib/utils";
 const CLOSED_MAIN_PANEL_SIZE_PERCENT = 100;
 const MAIN_PANEL_MIN_SIZE_PERCENT = 30;
 const ROOT_COMPOSE_MAX_WIDTH_CLASS = "max-w-[760px]";
+const RIGHT_PANEL_DRAWER_CONTENT_CLASS =
+  "flex h-[92dvh] max-h-[92dvh] min-h-0 flex-col overflow-hidden";
+const RIGHT_PANEL_DRAWER_BODY_CLASS =
+  "flex h-full min-h-0 flex-1 flex-col overflow-hidden";
 
 type RootSecondaryPanelProps = Omit<
   ComponentProps<typeof ThreadSecondaryPanel>,
@@ -249,12 +253,12 @@ export function RootComposeSecondaryContent({
             if (!open) threadSecondaryPanelProps.onClose();
           }}
           srLabel="Right panel"
-          contentClassName="h-[92dvh] max-h-[92dvh]"
+          contentClassName={RIGHT_PANEL_DRAWER_CONTENT_CLASS}
           onContentAnimationEnd={handleDrawerContentAnimationEnd}
           handleOnly
           repositionInputs={false}
         >
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className={RIGHT_PANEL_DRAWER_BODY_CLASS}>
             {drawerSecondaryPanelContent}
           </div>
         </ResponsiveDrawerShell>

@@ -68,18 +68,27 @@ vi.mock("@/components/ui/responsive-overlay.js", async () => {
 
   const ResponsiveDrawerShell = ({
     children,
+    contentClassName,
+    handleOnly,
     onContentAnimationEnd,
     open,
+    repositionInputs,
   }: {
     children?: ReactNode;
+    contentClassName?: string;
+    handleOnly?: boolean;
     onContentAnimationEnd?: DrawerShellCallback;
     open: boolean;
+    repositionInputs?: boolean;
   }) => {
     drawerShellState.onContentAnimationEnd = onContentAnimationEnd;
     return React.createElement(
       "div",
       {
+        "data-content-class-name": contentClassName,
+        "data-handle-only": String(handleOnly),
         "data-open": String(open),
+        "data-reposition-inputs": String(repositionInputs),
         "data-testid": "responsive-drawer-shell",
       },
       children,
@@ -399,6 +408,22 @@ beforeEach(() => {
 });
 
 describe("ThreadDetailSecondaryContent compact drawer settling", () => {
+  it("passes fixed flex sizing and handle-only behavior to the compact drawer shell", () => {
+    renderThreadDetail({
+      isCompactViewport: true,
+      isSecondaryPanelOpen: true,
+      renderBrowserDeck: createBrowserDeckRenderer(),
+      threadId: "thread-1",
+    });
+
+    const drawerShell = screen.getByTestId("responsive-drawer-shell");
+    expect(drawerShell.getAttribute("data-content-class-name")).toBe(
+      "flex h-[92dvh] max-h-[92dvh] min-h-0 flex-col overflow-hidden",
+    );
+    expect(drawerShell.getAttribute("data-handle-only")).toBe("true");
+    expect(drawerShell.getAttribute("data-reposition-inputs")).toBe("false");
+  });
+
   it("orders open-animation completion, rAF, bounds sync, and drawer settled true", () => {
     const order: string[] = [];
     const frames = installAnimationFrameQueue(order);

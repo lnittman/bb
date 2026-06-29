@@ -81,6 +81,10 @@ const SECONDARY_RESIZABLE_PANEL_STYLE: CSSProperties = {
 };
 const SECONDARY_PANEL_CHROME_ICON_BUTTON_CLASS = `${COARSE_POINTER_COMPACT_ICON_BUTTON_CLASS} shrink-0 ${CHROME_SUBTLE_ICON_BUTTON_FOREGROUND_CLASS}`;
 const SECONDARY_PANEL_HIDE_ICON_BUTTON_CLASS = `${COARSE_POINTER_HEADER_ICON_BUTTON_CLASS} shrink-0 ${CHROME_SUBTLE_ICON_BUTTON_FOREGROUND_CLASS}`;
+const SECONDARY_PANEL_DRAWER_ICON_BUTTON_CLASS =
+  "max-md:h-11 max-md:w-11 max-md:[&_svg]:size-5";
+const SECONDARY_PANEL_DRAWER_TOOLBAR_TOUCH_CLASS =
+  "max-md:[&_button]:min-h-11";
 // Stable empty TOC reference so the collapse-controls hook's derived atom and
 // the stats memo are not rebuilt every render while the diff is loading/absent.
 const EMPTY_DIFF_FILES: readonly DiffFileEntry[] = [];
@@ -334,6 +338,14 @@ export function ThreadSecondaryPanel({
   const [gitDiffLineOverflowMode, setGitDiffLineOverflowMode] =
     useState<CodeOverflowMode>(DEFAULT_CODE_OVERFLOW_MODE);
   const usesDesktopChrome = shouldUseMacosDesktopChrome(desktopInfo);
+  const chromeIconButtonClass = cn(
+    SECONDARY_PANEL_CHROME_ICON_BUTTON_CLASS,
+    renderAsDrawer && SECONDARY_PANEL_DRAWER_ICON_BUTTON_CLASS,
+  );
+  const hideIconButtonClass = cn(
+    SECONDARY_PANEL_HIDE_ICON_BUTTON_CLASS,
+    renderAsDrawer && SECONDARY_PANEL_DRAWER_ICON_BUTTON_CLASS,
+  );
   const preferredTheme = usePreferredTheme();
   const gitDiffViewOptions = useMemo(
     () => ({
@@ -412,6 +424,7 @@ export function ThreadSecondaryPanel({
             // each view's background (info, diff, new-tab, terminal) runs
             // straight up to the top with no seam.
             "min-w-0 justify-between gap-2 px-4",
+            renderAsDrawer && SECONDARY_PANEL_DRAWER_TOOLBAR_TOUCH_CLASS,
             usesDesktopChrome && MACOS_WINDOW_DRAG_CLASS,
           )}
         >
@@ -431,7 +444,7 @@ export function ThreadSecondaryPanel({
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  SECONDARY_PANEL_CHROME_ICON_BUTTON_CLASS,
+                  chromeIconButtonClass,
                   usesDesktopChrome && MACOS_WINDOW_NO_DRAG_CLASS,
                 )}
                 onClick={() => onPanelChange("thread-info")}
@@ -449,7 +462,7 @@ export function ThreadSecondaryPanel({
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  SECONDARY_PANEL_CHROME_ICON_BUTTON_CLASS,
+                  chromeIconButtonClass,
                   usesDesktopChrome && MACOS_WINDOW_NO_DRAG_CLASS,
                 )}
                 onClick={() => onPanelChange("git-diff")}
@@ -462,6 +475,7 @@ export function ThreadSecondaryPanel({
             {showNewTabButton ? (
               <NewTabButton
                 onOpenNewTab={onOpenNewTab}
+                chromeIconButtonClass={chromeIconButtonClass}
                 usesDesktopChrome={usesDesktopChrome}
               />
             ) : null}
@@ -481,6 +495,7 @@ export function ThreadSecondaryPanel({
                 size="icon"
                 className={cn(
                   COARSE_POINTER_COMPACT_ICON_BUTTON_CLASS,
+                  renderAsDrawer && SECONDARY_PANEL_DRAWER_ICON_BUTTON_CLASS,
                   "shrink-0",
                   usesDesktopChrome && MACOS_WINDOW_NO_DRAG_CLASS,
                 )}
@@ -497,7 +512,7 @@ export function ThreadSecondaryPanel({
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  SECONDARY_PANEL_HIDE_ICON_BUTTON_CLASS,
+                  hideIconButtonClass,
                   usesDesktopChrome && MACOS_WINDOW_NO_DRAG_CLASS,
                 )}
                 onClick={onClose}
@@ -513,7 +528,7 @@ export function ThreadSecondaryPanel({
               // the tab strip stays clear and the pinned toggle lands over it.
               <div
                 aria-hidden
-                className={SECONDARY_PANEL_HIDE_ICON_BUTTON_CLASS}
+                className={hideIconButtonClass}
               />
             ) : null}
           </div>
@@ -637,18 +652,23 @@ export function ThreadSecondaryPanel({
 }
 
 interface NewTabButtonProps {
+  chromeIconButtonClass: string;
   onOpenNewTab: () => void;
   usesDesktopChrome: boolean;
 }
 
-function NewTabButton({ onOpenNewTab, usesDesktopChrome }: NewTabButtonProps) {
+function NewTabButton({
+  chromeIconButtonClass,
+  onOpenNewTab,
+  usesDesktopChrome,
+}: NewTabButtonProps) {
   return (
     <Button
       type="button"
       variant="ghost"
       size="sm"
       className={cn(
-        SECONDARY_PANEL_CHROME_ICON_BUTTON_CLASS,
+        chromeIconButtonClass,
         usesDesktopChrome && MACOS_WINDOW_NO_DRAG_CLASS,
       )}
       onClick={onOpenNewTab}
