@@ -1,4 +1,5 @@
 import {
+  type CSSProperties,
   Fragment,
   useCallback,
   useEffect,
@@ -35,7 +36,6 @@ import { EmptyStatePanel } from "@/components/ui/empty-state.js";
 import { Icon } from "@/components/ui/icon.js";
 import { Input } from "@/components/ui/input.js";
 import { LIST_HOVER_TRANSITION } from "@/components/ui/motion.js";
-import { OverflowFade } from "@/components/ui/overflow-fade.js";
 import { PageShell } from "@/components/ui/page-shell.js";
 import { Pill } from "@/components/ui/pill.js";
 import { TabPill } from "@/components/ui/tab-pill.js";
@@ -383,6 +383,28 @@ const INITIAL_TEMPLATE_GALLERY_OVERFLOW_STATE: TemplateGalleryOverflowState = {
   below: false,
 };
 
+const TEMPLATE_GALLERY_EDGE_FADE = "1.5rem";
+
+/** Alpha mask that fades the scroll viewport's overflowing edge(s) into the
+ * dialog surface. A mask (not a gradient overlay) sidesteps the Safari
+ * transparent-black interpolation fringe, and an edge only fades when the
+ * overflow hook reports content past it. */
+function buildTemplateGalleryMaskStyle(
+  overflow: TemplateGalleryOverflowState,
+): CSSProperties | undefined {
+  if (!overflow.above && !overflow.below) {
+    return undefined;
+  }
+  const stops = [
+    overflow.above ? "transparent" : "black",
+    `black ${TEMPLATE_GALLERY_EDGE_FADE}`,
+    `black calc(100% - ${TEMPLATE_GALLERY_EDGE_FADE})`,
+    overflow.below ? "transparent" : "black",
+  ];
+  const gradient = `linear-gradient(to bottom, ${stops.join(", ")})`;
+  return { maskImage: gradient, WebkitMaskImage: gradient };
+}
+
 function useTemplateGalleryOverflowState() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -536,32 +558,28 @@ function TemplateGallery({ onSelect }: TemplateGalleryProps) {
           ))}
         </div>
       </div>
-      <div className="relative">
-        {overflow.above ? (
-          <OverflowFade placement="above" className="z-10" />
-        ) : null}
-        {overflow.below ? (
-          <OverflowFade placement="below" className="z-10" />
-        ) : null}
-        <div ref={scrollRef} className="h-[60vh] overflow-y-auto pr-1">
-          <div
-            ref={contentRef}
-            className="grid grid-cols-1 gap-2 sm:grid-cols-2"
-          >
-            {filteredStarters.length > 0 ? (
-              filteredStarters.map((starter) => (
-                <LoopTemplateCard
-                  key={starter.name}
-                  starter={starter}
-                  onSelect={onSelect}
-                />
-              ))
-            ) : (
-              <div className="flex min-h-32 items-center justify-center rounded-md bg-muted/50 px-4 py-6 text-center text-sm text-muted-foreground sm:col-span-2">
-                No templates match this filter.
-              </div>
-            )}
-          </div>
+      <div
+        ref={scrollRef}
+        className="h-[60vh] overflow-y-auto pr-1"
+        style={buildTemplateGalleryMaskStyle(overflow)}
+      >
+        <div
+          ref={contentRef}
+          className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+        >
+          {filteredStarters.length > 0 ? (
+            filteredStarters.map((starter) => (
+              <LoopTemplateCard
+                key={starter.name}
+                starter={starter}
+                onSelect={onSelect}
+              />
+            ))
+          ) : (
+            <div className="flex min-h-32 items-center justify-center rounded-md bg-muted/50 px-4 py-6 text-center text-sm text-muted-foreground sm:col-span-2">
+              No templates match this filter.
+            </div>
+          )}
         </div>
       </div>
     </div>
