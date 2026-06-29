@@ -73,4 +73,85 @@ export const AUTOMATION_STARTER_LOOPS = [
     prompt:
       "Create a new bb loop to flag threads and branches that have gone quiet, weekly.",
   },
+  {
+    name: "Dependency security scan",
+    icon: "Lock",
+    category: "Maintenance",
+    description: "Scan dependencies for known vulnerabilities.",
+    schedule: "Daily 6am",
+    prompt:
+      "Create a new bb loop to scan dependencies for known vulnerabilities every morning.",
+  },
+  {
+    name: "Lockfile drift check",
+    icon: "FileDiff",
+    category: "Maintenance",
+    description: "Flag lockfile and manifest drift.",
+    schedule: "Weekdays 7am",
+    prompt:
+      "Create a new bb loop to flag lockfile and manifest drift on weekday mornings.",
+  },
+  {
+    name: "Weekly activity digest",
+    icon: "Mail",
+    category: "Digests",
+    description: "Summarize the week's threads and changes.",
+    schedule: "Fridays 5pm",
+    prompt:
+      "Create a new bb loop to summarize the week's threads and changes every Friday afternoon.",
+  },
+  {
+    name: "PR review queue",
+    icon: "GitPullRequest",
+    category: "Digests",
+    description: "Surface open pull requests awaiting review.",
+    schedule: "Weekdays 10am",
+    prompt:
+      "Create a new bb loop to surface open pull requests awaiting review on weekday mornings.",
+  },
+  {
+    name: "Error rate watch",
+    icon: "Zap",
+    category: "Monitoring",
+    description: "Alert when the error rate spikes.",
+    schedule: "Hourly",
+    prompt:
+      "Create a new bb loop to alert me when the error rate spikes, checked hourly.",
+  },
+  {
+    name: "Endpoint uptime probe",
+    icon: "Globe",
+    category: "Monitoring",
+    description: "Probe an endpoint and alert on failure.",
+    schedule: "Every 15 minutes",
+    prompt:
+      "Create a new bb loop to probe an endpoint every 15 minutes and alert on failure.",
+  },
+  {
+    name: "Performance regression watch",
+    icon: "AlertTriangle",
+    category: "Monitoring",
+    description: "Flag latency and benchmark regressions.",
+    schedule: "Daily 9pm",
+    prompt:
+      "Create a new bb loop to flag latency and benchmark regressions each night.",
+  },
+  {
+    name: "Changelog update",
+    icon: "Edit",
+    category: "Releases",
+    description: "Update the changelog with recent merges.",
+    schedule: "Fridays 4pm",
+    prompt:
+      "Create a new bb loop to update the changelog with recent merges every Friday afternoon.",
+  },
+  {
+    name: "Release readiness check",
+    icon: "CircleCheck",
+    category: "Releases",
+    description: "Verify changelog, migrations, and tests before tagging.",
+    schedule: "Thursdays 1pm",
+    prompt:
+      "Create a new bb loop to verify changelog, migrations, and tests before tagging, on Thursday afternoons.",
+  },
 ] as const satisfies readonly AutomationStarterLoop[];

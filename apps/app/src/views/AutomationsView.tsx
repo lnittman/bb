@@ -543,7 +543,7 @@ function TemplateGallery({ onSelect }: TemplateGalleryProps) {
         {overflow.below ? (
           <OverflowFade placement="below" className="z-10" />
         ) : null}
-        <div ref={scrollRef} className="max-h-[60vh] overflow-y-auto pr-1">
+        <div ref={scrollRef} className="h-[60vh] overflow-y-auto pr-1">
           <div
             ref={contentRef}
             className="grid grid-cols-1 gap-2 sm:grid-cols-2"
