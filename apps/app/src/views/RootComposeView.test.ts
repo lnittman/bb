@@ -8,9 +8,11 @@ import type {
   SidebarBootstrapResponse,
   TerminalSession,
 } from "@bb/server-contract";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { ReuseThreadOption } from "@/components/pickers/WorktreePicker";
+import type { PromptDraftState } from "@/lib/prompt-draft";
 import {
+  applyInitialPromptToPromptDraft,
   buildRootComposeTerminalSessions,
   buildMobileRecentThreads,
   canCreateRootComposeTerminal,
@@ -203,6 +205,42 @@ describe("readInitialPromptFromLocationState", () => {
   });
 });
 
+describe("applyInitialPromptToPromptDraft", () => {
+  it("writes each navigation prompt as a fresh draft", () => {
+    const writtenDrafts: PromptDraftState[] = [];
+    const setDraft = (draft: PromptDraftState) => {
+      writtenDrafts.push(draft);
+    };
+
+    expect(
+      applyInitialPromptToPromptDraft({
+        state: { initialPrompt: "Create a first loop." },
+        setDraft,
+      }),
+    ).toBe(true);
+    expect(
+      applyInitialPromptToPromptDraft({
+        state: { initialPrompt: "Create a second loop." },
+        setDraft,
+      }),
+    ).toBe(true);
+
+    expect(writtenDrafts).toEqual([
+      { text: "Create a first loop.", mentions: [], attachments: [] },
+      { text: "Create a second loop.", mentions: [], attachments: [] },
+    ]);
+  });
+
+  it("ignores location state without a usable initial prompt", () => {
+    const setDraft = vi.fn();
+
+    expect(applyInitialPromptToPromptDraft({ state: {}, setDraft })).toBe(
+      false,
+    );
+    expect(setDraft).not.toHaveBeenCalled();
+  });
+});
+
 describe("readFolderIdFromLocationState", () => {
   it("returns a trimmed folder id seeded by navigation state", () => {
     expect(readFolderIdFromLocationState({ folderId: " fld_work " })).toBe(
@@ -232,8 +270,9 @@ describe("readRootComposeFolderTargetFromLocationState", () => {
   });
 
   it("clears the folder target for an unusable folder id", () => {
-    expect(readRootComposeFolderTargetFromLocationState({ folderId: "" }))
-      .toEqual({ kind: "clear" });
+    expect(
+      readRootComposeFolderTargetFromLocationState({ folderId: "" }),
+    ).toEqual({ kind: "clear" });
   });
 
   it("returns null when no folder target instruction is present", () => {
@@ -475,9 +514,9 @@ describe("shouldStartComposingFromLocationState", () => {
   it("ignores non-focus navigation state", () => {
     expect(shouldStartComposingFromLocationState(null)).toBe(false);
     expect(shouldStartComposingFromLocationState({})).toBe(false);
-    expect(
-      shouldStartComposingFromLocationState({ focusPrompt: false }),
-    ).toBe(false);
+    expect(shouldStartComposingFromLocationState({ focusPrompt: false })).toBe(
+      false,
+    );
   });
 });
 

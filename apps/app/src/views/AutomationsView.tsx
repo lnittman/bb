@@ -1,4 +1,11 @@
-import { Fragment, useCallback, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type {
   Automation,
@@ -25,10 +32,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.js";
 import { EmptyStatePanel } from "@/components/ui/empty-state.js";
-import { Icon, type IconName } from "@/components/ui/icon.js";
+import { Icon } from "@/components/ui/icon.js";
+import { Input } from "@/components/ui/input.js";
 import { LIST_HOVER_TRANSITION } from "@/components/ui/motion.js";
+import { OverflowFade } from "@/components/ui/overflow-fade.js";
 import { PageShell } from "@/components/ui/page-shell.js";
 import { Pill } from "@/components/ui/pill.js";
+import { TabPill } from "@/components/ui/tab-pill.js";
 import { useDialogState } from "@/hooks/useDialogState";
 import {
   useAutomations,
@@ -46,6 +56,12 @@ import {
   getRootComposeRoutePath,
 } from "@/lib/route-paths";
 import { cn } from "@/lib/utils";
+import {
+  AUTOMATION_STARTER_LOOPS,
+  AUTOMATION_TEMPLATE_CATEGORIES,
+  type AutomationStarterLoop,
+  type AutomationStarterLoopCategory,
+} from "./automations/automation-templates";
 
 interface AutomationOverviewEntry {
   automation: Automation;
@@ -59,65 +75,6 @@ interface AutomationStatusGroup {
 }
 
 type CreateAutomationHandler = (initialPrompt: string) => void;
-
-interface AutomationStarterLoop {
-  name: string;
-  icon: IconName;
-  description: string;
-  schedule: string;
-  prompt: string;
-}
-
-export const AUTOMATION_STARTER_LOOPS: readonly AutomationStarterLoop[] = [
-  {
-    name: "Daily dependency audit",
-    icon: "Search",
-    description: "Audit dependencies and write a summary.",
-    schedule: "Daily 8am",
-    prompt:
-      "Create a new bb loop to audit dependencies every morning and write a summary.",
-  },
-  {
-    name: "Weekday standup digest",
-    icon: "MessageSquare",
-    description: "Summarize overnight thread activity.",
-    schedule: "Weekdays 9am",
-    prompt:
-      "Create a new bb loop to summarize overnight thread activity on weekday mornings.",
-  },
-  {
-    name: "Scheduled check & alert",
-    icon: "AlertCircle",
-    description: "Run a check on a schedule and alert on change.",
-    schedule: "Hourly",
-    prompt:
-      "Create a new bb loop to run a check on a schedule and alert me when something changes.",
-  },
-  {
-    name: "Morning triage",
-    icon: "ListTodo",
-    description: "Surface and prioritize overnight activity.",
-    schedule: "Weekdays 8am",
-    prompt:
-      "Create a new bb loop to surface and prioritize overnight activity each weekday morning.",
-  },
-  {
-    name: "Release notes draft",
-    icon: "FileText",
-    description: "Draft release notes from recent changes.",
-    schedule: "Fridays 5pm",
-    prompt:
-      "Create a new bb loop to draft release notes from recent changes every Friday afternoon.",
-  },
-  {
-    name: "Stale work sweep",
-    icon: "Archive",
-    description: "Flag threads and branches gone quiet.",
-    schedule: "Weekly",
-    prompt:
-      "Create a new bb loop to flag threads and branches that have gone quiet, weekly.",
-  },
-];
 
 /** Per-row action callbacks, supplied by the container so the presentational
  * overview stays free of mutation hooks (and renderable in tests). */
@@ -412,13 +369,214 @@ interface TemplatesSectionProps {
 
 /** Curated starters shown inline; the full set lives in the gallery dialog. */
 const INLINE_TEMPLATE_COUNT = 3;
+const OVERFLOW_EDGE_EPSILON_PX = 1;
+
+type TemplateGalleryCategory = "All" | AutomationStarterLoopCategory;
+
+interface TemplateGalleryOverflowState {
+  above: boolean;
+  below: boolean;
+}
+
+const INITIAL_TEMPLATE_GALLERY_OVERFLOW_STATE: TemplateGalleryOverflowState = {
+  above: false,
+  below: false,
+};
+
+function useTemplateGalleryOverflowState() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [overflow, setOverflow] = useState<TemplateGalleryOverflowState>(
+    INITIAL_TEMPLATE_GALLERY_OVERFLOW_STATE,
+  );
+
+  const measureOverflow = useCallback(() => {
+    const scrollElement = scrollRef.current;
+    if (!scrollElement) {
+      return;
+    }
+
+    const maxScrollTop =
+      scrollElement.scrollHeight - scrollElement.clientHeight;
+    const hasOverflow = maxScrollTop > OVERFLOW_EDGE_EPSILON_PX;
+    const nextOverflow = {
+      above: hasOverflow && scrollElement.scrollTop > OVERFLOW_EDGE_EPSILON_PX,
+      below:
+        hasOverflow &&
+        scrollElement.scrollTop < maxScrollTop - OVERFLOW_EDGE_EPSILON_PX,
+    };
+
+    setOverflow((previousOverflow) =>
+      previousOverflow.above === nextOverflow.above &&
+      previousOverflow.below === nextOverflow.below
+        ? previousOverflow
+        : nextOverflow,
+    );
+  }, []);
+
+  useEffect(() => {
+    const scrollElement = scrollRef.current;
+    if (!scrollElement || typeof window === "undefined") {
+      return;
+    }
+
+    let frame: number | null = null;
+    const runMeasure = () => {
+      frame = null;
+      measureOverflow();
+    };
+    const scheduleMeasure = () => {
+      if (frame !== null) {
+        return;
+      }
+      frame =
+        typeof window.requestAnimationFrame === "function"
+          ? window.requestAnimationFrame(runMeasure)
+          : window.setTimeout(runMeasure, 0);
+    };
+
+    scheduleMeasure();
+    scrollElement.addEventListener("scroll", scheduleMeasure, {
+      passive: true,
+    });
+
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(scheduleMeasure);
+    resizeObserver?.observe(scrollElement);
+    if (contentRef.current) {
+      resizeObserver?.observe(contentRef.current);
+    }
+
+    return () => {
+      if (frame !== null) {
+        if (typeof window.cancelAnimationFrame === "function") {
+          window.cancelAnimationFrame(frame);
+        } else {
+          window.clearTimeout(frame);
+        }
+      }
+      scrollElement.removeEventListener("scroll", scheduleMeasure);
+      resizeObserver?.disconnect();
+    };
+  }, [measureOverflow]);
+
+  return { contentRef, overflow, scrollRef };
+}
+
+function filterAutomationStarterLoops(
+  starters: readonly AutomationStarterLoop[],
+  filter: string,
+  activeCategory: TemplateGalleryCategory,
+): readonly AutomationStarterLoop[] {
+  const normalizedFilter = filter.trim().toLowerCase();
+  return starters.filter((starter) => {
+    if (activeCategory !== "All" && starter.category !== activeCategory) {
+      return false;
+    }
+    if (normalizedFilter.length === 0) {
+      return true;
+    }
+    const searchable = `${starter.name} ${starter.description}`.toLowerCase();
+    return searchable.includes(normalizedFilter);
+  });
+}
+
+interface TemplateGalleryProps {
+  onSelect: CreateAutomationHandler;
+}
+
+function TemplateGallery({ onSelect }: TemplateGalleryProps) {
+  const [filter, setFilter] = useState("");
+  const [activeCategory, setActiveCategory] =
+    useState<TemplateGalleryCategory>("All");
+  const { contentRef, overflow, scrollRef } = useTemplateGalleryOverflowState();
+  const filteredStarters = useMemo(
+    () =>
+      filterAutomationStarterLoops(
+        AUTOMATION_STARTER_LOOPS,
+        filter,
+        activeCategory,
+      ),
+    [activeCategory, filter],
+  );
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <Input
+          type="search"
+          aria-label="Filter loop templates"
+          placeholder="Filter..."
+          value={filter}
+          onChange={(event) => setFilter(event.target.value)}
+          className="h-8 sm:max-w-64"
+        />
+        <div
+          aria-label="Template categories"
+          className="flex min-w-0 items-center gap-1 overflow-x-auto"
+        >
+          <TabPill
+            label="All"
+            title="All"
+            isActive={activeCategory === "All"}
+            onSelect={() => setActiveCategory("All")}
+            closeAction={null}
+          />
+          {AUTOMATION_TEMPLATE_CATEGORIES.map((category) => (
+            <TabPill
+              key={category}
+              label={category}
+              title={category}
+              isActive={activeCategory === category}
+              onSelect={() => setActiveCategory(category)}
+              closeAction={null}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="relative">
+        {overflow.above ? (
+          <OverflowFade placement="above" className="z-10" />
+        ) : null}
+        {overflow.below ? (
+          <OverflowFade placement="below" className="z-10" />
+        ) : null}
+        <div ref={scrollRef} className="max-h-[60vh] overflow-y-auto pr-1">
+          <div
+            ref={contentRef}
+            className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+          >
+            {filteredStarters.length > 0 ? (
+              filteredStarters.map((starter) => (
+                <LoopTemplateCard
+                  key={starter.name}
+                  starter={starter}
+                  onSelect={onSelect}
+                />
+              ))
+            ) : (
+              <div className="flex min-h-32 items-center justify-center rounded-md bg-muted/50 px-4 py-6 text-center text-sm text-muted-foreground sm:col-span-2">
+                No templates match this filter.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /** Inline templates: a compact static row of tiles (visually distinct from the
  * automations list below) plus a right-aligned "View all" that opens the full
  * gallery — a responsive Dialog that renders as a vaul drawer on mobile. */
 function TemplatesSection({ onCreateAutomation }: TemplatesSectionProps) {
   const [galleryOpen, setGalleryOpen] = useState(false);
-  const inlineStarters = AUTOMATION_STARTER_LOOPS.slice(0, INLINE_TEMPLATE_COUNT);
+  const inlineStarters = AUTOMATION_STARTER_LOOPS.slice(
+    0,
+    INLINE_TEMPLATE_COUNT,
+  );
 
   const handleGallerySelect = (prompt: string) => {
     setGalleryOpen(false);
@@ -449,15 +607,7 @@ function TemplatesSection({ onCreateAutomation }: TemplatesSectionProps) {
                 Start a scheduled loop from a template.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {AUTOMATION_STARTER_LOOPS.map((starter) => (
-                <LoopTemplateCard
-                  key={starter.name}
-                  starter={starter}
-                  onSelect={handleGallerySelect}
-                />
-              ))}
-            </div>
+            <TemplateGallery onSelect={handleGallerySelect} />
           </DialogContent>
         </Dialog>
       </div>
@@ -499,8 +649,8 @@ export function AutomationsOverview({
         ) : isEmpty ? (
           <EmptyStatePanel className="px-4 py-6">
             <p className="mx-auto max-w-md text-balance text-sm text-foreground">
-              Automations run a prompt on a schedule, spinning up an agent run in
-              a project.
+              Automations run a prompt on a schedule, spinning up an agent run
+              in a project.
             </p>
           </EmptyStatePanel>
         ) : (

@@ -2,9 +2,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { PERSONAL_PROJECT_ID } from "@bb/domain";
 import type { Automation } from "@bb/server-contract";
+import { AUTOMATION_STARTER_LOOPS } from "./automations/automation-templates";
 import { describe, expect, it } from "vitest";
 import {
-  AUTOMATION_STARTER_LOOPS,
   AutomationsOverview,
   buildAutomationRowMenuItems,
   type AutomationRowActions,
@@ -88,10 +88,10 @@ function renderOverview(
 }
 
 describe("AutomationsOverview", () => {
-  it("renders starter templates in the empty overview body", () => {
+  it("renders the templates section and gallery trigger", () => {
     const markup = renderOverview({ entries: [] });
     expect(markup).toContain(">Templates<");
-    expect(markup).toContain("Daily dependency audit");
+    expect(markup).toContain("View all");
   });
 
   it("groups automations by status into Active and Paused sections", () => {
@@ -191,10 +191,12 @@ describe("AutomationsOverview", () => {
     expect(markup).toContain(">Hourly<");
   });
 
-  it("defines exactly three starters with create-via-chat prompts", () => {
+  it("defines the gallery starters with categories and create-via-chat prompts", () => {
     expect(AUTOMATION_STARTER_LOOPS).toEqual([
       {
         name: "Daily dependency audit",
+        icon: "Search",
+        category: "Maintenance",
         description: "Audit dependencies and write a summary.",
         schedule: "Daily 8am",
         prompt:
@@ -202,6 +204,8 @@ describe("AutomationsOverview", () => {
       },
       {
         name: "Weekday standup digest",
+        icon: "MessageSquare",
+        category: "Digests",
         description: "Summarize overnight thread activity.",
         schedule: "Weekdays 9am",
         prompt:
@@ -209,10 +213,39 @@ describe("AutomationsOverview", () => {
       },
       {
         name: "Scheduled check & alert",
+        icon: "AlertCircle",
+        category: "Monitoring",
         description: "Run a check on a schedule and alert on change.",
         schedule: "Hourly",
         prompt:
           "Create a new bb loop to run a check on a schedule and alert me when something changes.",
+      },
+      {
+        name: "Morning triage",
+        icon: "ListTodo",
+        category: "Digests",
+        description: "Surface and prioritize overnight activity.",
+        schedule: "Weekdays 8am",
+        prompt:
+          "Create a new bb loop to surface and prioritize overnight activity each weekday morning.",
+      },
+      {
+        name: "Release notes draft",
+        icon: "FileText",
+        category: "Releases",
+        description: "Draft release notes from recent changes.",
+        schedule: "Fridays 5pm",
+        prompt:
+          "Create a new bb loop to draft release notes from recent changes every Friday afternoon.",
+      },
+      {
+        name: "Stale work sweep",
+        icon: "Archive",
+        category: "Maintenance",
+        description: "Flag threads and branches gone quiet.",
+        schedule: "Weekly",
+        prompt:
+          "Create a new bb loop to flag threads and branches that have gone quiet, weekly.",
       },
     ]);
   });
@@ -248,9 +281,9 @@ describe("AutomationsOverview", () => {
     expect(markup).toContain("Watcher actions");
   });
 
-  it("does not render script or agent automation picker options", () => {
+  it("renders the templates gallery trigger without script or agent options", () => {
     const markup = renderOverview({ entries: [] });
-    expect(markup).toContain(">Templates<");
+    expect(markup).toContain("View all");
     expect(markup).not.toContain("Script automation");
     expect(markup).not.toContain("Agent automation");
   });

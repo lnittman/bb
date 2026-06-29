@@ -562,6 +562,19 @@ export function readInitialPromptFromLocationState(
   return null;
 }
 
+export function applyInitialPromptToPromptDraft({
+  setDraft,
+  state,
+}: {
+  setDraft: (draft: PromptDraftState) => void;
+  state: unknown;
+}): boolean {
+  const initialPrompt = readInitialPromptFromLocationState(state);
+  if (initialPrompt === null) return false;
+  setDraft({ text: initialPrompt, mentions: [], attachments: [] });
+  return true;
+}
+
 function isWorktreeWithEnv(thread: ThreadListEntry): boolean {
   if (thread.environmentId === null) return false;
   return (
@@ -1189,19 +1202,21 @@ export function RootComposeView(props: RootComposeViewProps) {
   ]);
 
   // Seed the composer from navigation state `initialPrompt` (e.g. "Create via
-  // chat" from Automations). Single-use: applied only when the current draft is
-  // empty so it never clobbers an in-progress draft, then cleared from
-  // location.state so a refresh starts from the persisted draft.
-  const seedInitialPrompt = promptDraft.restoreIfEmpty;
+  // chat" from Automations). Single-use: route-provided prompts replace the
+  // current draft, then location.state is cleared so a refresh starts from the
+  // persisted draft.
+  const setInitialPromptDraft = promptDraft.setDraft;
   useEffect(() => {
-    const initialPrompt = readInitialPromptFromLocationState(location.state);
-    if (initialPrompt === null) return;
-    seedInitialPrompt({ text: initialPrompt, mentions: [], attachments: [] });
+    const applied = applyInitialPromptToPromptDraft({
+      state: location.state,
+      setDraft: setInitialPromptDraft,
+    });
+    if (!applied) return;
     navigate(getRootComposeRoutePath() + location.search, {
       replace: true,
       state: { focusPrompt: true },
     });
-  }, [location.search, location.state, navigate, seedInitialPrompt]);
+  }, [location.search, location.state, navigate, setInitialPromptDraft]);
 
   // Worktree picker options come from the project's unarchived threads.
   // Threads on managed or unmanaged worktrees with a non-null environmentId

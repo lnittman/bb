@@ -6,6 +6,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { PERSONAL_PROJECT_ID } from "@bb/domain";
 import type { Automation } from "@bb/server-contract";
@@ -92,5 +93,50 @@ describe("AutomationsOverview interactions", () => {
     await waitFor(() => {
       expect(screen.queryByRole("menuitem", { name: "Delete" })).toBeNull();
     });
+  });
+
+  it("filters gallery templates by text and active category", async () => {
+    render(
+      <MemoryRouter>
+        <AutomationsOverview
+          entries={[]}
+          isLoading={false}
+          hasInitialLoadError={false}
+          actions={{
+            onPause: vi.fn(),
+            onResume: vi.fn(),
+            onRun: vi.fn(),
+            onDelete: vi.fn(),
+          }}
+          onCreateAutomation={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /view all/i }));
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Loop templates",
+    });
+    const gallery = within(dialog);
+    const filterInput = gallery.getByRole("searchbox", {
+      name: "Filter loop templates",
+    });
+    expect(
+      gallery.getByRole("button", { name: "All" }).getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(gallery.getByRole("button", { name: "Maintenance" })).not.toBeNull();
+    expect(gallery.getByRole("button", { name: "Digests" })).not.toBeNull();
+    expect(gallery.getByText("Release notes draft")).not.toBeNull();
+
+    fireEvent.change(filterInput, { target: { value: "release" } });
+
+    expect(gallery.getByText("Release notes draft")).not.toBeNull();
+    expect(gallery.queryByText("Daily dependency audit")).toBeNull();
+
+    fireEvent.click(gallery.getByRole("button", { name: "Maintenance" }));
+
+    expect(gallery.getByText("No templates match this filter.")).not.toBeNull();
+    expect(gallery.queryByText("Release notes draft")).toBeNull();
   });
 });
