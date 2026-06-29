@@ -1,10 +1,18 @@
-import { Fragment, useCallback } from "react";
+import { Fragment, useCallback, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type {
   Automation,
   AutomationsOverviewResponse,
 } from "@bb/server-contract";
 import { Button } from "@/components/ui/button.js";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog.js";
 import {
   ConfirmDeleteDialog,
   ConfirmDeleteDialogContent,
@@ -16,7 +24,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.js";
-import { Icon } from "@/components/ui/icon.js";
+import { EmptyStatePanel } from "@/components/ui/empty-state.js";
+import { Icon, type IconName } from "@/components/ui/icon.js";
 import { LIST_HOVER_TRANSITION } from "@/components/ui/motion.js";
 import { PageShell } from "@/components/ui/page-shell.js";
 import { Pill } from "@/components/ui/pill.js";
@@ -53,6 +62,7 @@ type CreateAutomationHandler = (initialPrompt: string) => void;
 
 interface AutomationStarterLoop {
   name: string;
+  icon: IconName;
   description: string;
   schedule: string;
   prompt: string;
@@ -61,6 +71,7 @@ interface AutomationStarterLoop {
 export const AUTOMATION_STARTER_LOOPS: readonly AutomationStarterLoop[] = [
   {
     name: "Daily dependency audit",
+    icon: "Search",
     description: "Audit dependencies and write a summary.",
     schedule: "Daily 8am",
     prompt:
@@ -68,6 +79,7 @@ export const AUTOMATION_STARTER_LOOPS: readonly AutomationStarterLoop[] = [
   },
   {
     name: "Weekday standup digest",
+    icon: "MessageSquare",
     description: "Summarize overnight thread activity.",
     schedule: "Weekdays 9am",
     prompt:
@@ -75,10 +87,35 @@ export const AUTOMATION_STARTER_LOOPS: readonly AutomationStarterLoop[] = [
   },
   {
     name: "Scheduled check & alert",
+    icon: "AlertCircle",
     description: "Run a check on a schedule and alert on change.",
     schedule: "Hourly",
     prompt:
       "Create a new bb loop to run a check on a schedule and alert me when something changes.",
+  },
+  {
+    name: "Morning triage",
+    icon: "ListTodo",
+    description: "Surface and prioritize overnight activity.",
+    schedule: "Weekdays 8am",
+    prompt:
+      "Create a new bb loop to surface and prioritize overnight activity each weekday morning.",
+  },
+  {
+    name: "Release notes draft",
+    icon: "FileText",
+    description: "Draft release notes from recent changes.",
+    schedule: "Fridays 5pm",
+    prompt:
+      "Create a new bb loop to draft release notes from recent changes every Friday afternoon.",
+  },
+  {
+    name: "Stale work sweep",
+    icon: "Archive",
+    description: "Flag threads and branches gone quiet.",
+    schedule: "Weekly",
+    prompt:
+      "Create a new bb loop to flag threads and branches that have gone quiet, weekly.",
   },
 ];
 
@@ -332,33 +369,108 @@ function AutomationRow({ entry, actions }: AutomationRowProps) {
   );
 }
 
-interface StarterLoopRowProps {
+interface LoopTemplateCardProps {
   starter: AutomationStarterLoop;
-  onCreateAutomation: CreateAutomationHandler;
+  onSelect: CreateAutomationHandler;
 }
 
-function StarterLoopRow({ starter, onCreateAutomation }: StarterLoopRowProps) {
+function LoopTemplateCard({ starter, onSelect }: LoopTemplateCardProps) {
   return (
     <button
       type="button"
+      title={starter.name}
+      onClick={() => onSelect(starter.prompt)}
       className={cn(
-        "flex w-full cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-left hover:bg-state-hover/60",
+        "flex cursor-pointer flex-col gap-2.5 rounded-md bg-muted/50 p-3 text-left",
+        "hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
         LIST_HOVER_TRANSITION,
       )}
-      onClick={() => onCreateAutomation(starter.prompt)}
     >
-      <span className="min-w-0 flex-1 space-y-0.5">
-        <span className="block truncate text-sm font-medium text-foreground">
+      <div className="flex items-start justify-between gap-2">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-background text-muted-foreground">
+          <Icon name={starter.icon} className="size-4" />
+        </span>
+        <Pill variant="outline" className="shrink-0">
+          {starter.schedule}
+        </Pill>
+      </div>
+      <div className="min-w-0 space-y-0.5">
+        <p className="truncate text-sm font-medium text-foreground">
           {starter.name}
-        </span>
-        <span className="block truncate text-xs text-muted-foreground">
+        </p>
+        <p className="line-clamp-2 text-xs text-muted-foreground">
           {starter.description}
-        </span>
-      </span>
-      <Pill variant="outline" className="shrink-0">
-        {starter.schedule}
-      </Pill>
+        </p>
+      </div>
     </button>
+  );
+}
+
+interface TemplatesSectionProps {
+  onCreateAutomation: CreateAutomationHandler;
+}
+
+/** Curated starters shown inline; the full set lives in the gallery dialog. */
+const INLINE_TEMPLATE_COUNT = 3;
+
+/** Inline templates: a compact static row of tiles (visually distinct from the
+ * automations list below) plus a right-aligned "View all" that opens the full
+ * gallery — a responsive Dialog that renders as a vaul drawer on mobile. */
+function TemplatesSection({ onCreateAutomation }: TemplatesSectionProps) {
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const inlineStarters = AUTOMATION_STARTER_LOOPS.slice(0, INLINE_TEMPLATE_COUNT);
+
+  const handleGallerySelect = (prompt: string) => {
+    setGalleryOpen(false);
+    onCreateAutomation(prompt);
+  };
+
+  return (
+    <section className="space-y-2">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-muted-foreground">Templates</p>
+        <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
+          <DialogTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                "inline-flex items-center gap-0.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                LIST_HOVER_TRANSITION,
+              )}
+            >
+              View all
+              <Icon name="ChevronRight" className="size-3.5" />
+            </button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Loop templates</DialogTitle>
+              <DialogDescription>
+                Start a scheduled loop from a template.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {AUTOMATION_STARTER_LOOPS.map((starter) => (
+                <LoopTemplateCard
+                  key={starter.name}
+                  starter={starter}
+                  onSelect={handleGallerySelect}
+                />
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        {inlineStarters.map((starter) => (
+          <LoopTemplateCard
+            key={starter.name}
+            starter={starter}
+            onSelect={onCreateAutomation}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -374,7 +486,10 @@ export function AutomationsOverview({
 
   return (
     <PageShell contentClassName="pt-4 md:pt-5">
-      <div className="w-full space-y-5">
+      <div className="w-full space-y-6">
+        {!isLoading && !hasInitialLoadError ? (
+          <TemplatesSection onCreateAutomation={onCreateAutomation} />
+        ) : null}
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading...</p>
         ) : hasInitialLoadError ? (
@@ -382,31 +497,17 @@ export function AutomationsOverview({
             Failed to load automations.
           </p>
         ) : isEmpty ? (
-          <div className="space-y-3 px-3 py-3">
-            <p className="text-sm text-muted-foreground">
-              Automations run a prompt on a schedule, spinning up an agent run
-              in a project.
+          <EmptyStatePanel className="px-4 py-6">
+            <p className="mx-auto max-w-md text-balance text-sm text-foreground">
+              Automations run a prompt on a schedule, spinning up an agent run in
+              a project.
             </p>
-            <section>
-              <p className="text-xs font-medium uppercase text-muted-foreground">
-                Templates
-              </p>
-              <div className="mt-1.5 space-y-1">
-                {AUTOMATION_STARTER_LOOPS.map((starter) => (
-                  <StarterLoopRow
-                    key={starter.name}
-                    starter={starter}
-                    onCreateAutomation={onCreateAutomation}
-                  />
-                ))}
-              </div>
-            </section>
-          </div>
+          </EmptyStatePanel>
         ) : (
           <div className="space-y-5">
             {groups.map((group) => (
               <section key={group.status}>
-                <p className="text-xs font-medium uppercase text-muted-foreground">
+                <p className="px-3 text-xs font-medium text-muted-foreground">
                   {group.label}
                 </p>
                 <div className="mt-1.5 space-y-1">
