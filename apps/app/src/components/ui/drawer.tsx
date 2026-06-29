@@ -36,6 +36,11 @@ const DrawerPortal = DrawerPrimitive.Portal;
 
 const DrawerClose = DrawerPrimitive.Close;
 
+const DRAWER_HANDLE_CLASS_NAME = cn(
+  "mx-auto mt-3 mb-5 h-1 w-10 shrink-0 rounded-full bg-muted-foreground/20",
+  "[&_[data-vaul-handle-hitarea]]:h-11 [&_[data-vaul-handle-hitarea]]:w-16",
+);
+
 const DrawerOverlay = React.forwardRef<
   React.ComponentRef<typeof DrawerPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
@@ -65,9 +70,7 @@ const DrawerContent = React.forwardRef<
       )}
       {...props}
     >
-      <DrawerPrimitive.Handle
-        className="mx-auto mt-3 mb-1 h-1 w-10 shrink-0 rounded-full bg-muted-foreground/20"
-      />
+      <DrawerPrimitive.Handle className={DRAWER_HANDLE_CLASS_NAME} />
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>

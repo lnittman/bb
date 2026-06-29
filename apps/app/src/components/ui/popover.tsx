@@ -157,8 +157,9 @@ const PopoverContent = React.forwardRef<
           <div
             ref={ref}
             className={cn(
-              "overflow-y-auto px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))]",
+              "flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-2",
               className,
+              "pb-[max(1rem,env(safe-area-inset-bottom))]",
             )}
             {...domProps}
           >

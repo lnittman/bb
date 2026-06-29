@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 
+import { cn } from "@/lib/utils";
 import { Drawer, DrawerContent, DrawerTitle } from "./drawer.js";
 import {
   blurActiveKeyboardInputBeforeOverlayOpen,
@@ -258,6 +259,10 @@ export function ResponsiveDrawerShell({
   const isPointerCoarse = usePointerCoarse();
   const isNestedDrawer = parentDrawerDepth > 0;
   const shouldRepositionInputs = repositionInputs ?? !isNestedDrawer;
+  const drawerContentClassName = cn(
+    contentClassName,
+    handleOnly && "pb-[env(safe-area-inset-bottom)]",
+  );
   const resetClosingKeyboardState = React.useCallback(() => {
     blurActiveKeyboardInputWithin(drawerContentRef.current);
     resetDrawerKeyboardStyles(drawerContentRef.current);
@@ -271,16 +276,17 @@ export function ResponsiveDrawerShell({
     },
     [onOpenChange, resetClosingKeyboardState],
   );
-  const handleContentAnimationEnd =
-    React.useCallback<React.AnimationEventHandler<HTMLDivElement>>(
-      (event) => {
-        if (event.currentTarget !== event.target) {
-          return;
-        }
-        onContentAnimationEnd?.(open);
-      },
-      [onContentAnimationEnd, open],
-    );
+  const handleContentAnimationEnd = React.useCallback<
+    React.AnimationEventHandler<HTMLDivElement>
+  >(
+    (event) => {
+      if (event.currentTarget !== event.target) {
+        return;
+      }
+      onContentAnimationEnd?.(open);
+    },
+    [onContentAnimationEnd, open],
+  );
   const handleOpenAutoFocus = React.useCallback(
     (event: Event) => {
       if (isPointerCoarse) {
@@ -316,7 +322,7 @@ export function ResponsiveDrawerShell({
     >
       <DrawerContent
         ref={drawerContentRef}
-        className={contentClassName}
+        className={drawerContentClassName}
         onAnimationEnd={handleContentAnimationEnd}
         onOpenAutoFocus={handleOpenAutoFocus}
         onPointerDownOutside={handlePointerDownOutside}

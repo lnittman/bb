@@ -35,7 +35,10 @@ vi.mock("./drawer.js", async () => {
     onPointerDownOutside?: CapturedPointerDownOutside;
   }
 
-  const DrawerContent = React.forwardRef<HTMLDivElement, MockDrawerContentProps>(
+  const DrawerContent = React.forwardRef<
+    HTMLDivElement,
+    MockDrawerContentProps
+  >(
     (
       {
         children,
@@ -177,6 +180,45 @@ describe("ResponsiveDrawerShell", () => {
     expect(onContentAnimationEnd).toHaveBeenCalledWith(false);
   });
 
+  it("reserves bottom safe area for handle-only drawers without dropping fixed-height classes", () => {
+    render(
+      <ResponsiveDrawerShell
+        open={true}
+        onOpenChange={() => {}}
+        contentClassName="h-[65dvh] max-h-[65dvh] pb-4"
+        handleOnly
+      >
+        <div />
+      </ResponsiveDrawerShell>,
+    );
+
+    const drawerContent = screen.getByTestId("drawer-content");
+    expect(drawerContent.className).toContain("h-[65dvh]");
+    expect(drawerContent.className).toContain("max-h-[65dvh]");
+    expect(drawerContent.className).toContain(
+      "pb-[env(safe-area-inset-bottom)]",
+    );
+    expect(drawerContent.className).not.toContain("pb-4");
+  });
+
+  it("leaves non-handle-only drawer body padding with the caller", () => {
+    render(
+      <ResponsiveDrawerShell
+        open={true}
+        onOpenChange={() => {}}
+        contentClassName="pb-4"
+      >
+        <div />
+      </ResponsiveDrawerShell>,
+    );
+
+    const drawerContent = screen.getByTestId("drawer-content");
+    expect(drawerContent.className).toContain("pb-4");
+    expect(drawerContent.className).not.toContain(
+      "pb-[env(safe-area-inset-bottom)]",
+    );
+  });
+
   it("prevents drawer open autofocus on coarse pointers", () => {
     mockPointerCoarse(true);
 
@@ -234,9 +276,9 @@ describe("ResponsiveDrawerShell", () => {
     document.body.appendChild(outsideButton);
 
     try {
-      expect(
-        fireDrawerPointerDownOutside(outsideButton).defaultPrevented,
-      ).toBe(false);
+      expect(fireDrawerPointerDownOutside(outsideButton).defaultPrevented).toBe(
+        false,
+      );
     } finally {
       outsideButton.remove();
     }
