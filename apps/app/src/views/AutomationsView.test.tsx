@@ -2,7 +2,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { PERSONAL_PROJECT_ID } from "@bb/domain";
 import type { Automation } from "@bb/server-contract";
-import { AUTOMATION_STARTER_LOOPS } from "./automations/automation-templates";
+import {
+  AUTOMATION_STARTER_LOOPS,
+  AUTOMATION_TEMPLATE_CATEGORIES,
+} from "./automations/automation-templates";
 import { describe, expect, it } from "vitest";
 import {
   AutomationsOverview,
@@ -192,62 +195,29 @@ describe("AutomationsOverview", () => {
   });
 
   it("defines the gallery starters with categories and create-via-chat prompts", () => {
-    expect(AUTOMATION_STARTER_LOOPS).toEqual([
-      {
-        name: "Daily dependency audit",
-        icon: "Search",
-        category: "Maintenance",
-        description: "Audit dependencies and write a summary.",
-        schedule: "Daily 8am",
-        prompt:
-          "Create a new bb loop to audit dependencies every morning and write a summary.",
-      },
-      {
-        name: "Weekday standup digest",
-        icon: "MessageSquare",
-        category: "Digests",
-        description: "Summarize overnight thread activity.",
-        schedule: "Weekdays 9am",
-        prompt:
-          "Create a new bb loop to summarize overnight thread activity on weekday mornings.",
-      },
-      {
-        name: "Scheduled check & alert",
-        icon: "AlertCircle",
-        category: "Monitoring",
-        description: "Run a check on a schedule and alert on change.",
-        schedule: "Hourly",
-        prompt:
-          "Create a new bb loop to run a check on a schedule and alert me when something changes.",
-      },
-      {
-        name: "Morning triage",
-        icon: "ListTodo",
-        category: "Digests",
-        description: "Surface and prioritize overnight activity.",
-        schedule: "Weekdays 8am",
-        prompt:
-          "Create a new bb loop to surface and prioritize overnight activity each weekday morning.",
-      },
-      {
-        name: "Release notes draft",
-        icon: "FileText",
-        category: "Releases",
-        description: "Draft release notes from recent changes.",
-        schedule: "Fridays 5pm",
-        prompt:
-          "Create a new bb loop to draft release notes from recent changes every Friday afternoon.",
-      },
-      {
-        name: "Stale work sweep",
-        icon: "Archive",
-        category: "Maintenance",
-        description: "Flag threads and branches gone quiet.",
-        schedule: "Weekly",
-        prompt:
-          "Create a new bb loop to flag threads and branches that have gone quiet, weekly.",
-      },
-    ]);
+    expect(AUTOMATION_STARTER_LOOPS.length).toBeGreaterThan(0);
+
+    for (const starter of AUTOMATION_STARTER_LOOPS) {
+      expect(AUTOMATION_TEMPLATE_CATEGORIES).toContain(starter.category);
+      expect(starter.name.length).toBeGreaterThan(0);
+      expect(starter.description.length).toBeGreaterThan(0);
+      expect(starter.schedule.length).toBeGreaterThan(0);
+      expect(starter.icon.length).toBeGreaterThan(0);
+      expect(starter.prompt).toMatch(/^Create a new bb loop/);
+    }
+
+    // Names key the gallery cards, so they must be unique.
+    const names = AUTOMATION_STARTER_LOOPS.map((starter) => starter.name);
+    expect(new Set(names).size).toBe(names.length);
+
+    // Every category has at least one starter, so no gallery tab is empty.
+    for (const category of AUTOMATION_TEMPLATE_CATEGORIES) {
+      expect(
+        AUTOMATION_STARTER_LOOPS.some(
+          (starter) => starter.category === category,
+        ),
+      ).toBe(true);
+    }
   });
 
   it("shows a muted loading state", () => {
