@@ -2,9 +2,7 @@ import {
   type CSSProperties,
   Fragment,
   useCallback,
-  useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -25,6 +23,7 @@ import {
   ConfirmDeleteDialog,
   ConfirmDeleteDialogContent,
 } from "@/components/dialogs/ConfirmDeleteDialog.js";
+import { useScrollOverflowState } from "@/components/thread/timeline/useScrollOverflowState";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -369,19 +368,8 @@ interface TemplatesSectionProps {
 
 /** Curated starters shown inline; the full set lives in the gallery dialog. */
 const INLINE_TEMPLATE_COUNT = 3;
-const OVERFLOW_EDGE_EPSILON_PX = 1;
 
 type TemplateGalleryCategory = "All" | AutomationStarterLoopCategory;
-
-interface TemplateGalleryOverflowState {
-  above: boolean;
-  below: boolean;
-}
-
-const INITIAL_TEMPLATE_GALLERY_OVERFLOW_STATE: TemplateGalleryOverflowState = {
-  above: false,
-  below: false,
-};
 
 const TEMPLATE_GALLERY_EDGE_FADE = "1.5rem";
 
@@ -390,7 +378,7 @@ const TEMPLATE_GALLERY_EDGE_FADE = "1.5rem";
  * transparent-black interpolation fringe, and an edge only fades when the
  * overflow hook reports content past it. */
 function buildTemplateGalleryMaskStyle(
-  overflow: TemplateGalleryOverflowState,
+  overflow: { above: boolean; below: boolean },
 ): CSSProperties | undefined {
   if (!overflow.above && !overflow.below) {
     return undefined;
@@ -403,88 +391,6 @@ function buildTemplateGalleryMaskStyle(
   ];
   const gradient = `linear-gradient(to bottom, ${stops.join(", ")})`;
   return { maskImage: gradient, WebkitMaskImage: gradient };
-}
-
-function useTemplateGalleryOverflowState() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [overflow, setOverflow] = useState<TemplateGalleryOverflowState>(
-    INITIAL_TEMPLATE_GALLERY_OVERFLOW_STATE,
-  );
-
-  const measureOverflow = useCallback(() => {
-    const scrollElement = scrollRef.current;
-    if (!scrollElement) {
-      return;
-    }
-
-    const maxScrollTop =
-      scrollElement.scrollHeight - scrollElement.clientHeight;
-    const hasOverflow = maxScrollTop > OVERFLOW_EDGE_EPSILON_PX;
-    const nextOverflow = {
-      above: hasOverflow && scrollElement.scrollTop > OVERFLOW_EDGE_EPSILON_PX,
-      below:
-        hasOverflow &&
-        scrollElement.scrollTop < maxScrollTop - OVERFLOW_EDGE_EPSILON_PX,
-    };
-
-    setOverflow((previousOverflow) =>
-      previousOverflow.above === nextOverflow.above &&
-      previousOverflow.below === nextOverflow.below
-        ? previousOverflow
-        : nextOverflow,
-    );
-  }, []);
-
-  useEffect(() => {
-    const scrollElement = scrollRef.current;
-    if (!scrollElement || typeof window === "undefined") {
-      return;
-    }
-
-    let frame: number | null = null;
-    const runMeasure = () => {
-      frame = null;
-      measureOverflow();
-    };
-    const scheduleMeasure = () => {
-      if (frame !== null) {
-        return;
-      }
-      frame =
-        typeof window.requestAnimationFrame === "function"
-          ? window.requestAnimationFrame(runMeasure)
-          : window.setTimeout(runMeasure, 0);
-    };
-
-    scheduleMeasure();
-    scrollElement.addEventListener("scroll", scheduleMeasure, {
-      passive: true,
-    });
-
-    const resizeObserver =
-      typeof ResizeObserver === "undefined"
-        ? null
-        : new ResizeObserver(scheduleMeasure);
-    resizeObserver?.observe(scrollElement);
-    if (contentRef.current) {
-      resizeObserver?.observe(contentRef.current);
-    }
-
-    return () => {
-      if (frame !== null) {
-        if (typeof window.cancelAnimationFrame === "function") {
-          window.cancelAnimationFrame(frame);
-        } else {
-          window.clearTimeout(frame);
-        }
-      }
-      scrollElement.removeEventListener("scroll", scheduleMeasure);
-      resizeObserver?.disconnect();
-    };
-  }, [measureOverflow]);
-
-  return { contentRef, overflow, scrollRef };
 }
 
 function filterAutomationStarterLoops(
@@ -513,7 +419,13 @@ function TemplateGallery({ onSelect }: TemplateGalleryProps) {
   const [filter, setFilter] = useState("");
   const [activeCategory, setActiveCategory] =
     useState<TemplateGalleryCategory>("All");
-  const { contentRef, overflow, scrollRef } = useTemplateGalleryOverflowState();
+  const {
+    scrollRef,
+    topSentinelRef,
+    bottomSentinelRef,
+    aboveOverflow,
+    belowOverflow,
+  } = useScrollOverflowState<HTMLDivElement>({ measureOverflow: true });
   const filteredStarters = useMemo(
     () =>
       filterAutomationStarterLoops(
@@ -561,12 +473,13 @@ function TemplateGallery({ onSelect }: TemplateGalleryProps) {
       <div
         ref={scrollRef}
         className="h-[60vh] overflow-y-auto pr-1"
-        style={buildTemplateGalleryMaskStyle(overflow)}
+        style={buildTemplateGalleryMaskStyle({
+          above: aboveOverflow,
+          below: belowOverflow,
+        })}
       >
-        <div
-          ref={contentRef}
-          className="grid grid-cols-1 gap-2 sm:grid-cols-2"
-        >
+        <div ref={topSentinelRef} aria-hidden />
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {filteredStarters.length > 0 ? (
             filteredStarters.map((starter) => (
               <LoopTemplateCard
@@ -581,6 +494,7 @@ function TemplateGallery({ onSelect }: TemplateGalleryProps) {
             </div>
           )}
         </div>
+        <div ref={bottomSentinelRef} aria-hidden />
       </div>
     </div>
   );
@@ -772,6 +686,7 @@ export function AutomationsView() {
         state: {
           focusPrompt: true,
           initialPrompt,
+          replacePrompt: true,
         },
       });
     },

@@ -206,37 +206,65 @@ describe("readInitialPromptFromLocationState", () => {
 });
 
 describe("applyInitialPromptToPromptDraft", () => {
-  it("writes each navigation prompt as a fresh draft", () => {
+  it("keeps legacy initial prompts on the restore-if-empty path", () => {
+    const restoreIfEmpty = vi.fn();
+    const setDraft = vi.fn();
+
+    expect(
+      applyInitialPromptToPromptDraft({
+        restoreIfEmpty,
+        state: { initialPrompt: "Create a custom palette." },
+        setDraft,
+      }),
+    ).toBe(true);
+
+    expect(setDraft).not.toHaveBeenCalled();
+    expect(restoreIfEmpty).toHaveBeenCalledWith({
+      text: "Create a custom palette.",
+      mentions: [],
+      attachments: [],
+    });
+  });
+
+  it("replaces an existing prompt draft when template selection opts in", () => {
+    const restoredDrafts: PromptDraftState[] = [];
     const writtenDrafts: PromptDraftState[] = [];
+    const restoreIfEmpty = (draft: PromptDraftState) => {
+      restoredDrafts.push(draft);
+    };
     const setDraft = (draft: PromptDraftState) => {
       writtenDrafts.push(draft);
     };
 
     expect(
       applyInitialPromptToPromptDraft({
-        state: { initialPrompt: "Create a first loop." },
-        setDraft,
-      }),
-    ).toBe(true);
-    expect(
-      applyInitialPromptToPromptDraft({
-        state: { initialPrompt: "Create a second loop." },
+        restoreIfEmpty,
+        state: {
+          initialPrompt: "Create a new bb loop to check issues.",
+          replacePrompt: true,
+        },
         setDraft,
       }),
     ).toBe(true);
 
     expect(writtenDrafts).toEqual([
-      { text: "Create a first loop.", mentions: [], attachments: [] },
-      { text: "Create a second loop.", mentions: [], attachments: [] },
+      {
+        text: "Create a new bb loop to check issues.",
+        mentions: [],
+        attachments: [],
+      },
     ]);
+    expect(restoredDrafts).toEqual([]);
   });
 
   it("ignores location state without a usable initial prompt", () => {
+    const restoreIfEmpty = vi.fn();
     const setDraft = vi.fn();
 
-    expect(applyInitialPromptToPromptDraft({ state: {}, setDraft })).toBe(
-      false,
-    );
+    expect(
+      applyInitialPromptToPromptDraft({ restoreIfEmpty, state: {}, setDraft }),
+    ).toBe(false);
+    expect(restoreIfEmpty).not.toHaveBeenCalled();
     expect(setDraft).not.toHaveBeenCalled();
   });
 });

@@ -562,16 +562,32 @@ export function readInitialPromptFromLocationState(
   return null;
 }
 
+function shouldReplacePromptFromLocationState(state: unknown): boolean {
+  if (!state || typeof state !== "object") return false;
+  return (state as { replacePrompt?: unknown }).replacePrompt === true;
+}
+
 export function applyInitialPromptToPromptDraft({
+  restoreIfEmpty,
   setDraft,
   state,
 }: {
+  restoreIfEmpty: (draft: PromptDraftState) => void;
   setDraft: (draft: PromptDraftState) => void;
   state: unknown;
 }): boolean {
   const initialPrompt = readInitialPromptFromLocationState(state);
   if (initialPrompt === null) return false;
-  setDraft({ text: initialPrompt, mentions: [], attachments: [] });
+  const nextDraft: PromptDraftState = {
+    text: initialPrompt,
+    mentions: [],
+    attachments: [],
+  };
+  if (shouldReplacePromptFromLocationState(state)) {
+    setDraft(nextDraft);
+  } else {
+    restoreIfEmpty(nextDraft);
+  }
   return true;
 }
 
@@ -1201,13 +1217,15 @@ export function RootComposeView(props: RootComposeViewProps) {
     setServiceTier,
   ]);
 
-  // Seed the composer from navigation state `initialPrompt` (e.g. "Create via
-  // chat" from Automations). Single-use: route-provided prompts replace the
-  // current draft, then location.state is cleared so a refresh starts from the
-  // persisted draft.
+  // Seed the composer from navigation state `initialPrompt`. Single-use:
+  // legacy route-provided prompts only restore empty drafts; template
+  // selections opt into replacement, then location.state is cleared so refresh
+  // starts from the persisted draft.
   const setInitialPromptDraft = promptDraft.setDraft;
+  const restoreInitialPromptDraftIfEmpty = promptDraft.restoreIfEmpty;
   useEffect(() => {
     const applied = applyInitialPromptToPromptDraft({
+      restoreIfEmpty: restoreInitialPromptDraftIfEmpty,
       state: location.state,
       setDraft: setInitialPromptDraft,
     });
@@ -1216,7 +1234,13 @@ export function RootComposeView(props: RootComposeViewProps) {
       replace: true,
       state: { focusPrompt: true },
     });
-  }, [location.search, location.state, navigate, setInitialPromptDraft]);
+  }, [
+    location.search,
+    location.state,
+    navigate,
+    restoreInitialPromptDraftIfEmpty,
+    setInitialPromptDraft,
+  ]);
 
   // Worktree picker options come from the project's unarchived threads.
   // Threads on managed or unmanaged worktrees with a non-null environmentId

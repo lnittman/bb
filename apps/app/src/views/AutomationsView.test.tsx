@@ -2,11 +2,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { PERSONAL_PROJECT_ID } from "@bb/domain";
 import type { Automation } from "@bb/server-contract";
+import { describe, expect, it } from "vitest";
 import {
   AUTOMATION_STARTER_LOOPS,
   AUTOMATION_TEMPLATE_CATEGORIES,
 } from "./automations/automation-templates";
-import { describe, expect, it } from "vitest";
 import {
   AutomationsOverview,
   buildAutomationRowMenuItems,
