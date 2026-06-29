@@ -54,6 +54,8 @@ interface ModelLabelParts {
 }
 
 const FAILED_TO_LOAD_MODELS_LABEL = "Failed to load models";
+const COMPACT_PROVIDER_TAB_CLASS_NAME =
+  "h-7 w-6 max-md:pointer-coarse:h-11 max-md:pointer-coarse:w-11";
 
 // Splits a trailing parenthetical off a model label (e.g. "Opus 4.8 (1M)" →
 // base "Opus 4.8", tag "1M") so the tag can render as a small, muted suffix
@@ -468,6 +470,7 @@ export function ModelReasoningPicker({
       <PopoverContent
         align="start"
         mobileTitle="Model"
+        mobileClassName="h-[65dvh] min-h-[22rem] max-h-[85dvh]"
         className="flex w-52 flex-col p-0 max-md:w-full max-md:max-w-none"
       >
         <ResetBrowseStateOnUnmount onReset={resetBrowseState} />
@@ -501,7 +504,9 @@ export function ModelReasoningPicker({
                   className={cn(
                     "flex items-center justify-center border-b-2 focus-visible:outline-none",
                     LIST_HOVER_TRANSITION,
-                    COARSE_POINTER_PROVIDER_TAB_SIZE_CLASS,
+                    isCompactViewport
+                      ? COMPACT_PROVIDER_TAB_CLASS_NAME
+                      : COARSE_POINTER_PROVIDER_TAB_SIZE_CLASS,
                     isActive
                       ? "border-foreground text-foreground"
                       : "border-transparent text-muted-foreground hover:text-foreground",
@@ -534,9 +539,13 @@ export function ModelReasoningPicker({
           <div
             key={activeProviderId || "no-provider"}
             className={cn(
-              "overflow-y-auto px-1 pb-1 pt-0",
-              !isCompactViewport &&
-                "max-h-[min(250px,var(--radix-popover-content-available-height,250px)-80px)]",
+              "px-1 pb-1 pt-0",
+              isCompactViewport
+                ? "flex-1 min-h-0 overflow-y-auto"
+                : [
+                    "overflow-y-auto",
+                    "max-h-[min(250px,var(--radix-popover-content-available-height,250px)-80px)]",
+                  ],
             )}
           >
             {isShowingModelError ? null : (
@@ -718,7 +727,9 @@ function MoreModelsToggleRow({
         "relative flex w-full cursor-default select-none items-center gap-1 rounded-sm px-2 text-xs text-muted-foreground outline-none hover:bg-state-hover hover:text-foreground",
         LIST_HOVER_TRANSITION,
         MENU_ITEM_LAST_HOVERED_CLASS,
-        isCompactViewport ? "py-2" : "py-[0.3125rem]",
+        isCompactViewport
+          ? "py-2 max-md:pointer-coarse:min-h-11"
+          : "py-[0.3125rem]",
       )}
       {...hoverProps}
     >
@@ -880,7 +891,9 @@ function MenuRowButton({
         "relative flex w-full cursor-default select-none items-center justify-between gap-3 rounded-sm px-2 text-xs outline-none hover:bg-state-hover hover:text-foreground",
         LIST_HOVER_TRANSITION,
         MENU_ITEM_LAST_HOVERED_CLASS,
-        isCompactViewport ? "py-2" : "py-[0.3125rem]",
+        isCompactViewport
+          ? "py-2 max-md:pointer-coarse:min-h-11"
+          : "py-[0.3125rem]",
       )}
       {...hoverProps}
     >

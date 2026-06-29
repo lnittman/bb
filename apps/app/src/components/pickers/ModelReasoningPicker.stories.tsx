@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ReasoningLevel } from "@bb/domain";
 import type { SystemExecutionOptionsModelLoadError } from "@bb/server-contract";
 import { ModelReasoningPicker } from "./ModelReasoningPicker";
+import { CompactViewportOverrideProvider } from "@/components/ui/hooks/use-compact-viewport";
 import { StoryCard, StoryRow } from "../../../.ladle/story-card";
 import {
   STORY_CLAUDE_CODE_MODELS,
@@ -139,6 +140,18 @@ export function Overview() {
           />
         </StoryRow>
       </StoryCard>
+    </ModelPickerStoryQueryProvider>
+  );
+}
+
+export function CompactFixedHeightSheet() {
+  return (
+    <ModelPickerStoryQueryProvider>
+      <CompactViewportOverrideProvider isCompactViewport={true}>
+        <div className="min-h-[70dvh]">
+          <ModelReasoningPicker {...codexBase} defaultOpen modal={false} />
+        </div>
+      </CompactViewportOverrideProvider>
     </ModelPickerStoryQueryProvider>
   );
 }
