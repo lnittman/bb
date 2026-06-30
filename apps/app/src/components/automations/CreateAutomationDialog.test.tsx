@@ -329,37 +329,62 @@ describe("CreateAutomationDialog", () => {
     expect(postAutomation).not.toHaveBeenCalled();
   });
 
-  it("renders the polished footer, timezone dropdown, and model picker", async () => {
+  it("renders the run-context footer, timezone dropdown, and model picker", async () => {
     renderDialog();
 
     expect(screen.queryByRole("heading", { name: "Permissions" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Model" })).toBeNull();
+    expect(
+      screen.queryByText("Provider and model for the agent run."),
+    ).toBeNull();
     expect(screen.getByText("Ask permissions")).not.toBeNull();
     expect(
       (await screen.findByRole("button", { name: "Permission mode" }))
         .textContent,
     ).toContain("Default");
     expect(
-      screen.getByRole("button", { name: "Select folder" }).textContent,
+      screen.getByRole("button", { name: "Project" }).textContent,
     ).toContain("bb");
-    expect(
-      screen.getByRole("button", { name: "Worktree mode" }),
-    ).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Environment" })).not.toBeNull();
     expect(screen.getByRole("button", { name: "Timezone" })).not.toBeNull();
+    const modelButton = await screen.findByRole("button", {
+      name: "Provider and model",
+    });
+    expect(modelButton.textContent).toContain("5.5");
     expect(
-      (await screen.findByRole("button", { name: "Provider and model" }))
-        .textContent,
-    ).toContain("5.5");
+      modelButton.closest("[data-create-automation-run-context-footer]"),
+    ).not.toBeNull();
     const cancelButton = screen.getByRole("button", { name: "Cancel" });
     expect(cancelButton.className).toContain("border-input");
     expect(cancelButton.className).toContain("w-full");
+  });
 
-    fireEvent.pointerDown(screen.getByRole("button", { name: "Timezone" }), {
-      button: 0,
-    });
-    expect(
-      await screen.findByRole("menuitem", { name: "America/New_York" }),
-    ).not.toBeNull();
-    fireEvent.click(screen.getByRole("menuitem", { name: "America/New_York" }));
+  it("keeps the schedule cadence tabs in a stable layout column", () => {
+    renderDialog();
+
+    const tabs = screen.getByRole("group", { name: "Schedule cadence" });
+    const layout = tabs.closest("[data-create-automation-schedule-layout]");
+
+    expect(layout).not.toBeNull();
+    expect(layout?.className).toContain(
+      "grid-cols-[minmax(8.5rem,12rem)_minmax(0,1fr)]",
+    );
+    expect(tabs.className).toContain("self-start");
+
+    const tabParent = tabs.parentElement;
+    const tabsClassName = tabs.className;
+    for (const cadence of [
+      "Manual",
+      "Hourly",
+      "Daily",
+      "Weekdays",
+      "Weekly",
+      "Custom",
+    ]) {
+      fireEvent.click(screen.getByRole("button", { name: cadence }));
+      expect(tabs.parentElement).toBe(tabParent);
+      expect(tabs.className).toBe(tabsClassName);
+    }
   });
 
   it("posts the typed create payload, closes, and invalidates the overview", async () => {
@@ -426,10 +451,9 @@ describe("CreateAutomationDialog", () => {
     });
     await fillRequiredFields();
 
-    fireEvent.pointerDown(
-      screen.getByRole("button", { name: "Worktree mode" }),
-      { button: 0 },
-    );
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Environment" }), {
+      button: 0,
+    });
     fireEvent.click(
       await screen.findByRole("menuitem", { name: /Existing worktree/u }),
     );

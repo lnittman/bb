@@ -42,24 +42,23 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Icon, type IconName } from "@/components/ui/icon";
+import { Icon } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { TabPill } from "@/components/ui/tab-pill";
+import { EnvironmentPickerUI } from "@/components/pickers/EnvironmentPicker";
 import { PermissionModePicker } from "@/components/pickers/PermissionModePicker";
+import { ProjectSelector } from "@/components/pickers/ProjectSelector";
 import { WorktreePicker } from "@/components/pickers/WorktreePicker";
 import type { ReuseThreadOption } from "@/components/pickers/WorktreePicker";
 import {
   encodeHostValue,
   encodeReuseValue,
   parseEnvironmentValue,
-  REUSE_VALUE_WITHOUT_ENVIRONMENT,
 } from "@/components/pickers/environment-picker-value";
 import {
   OPTION_BASE_CLASS_NAME,
-  OPTION_INTERACTIVE_CLASS_NAME,
   OPTION_MUTED_CLASS_NAME,
-  OPTION_TRIGGER_CONTENT_CLASS_NAME,
   type PickerOption,
 } from "@/components/pickers/OptionPicker";
 import { ModelReasoningPicker } from "@/components/pickers/ModelReasoningPicker";
@@ -78,6 +77,7 @@ import { useCreateAutomation } from "@/hooks/queries/automation-queries";
 import { useSidebarNavigation } from "@/hooks/queries/sidebar-navigation-query";
 import { usePrimaryHost } from "@/hooks/queries/host-queries";
 import { useSystemExecutionOptions } from "@/hooks/queries/system-queries";
+import { useHostDaemon } from "@/hooks/useHostDaemon";
 import { useScrollOverflowState } from "@/components/thread/timeline/useScrollOverflowState";
 import { cn } from "@/lib/utils";
 
@@ -111,15 +111,6 @@ interface ScheduleCadenceOption {
   id: AutomationScheduleCadence;
   label: string;
   title: string;
-}
-
-type WorktreeMode = "local" | "worktree" | "reuse";
-
-interface WorktreeModeOption {
-  value: WorktreeMode;
-  label: string;
-  description: string;
-  icon: IconName;
 }
 
 interface ValidationResult {
@@ -158,27 +149,6 @@ const PERMISSION_MODE_OPTIONS: readonly PickerOption<PermissionMode>[] = [
   { value: "readonly", label: "Default" },
   { value: "workspace-write", label: "Workspace Write" },
   { value: "full", label: "Full Access", tone: "warning" },
-];
-
-const WORKTREE_MODE_OPTIONS: readonly WorktreeModeOption[] = [
-  {
-    value: "local",
-    label: "Use project folder",
-    description: "Run in the selected folder.",
-    icon: "Folder",
-  },
-  {
-    value: "worktree",
-    label: "New worktree",
-    description: "Create an isolated worktree for each run.",
-    icon: "GitBranch",
-  },
-  {
-    value: "reuse",
-    label: "Existing worktree",
-    description: "Reuse a worktree already known to this project.",
-    icon: "GitBranch",
-  },
 ];
 
 const FALLBACK_TIMEZONE_OPTIONS: readonly string[] = [
@@ -470,21 +440,6 @@ function getPermissionLabel(value: PermissionMode): string {
   );
 }
 
-function getWorktreeMode(
-  parsedEnvironment: ReturnType<typeof parseEnvironmentValue>,
-): WorktreeMode {
-  if (parsedEnvironment?.type === "reuse") {
-    return "reuse";
-  }
-  if (
-    parsedEnvironment?.type === "host" &&
-    parsedEnvironment.mode === "worktree"
-  ) {
-    return "worktree";
-  }
-  return "local";
-}
-
 function getDefaultEnvironmentValue(args: {
   primaryHostId: string | null;
   project: ProjectOption | undefined;
@@ -604,180 +559,6 @@ function FieldError({ id, message }: { id: string; message: string | null }) {
   );
 }
 
-function ProjectFolderPicker({
-  projects,
-  value,
-  onChange,
-  disabled,
-}: {
-  projects: readonly ProjectOption[];
-  value: string;
-  onChange: (projectId: string) => void;
-  disabled?: boolean;
-}) {
-  const selectedProject = projects.find((project) => project.id === value);
-  const selectedLabel = selectedProject?.name ?? "No folder";
-
-  return (
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild disabled={disabled}>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          aria-label="Select folder"
-          disabled={disabled}
-          className={cn(
-            OPTION_BASE_CLASS_NAME,
-            OPTION_INTERACTIVE_CLASS_NAME,
-            OPTION_MUTED_CLASS_NAME,
-            LIST_HOVER_TRANSITION,
-            "h-7 max-w-full",
-          )}
-        >
-          <span className={OPTION_TRIGGER_CONTENT_CLASS_NAME}>
-            <Icon name="Folder" className="size-3.5 shrink-0" aria-hidden />
-            <span className="shrink-0">Select folder</span>
-            <span
-              className="min-w-0 truncate text-subtle-foreground"
-              title={selectedLabel}
-            >
-              {selectedLabel}
-            </span>
-          </span>
-          <Icon
-            name="ChevronDown"
-            className="size-3.5 shrink-0 text-muted-foreground"
-            aria-hidden
-          />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="start"
-        className="w-56"
-        mobileTitle="Select folder"
-      >
-        <DropdownMenuLabel>Folder</DropdownMenuLabel>
-        {projects.map((project) => (
-          <DropdownMenuItem
-            key={project.id}
-            onSelect={() => onChange(project.id)}
-            className={LIST_HOVER_TRANSITION}
-          >
-            <Icon
-              name="Folder"
-              className="size-4 text-muted-foreground"
-              aria-hidden
-            />
-            <span className="min-w-0 truncate">{project.name}</span>
-            <Icon
-              name="Check"
-              className={cn(
-                "ml-auto size-4 shrink-0",
-                project.id === value ? "opacity-100" : "opacity-0",
-              )}
-              aria-hidden
-            />
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-function WorktreeModeMenu({
-  value,
-  onChange,
-  disabled,
-  reuseDisabled,
-}: {
-  value: WorktreeMode;
-  onChange: (value: WorktreeMode) => void;
-  disabled?: boolean;
-  reuseDisabled: boolean;
-}) {
-  const active = value !== "local";
-
-  return (
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild disabled={disabled}>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          aria-label="Worktree mode"
-          aria-pressed={active}
-          disabled={disabled}
-          className={cn(
-            OPTION_BASE_CLASS_NAME,
-            OPTION_INTERACTIVE_CLASS_NAME,
-            LIST_HOVER_TRANSITION,
-            "h-7 shrink-0",
-            active
-              ? "bg-state-active text-foreground hover:bg-state-active"
-              : OPTION_MUTED_CLASS_NAME,
-          )}
-        >
-          <span className={OPTION_TRIGGER_CONTENT_CLASS_NAME}>
-            <Icon name="GitBranch" className="size-3.5 shrink-0" aria-hidden />
-            <span>Worktree</span>
-          </span>
-          <Icon
-            name="ChevronDown"
-            className="size-3.5 shrink-0 text-muted-foreground"
-            aria-hidden
-          />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64" mobileTitle="Worktree">
-        <DropdownMenuLabel>Worktree</DropdownMenuLabel>
-        {WORKTREE_MODE_OPTIONS.map((option) => {
-          const disabledOption = option.value === "reuse" && reuseDisabled;
-          return (
-            <DropdownMenuItem
-              key={option.value}
-              disabled={disabledOption}
-              onSelect={() => {
-                if (!disabledOption) {
-                  onChange(option.value);
-                }
-              }}
-              className={cn(
-                "flex items-start justify-between gap-3 whitespace-normal",
-                LIST_HOVER_TRANSITION,
-              )}
-            >
-              <span className="flex min-w-0 items-start gap-2">
-                <Icon
-                  name={option.icon}
-                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                  aria-hidden
-                />
-                <span className="min-w-0">
-                  <span className="block text-xs">{option.label}</span>
-                  <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
-                    {disabledOption
-                      ? "No worktrees in this project yet."
-                      : option.description}
-                  </span>
-                </span>
-              </span>
-              <Icon
-                name="Check"
-                className={cn(
-                  "size-4 shrink-0",
-                  option.value === value ? "opacity-100" : "opacity-0",
-                )}
-                aria-hidden
-              />
-            </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
 function TimezonePicker({
   id,
   value,
@@ -867,6 +648,7 @@ export function CreateAutomationDialog({
   const wasOpenRef = useRef(false);
   const sidebarNavigation = useSidebarNavigation({ enabled: open });
   const primaryHost = usePrimaryHost({ enabled: open });
+  const { isLocalDaemonHost } = useHostDaemon();
   const projectOptions = useMemo(
     () => getProjectOptions(sidebarNavigation.data),
     [sidebarNavigation.data],
@@ -899,7 +681,6 @@ export function CreateAutomationDialog({
     () => parseEnvironmentValue(environmentValue),
     [environmentValue],
   );
-  const worktreeMode = getWorktreeMode(parsedEnvironment);
   const selectedReuseEnvironmentId =
     parsedEnvironment?.type === "reuse"
       ? parsedEnvironment.environmentId
@@ -1261,23 +1042,6 @@ export function CreateAutomationDialog({
     [markTouched, primaryHost?.id, projectOptions],
   );
 
-  const handleWorktreeModeChange = useCallback(
-    (nextMode: WorktreeMode) => {
-      const hostId = primaryHost?.id ?? null;
-      if (nextMode === "reuse") {
-        setEnvironmentValue(REUSE_VALUE_WITHOUT_ENVIRONMENT);
-      } else {
-        if (!hostId) {
-          return;
-        }
-        setEnvironmentValue(encodeHostValue(hostId, nextMode));
-      }
-      markTouched("environment");
-      setServerError(null);
-    },
-    [markTouched, primaryHost?.id],
-  );
-
   const handleCadenceSelect = useCallback(
     (cadence: AutomationScheduleCadence) => {
       setScheduleCadence(cadence);
@@ -1441,17 +1205,62 @@ export function CreateAutomationDialog({
                     className="min-h-32 resize-y rounded-b-none border-0 focus-visible:ring-0"
                     placeholder="Summarize the latest project updates and call out blockers."
                   />
-                  <div className="grid gap-1.5 border-t border-border bg-surface-recessed px-2 py-1.5">
-                    <div className="flex min-h-7 items-center justify-between gap-2">
-                      <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-                        <Icon
-                          name="Lock"
-                          className="size-3.5 shrink-0"
-                          aria-hidden
-                        />
-                        <span className="truncate">Ask permissions</span>
-                      </span>
-                      <div className="flex shrink-0 items-center">
+                  <div
+                    data-create-automation-run-context-footer=""
+                    className="grid gap-1.5 border-t border-border bg-surface-recessed px-2 py-1.5"
+                  >
+                    <div className="flex min-h-8 items-center justify-between gap-2">
+                      <div
+                        aria-describedby={modelErrorId}
+                        className="flex min-w-0 flex-1 items-center gap-1"
+                      >
+                        {providerOptions.length > 0 ||
+                        executionOptionsQuery.isLoading ? (
+                          <ModelReasoningPicker
+                            providerOptions={providerOptions}
+                            selectedProviderId={providerId}
+                            onSelectedProviderChange={handleProviderChange}
+                            hasMultipleProviders={providerOptions.length > 1}
+                            modelValue={model}
+                            modelOptions={modelOptions}
+                            moreModelOptions={moreModelOptions}
+                            modelIsLoading={executionOptionsQuery.isLoading}
+                            modelLoadFailed={executionOptionsQuery.isError}
+                            modelLoadError={
+                              executionOptions?.modelLoadError ?? null
+                            }
+                            onModelChange={handleModelChange}
+                            formatModelLabel={formatModelLabel}
+                            reasoningValue={MODEL_ONLY_REASONING_VALUE}
+                            reasoningOptions={EMPTY_REASONING_OPTIONS}
+                            onReasoningChange={() => undefined}
+                            fastModeEnabled={false}
+                            onFastModeChange={() => undefined}
+                            showFastModeToggle={false}
+                            muted
+                            modal={false}
+                            ariaLabel="Provider and model"
+                          />
+                        ) : (
+                          <span
+                            className={cn(
+                              OPTION_BASE_CLASS_NAME,
+                              OPTION_MUTED_CLASS_NAME,
+                            )}
+                          >
+                            No providers available
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                          <Icon
+                            name="Lock"
+                            className="size-3.5 shrink-0"
+                            aria-hidden
+                          />
+                          <span className="truncate">Ask permissions</span>
+                        </span>
                         <PermissionModePicker
                           value={permissionMode}
                           options={permissionOptions}
@@ -1470,13 +1279,39 @@ export function CreateAutomationDialog({
                         ) : null}
                       </div>
                     </div>
-                    <div className="flex min-h-7 items-center justify-between gap-2">
+                    <div className="flex min-h-8 items-center justify-between gap-2">
                       <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
-                        <ProjectFolderPicker
+                        <ProjectSelector
                           projects={projectOptions}
                           value={projectId}
-                          onChange={handleProjectChange}
+                          onChange={(nextProjectId) => {
+                            if (nextProjectId) {
+                              handleProjectChange(nextProjectId);
+                            }
+                          }}
+                          allowNoProject={false}
                           disabled={sidebarNavigation.isLoading}
+                          className="shrink-0"
+                          modal={false}
+                        />
+                        <EnvironmentPickerUI
+                          value={environmentValue}
+                          onChange={(nextValue) => {
+                            setEnvironmentValue(nextValue);
+                            markTouched("environment");
+                            setServerError(null);
+                          }}
+                          sources={selectedProject?.sources ?? []}
+                          host={primaryHost ?? null}
+                          isLocal={
+                            primaryHost
+                              ? isLocalDaemonHost(primaryHost.id)
+                              : true
+                          }
+                          reuseDisabled={reuseThreadOptions.length === 0}
+                          className="shrink-0"
+                          muted
+                          modal={false}
                         />
                         {parsedEnvironment?.type === "reuse" ? (
                           <WorktreePicker
@@ -1494,12 +1329,6 @@ export function CreateAutomationDialog({
                           />
                         ) : null}
                       </div>
-                      <WorktreeModeMenu
-                        value={worktreeMode}
-                        onChange={handleWorktreeModeChange}
-                        disabled={!primaryHost}
-                        reuseDisabled={reuseThreadOptions.length === 0}
-                      />
                     </div>
                   </div>
                 </div>
@@ -1513,18 +1342,23 @@ export function CreateAutomationDialog({
                   id={permissionsErrorId}
                   message={permissionsError}
                 />
+                <FieldError id={modelErrorId} message={modelSelectionError} />
               </div>
 
               <section className="grid gap-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
+                <div
+                  data-create-automation-schedule-layout=""
+                  className="grid grid-cols-[minmax(8.5rem,12rem)_minmax(0,1fr)] items-start gap-3"
+                >
+                  <div className="min-w-0">
                     <h3 className="text-sm font-medium">Schedule</h3>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-pretty text-xs text-muted-foreground">
                       {cadenceLabel}
                     </p>
                   </div>
                   <div
-                    className="flex flex-wrap items-center gap-1"
+                    data-create-automation-schedule-tabs=""
+                    className="flex min-w-0 flex-wrap items-center gap-1 self-start"
                     role="group"
                     aria-label="Schedule cadence"
                   >
@@ -1627,51 +1461,6 @@ export function CreateAutomationDialog({
                     ) : null}
                   </div>
                 ) : null}
-              </section>
-
-              <section className="grid gap-3">
-                <div>
-                  <h3 className="text-sm font-medium">Model</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Provider and model for the agent run.
-                  </p>
-                </div>
-                <div
-                  aria-describedby={modelErrorId}
-                  className="flex min-h-8 flex-wrap items-center gap-2"
-                >
-                  {providerOptions.length > 0 ||
-                  executionOptionsQuery.isLoading ? (
-                    <ModelReasoningPicker
-                      providerOptions={providerOptions}
-                      selectedProviderId={providerId}
-                      onSelectedProviderChange={handleProviderChange}
-                      hasMultipleProviders={providerOptions.length > 1}
-                      modelValue={model}
-                      modelOptions={modelOptions}
-                      moreModelOptions={moreModelOptions}
-                      modelIsLoading={executionOptionsQuery.isLoading}
-                      modelLoadFailed={executionOptionsQuery.isError}
-                      modelLoadError={executionOptions?.modelLoadError ?? null}
-                      onModelChange={handleModelChange}
-                      formatModelLabel={formatModelLabel}
-                      reasoningValue={MODEL_ONLY_REASONING_VALUE}
-                      reasoningOptions={EMPTY_REASONING_OPTIONS}
-                      onReasoningChange={() => undefined}
-                      fastModeEnabled={false}
-                      onFastModeChange={() => undefined}
-                      showFastModeToggle={false}
-                      muted={false}
-                      modal={false}
-                      ariaLabel="Provider and model"
-                    />
-                  ) : (
-                    <span className="rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground">
-                      No providers available
-                    </span>
-                  )}
-                </div>
-                <FieldError id={modelErrorId} message={modelSelectionError} />
               </section>
             </div>
             <div
