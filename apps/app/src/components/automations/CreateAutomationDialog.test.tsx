@@ -29,7 +29,10 @@ import {
 } from "@/hooks/queries/query-keys";
 import { sidebarNavigationQueryKey } from "@/hooks/queries/sidebar-navigation-query";
 import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
-import { CreateAutomationDialog } from "./CreateAutomationDialog";
+import {
+  buildCreateAutomationScrollMaskStyle,
+  CreateAutomationDialog,
+} from "./CreateAutomationDialog";
 
 const postAutomation = vi.hoisted(() => vi.fn<() => Promise<Response>>());
 
@@ -283,6 +286,33 @@ afterEach(() => {
 });
 
 describe("CreateAutomationDialog", () => {
+  it("builds edge-gated alpha mask styles for the scroll body", () => {
+    expect(
+      buildCreateAutomationScrollMaskStyle({
+        aboveOverflow: false,
+        belowOverflow: false,
+      }),
+    ).toBeUndefined();
+    expect(
+      buildCreateAutomationScrollMaskStyle({
+        aboveOverflow: false,
+        belowOverflow: true,
+      }),
+    ).toEqual({
+      maskImage:
+        "linear-gradient(to bottom, black 0, black calc(100% - 2rem), transparent 100%)",
+      WebkitMaskImage:
+        "linear-gradient(to bottom, black 0, black calc(100% - 2rem), transparent 100%)",
+      maskMode: "alpha",
+    });
+    expect(
+      buildCreateAutomationScrollMaskStyle({
+        aboveOverflow: true,
+        belowOverflow: false,
+      })?.maskImage,
+    ).toBe("linear-gradient(to bottom, transparent 0, black 2rem, black 100%)");
+  });
+
   it("validates required fields before allowing submit", async () => {
     renderDialog();
 
@@ -319,6 +349,9 @@ describe("CreateAutomationDialog", () => {
       (await screen.findByRole("button", { name: "Provider and model" }))
         .textContent,
     ).toContain("5.5");
+    const cancelButton = screen.getByRole("button", { name: "Cancel" });
+    expect(cancelButton.className).toContain("border-input");
+    expect(cancelButton.className).toContain("w-full");
 
     fireEvent.pointerDown(screen.getByRole("button", { name: "Timezone" }), {
       button: 0,
