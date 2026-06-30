@@ -6,6 +6,7 @@ import {
   type Host,
   type ProviderInfo,
   type ReasoningLevel,
+  type ThreadListEntry,
 } from "@bb/domain";
 import type {
   SidebarBootstrapResponse,
@@ -109,7 +110,43 @@ function makeExecutionOptions(
   };
 }
 
-function makeSidebarNavigation(): SidebarBootstrapResponse {
+const storyWorktreeThread: ThreadListEntry = {
+  id: "thr_story_worktree",
+  projectId: PROJECT_IDS.bb,
+  environmentId: "env_story_reuse",
+  providerId: "codex",
+  title: "Reuse design polish lane",
+  titleFallback: "Reuse design polish lane",
+  folderId: null,
+  status: "idle",
+  parentThreadId: null,
+  sourceThreadId: null,
+  originKind: null,
+  childOrigin: null,
+  archivedAt: null,
+  pinnedAt: null,
+  deletedAt: null,
+  lastReadAt: null,
+  latestAttentionAt: 10,
+  createdAt: 0,
+  updatedAt: 10,
+  runtime: {
+    displayStatus: "idle",
+    hostReconnectGraceExpiresAt: null,
+  },
+  activity: { activeWorkflowCount: 0 },
+  pinSortKey: null,
+  hasPendingInteraction: false,
+  environmentHostId: storyHost.id,
+  environmentName: "Dialog polish",
+  environmentBranchName: "bb/lane-b-create-menu",
+  environmentWorkspaceDisplayKind: "managed-worktree",
+};
+const storyWorktreeThreads = [storyWorktreeThread] as const;
+
+function makeSidebarNavigation(
+  threads: readonly ThreadListEntry[] = [],
+): SidebarBootstrapResponse {
   return {
     folders: [],
     personalProject: {
@@ -141,14 +178,16 @@ function makeSidebarNavigation(): SidebarBootstrapResponse {
             updatedAt: 0,
           },
         ],
-        threads: [],
+        threads: [...threads],
         defaultExecutionOptions: null,
       },
     ],
   };
 }
 
-function createStoryQueryClient(): QueryClient {
+function createStoryQueryClient(
+  threads: readonly ThreadListEntry[] = [],
+): QueryClient {
   const queryClient = new QueryClient({
     defaultOptions: {
       mutations: { retry: false },
@@ -190,7 +229,7 @@ function createStoryQueryClient(): QueryClient {
 
   queryClient.setQueryData(
     sidebarNavigationQueryKey(),
-    makeSidebarNavigation(),
+    makeSidebarNavigation(threads),
   );
   queryClient.setQueryData(hostsQueryKey(), [storyHost]);
   queryClient.setQueryData(automationsQueryKey(), { automations: [] });
@@ -209,8 +248,14 @@ function createStoryQueryClient(): QueryClient {
   return queryClient;
 }
 
-function StoryProvider({ children }: { children: ReactNode }) {
-  const queryClient = useMemo(() => createStoryQueryClient(), []);
+function StoryProvider({
+  children,
+  threads = [],
+}: {
+  children: ReactNode;
+  threads?: readonly ThreadListEntry[];
+}) {
+  const queryClient = useMemo(() => createStoryQueryClient(threads), [threads]);
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
@@ -220,6 +265,24 @@ export function Open() {
   const [open, setOpen] = useState(true);
   return (
     <StoryProvider>
+      <div className="flex min-h-screen items-start justify-center bg-background p-8">
+        <Button type="button" onClick={() => setOpen(true)}>
+          New automation
+        </Button>
+        <CreateAutomationDialog
+          open={open}
+          onOpenChange={setOpen}
+          defaultProjectId={PROJECT_IDS.bb}
+        />
+      </div>
+    </StoryProvider>
+  );
+}
+
+export function WithExistingWorktree() {
+  const [open, setOpen] = useState(true);
+  return (
+    <StoryProvider threads={storyWorktreeThreads}>
       <div className="flex min-h-screen items-start justify-center bg-background p-8">
         <Button type="button" onClick={() => setOpen(true)}>
           New automation

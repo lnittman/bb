@@ -19,6 +19,7 @@ import type {
   PermissionMode,
   ProjectSource,
   ProviderInfo,
+  ReasoningLevel,
   ThreadListEntry,
 } from "@bb/domain";
 import {
@@ -34,23 +35,34 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Icon, type IconName } from "@/components/ui/icon";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { TabPill } from "@/components/ui/tab-pill";
-import { ProjectSelector } from "@/components/pickers/ProjectSelector";
 import { PermissionModePicker } from "@/components/pickers/PermissionModePicker";
-import { EnvironmentPickerUI } from "@/components/pickers/EnvironmentPicker";
 import { WorktreePicker } from "@/components/pickers/WorktreePicker";
 import type { ReuseThreadOption } from "@/components/pickers/WorktreePicker";
 import {
   encodeHostValue,
   encodeReuseValue,
   parseEnvironmentValue,
+  REUSE_VALUE_WITHOUT_ENVIRONMENT,
 } from "@/components/pickers/environment-picker-value";
 import {
-  OptionPicker,
+  OPTION_BASE_CLASS_NAME,
+  OPTION_INTERACTIVE_CLASS_NAME,
+  OPTION_MUTED_CLASS_NAME,
+  OPTION_TRIGGER_CONTENT_CLASS_NAME,
   type PickerOption,
 } from "@/components/pickers/OptionPicker";
+import { ModelReasoningPicker } from "@/components/pickers/ModelReasoningPicker";
 import {
   buildAutomationCron,
   cadenceUsesTime,
@@ -61,11 +73,12 @@ import {
 import { getProviderIconInfo } from "@/lib/provider-icon";
 import { getThreadDisplayTitle } from "@/lib/thread-title";
 import { formatModelLabel } from "@/hooks/useThreadCreationOptions";
+import { LIST_HOVER_TRANSITION } from "@/components/ui/motion";
 import { useCreateAutomation } from "@/hooks/queries/automation-queries";
 import { useSidebarNavigation } from "@/hooks/queries/sidebar-navigation-query";
 import { usePrimaryHost } from "@/hooks/queries/host-queries";
 import { useSystemExecutionOptions } from "@/hooks/queries/system-queries";
-import { useHostDaemon } from "@/hooks/useHostDaemon";
+import { cn } from "@/lib/utils";
 
 export interface CreateAutomationDialogProps {
   open: boolean;
@@ -78,10 +91,13 @@ type AutomationEnvironment = CreateAutomationRequest["environment"];
 type FieldKey =
   | "name"
   | "instructions"
+  | "project"
   | "cron"
   | "timezone"
   | "environment"
-  | "time";
+  | "time"
+  | "provider"
+  | "model";
 
 interface ProjectOption {
   id: string;
@@ -94,6 +110,15 @@ interface ScheduleCadenceOption {
   id: AutomationScheduleCadence;
   label: string;
   title: string;
+}
+
+type WorktreeMode = "local" | "worktree" | "reuse";
+
+interface WorktreeModeOption {
+  value: WorktreeMode;
+  label: string;
+  description: string;
+  icon: IconName;
 }
 
 interface ValidationResult {
@@ -134,11 +159,70 @@ const PERMISSION_MODE_OPTIONS: readonly PickerOption<PermissionMode>[] = [
   { value: "full", label: "Full Access", tone: "warning" },
 ];
 
+const WORKTREE_MODE_OPTIONS: readonly WorktreeModeOption[] = [
+  {
+    value: "local",
+    label: "Use project folder",
+    description: "Run in the selected folder.",
+    icon: "Folder",
+  },
+  {
+    value: "worktree",
+    label: "New worktree",
+    description: "Create an isolated worktree for each run.",
+    icon: "GitBranch",
+  },
+  {
+    value: "reuse",
+    label: "Existing worktree",
+    description: "Reuse a worktree already known to this project.",
+    icon: "GitBranch",
+  },
+];
+
+const FALLBACK_TIMEZONE_OPTIONS: readonly string[] = [
+  "UTC",
+  "America/New_York",
+  "America/Detroit",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "America/Phoenix",
+  "America/Anchorage",
+  "Pacific/Honolulu",
+  "America/Toronto",
+  "America/Vancouver",
+  "America/Mexico_City",
+  "America/Sao_Paulo",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Berlin",
+  "Europe/Amsterdam",
+  "Europe/Madrid",
+  "Europe/Rome",
+  "Europe/Stockholm",
+  "Europe/Warsaw",
+  "Europe/Athens",
+  "Asia/Dubai",
+  "Asia/Kolkata",
+  "Asia/Singapore",
+  "Asia/Hong_Kong",
+  "Asia/Tokyo",
+  "Asia/Seoul",
+  "Australia/Sydney",
+  "Pacific/Auckland",
+];
+
+const FIELD_ERROR_CLASS_NAME = "min-h-4 text-xs leading-4 text-destructive";
+const MODEL_ONLY_REASONING_VALUE: ReasoningLevel = "medium";
+const EMPTY_REASONING_OPTIONS: readonly PickerOption<ReasoningLevel>[] = [];
 const EMPTY_PROVIDERS: readonly ProviderInfo[] = [];
 const EMPTY_MODELS: readonly AvailableModel[] = [];
 
 function getDefaultTimezone(): string {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone ?? FALLBACK_TIMEZONE;
+  const timezone =
+    Intl.DateTimeFormat().resolvedOptions().timeZone ?? FALLBACK_TIMEZONE;
+  return isValidTimezone(timezone) ? timezone : FALLBACK_TIMEZONE;
 }
 
 function isValidTimezone(timezone: string): boolean {
@@ -150,6 +234,29 @@ function isValidTimezone(timezone: string): boolean {
   } catch {
     return false;
   }
+}
+
+function getSupportedTimezones(): string[] {
+  const intlWithTimezones = Intl as typeof Intl & {
+    supportedValuesOf?: (input: "timeZone") => string[];
+  };
+  const supportedTimezones = intlWithTimezones.supportedValuesOf?.("timeZone");
+  if (supportedTimezones && supportedTimezones.length > 0) {
+    return supportedTimezones;
+  }
+  return [...FALLBACK_TIMEZONE_OPTIONS];
+}
+
+function getTimezoneOptions(timezone: string): PickerOption<string>[] {
+  const timezones = new Set([
+    ...getSupportedTimezones(),
+    timezone,
+    FALLBACK_TIMEZONE,
+  ]);
+  return Array.from(timezones)
+    .filter((value) => value.trim().length > 0 && isValidTimezone(value))
+    .sort((left, right) => left.localeCompare(right))
+    .map((value) => ({ value, label: value }));
 }
 
 function validateCronExpression(cron: string): string | null {
@@ -321,6 +428,21 @@ function getPermissionLabel(value: PermissionMode): string {
   );
 }
 
+function getWorktreeMode(
+  parsedEnvironment: ReturnType<typeof parseEnvironmentValue>,
+): WorktreeMode {
+  if (parsedEnvironment?.type === "reuse") {
+    return "reuse";
+  }
+  if (
+    parsedEnvironment?.type === "host" &&
+    parsedEnvironment.mode === "worktree"
+  ) {
+    return "worktree";
+  }
+  return "local";
+}
+
 function getDefaultEnvironmentValue(args: {
   primaryHostId: string | null;
   project: ProjectOption | undefined;
@@ -432,6 +554,255 @@ function buildCreateAutomationRequest(args: {
   return parsed.success ? parsed.data : null;
 }
 
+function FieldError({ id, message }: { id: string; message: string | null }) {
+  return (
+    <p id={id} aria-live="polite" className={FIELD_ERROR_CLASS_NAME}>
+      {message ?? ""}
+    </p>
+  );
+}
+
+function ProjectFolderPicker({
+  projects,
+  value,
+  onChange,
+  disabled,
+}: {
+  projects: readonly ProjectOption[];
+  value: string;
+  onChange: (projectId: string) => void;
+  disabled?: boolean;
+}) {
+  const selectedProject = projects.find((project) => project.id === value);
+  const selectedLabel = selectedProject?.name ?? "No folder";
+
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild disabled={disabled}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          aria-label="Select folder"
+          disabled={disabled}
+          className={cn(
+            OPTION_BASE_CLASS_NAME,
+            OPTION_INTERACTIVE_CLASS_NAME,
+            OPTION_MUTED_CLASS_NAME,
+            LIST_HOVER_TRANSITION,
+            "h-7 max-w-full",
+          )}
+        >
+          <span className={OPTION_TRIGGER_CONTENT_CLASS_NAME}>
+            <Icon name="Folder" className="size-3.5 shrink-0" aria-hidden />
+            <span className="shrink-0">Select folder</span>
+            <span
+              className="min-w-0 truncate text-subtle-foreground"
+              title={selectedLabel}
+            >
+              {selectedLabel}
+            </span>
+          </span>
+          <Icon
+            name="ChevronDown"
+            className="size-3.5 shrink-0 text-muted-foreground"
+            aria-hidden
+          />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        className="w-56"
+        mobileTitle="Select folder"
+      >
+        <DropdownMenuLabel>Folder</DropdownMenuLabel>
+        {projects.map((project) => (
+          <DropdownMenuItem
+            key={project.id}
+            onSelect={() => onChange(project.id)}
+            className={LIST_HOVER_TRANSITION}
+          >
+            <Icon
+              name="Folder"
+              className="size-4 text-muted-foreground"
+              aria-hidden
+            />
+            <span className="min-w-0 truncate">{project.name}</span>
+            <Icon
+              name="Check"
+              className={cn(
+                "ml-auto size-4 shrink-0",
+                project.id === value ? "opacity-100" : "opacity-0",
+              )}
+              aria-hidden
+            />
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function WorktreeModeMenu({
+  value,
+  onChange,
+  disabled,
+  reuseDisabled,
+}: {
+  value: WorktreeMode;
+  onChange: (value: WorktreeMode) => void;
+  disabled?: boolean;
+  reuseDisabled: boolean;
+}) {
+  const active = value !== "local";
+
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild disabled={disabled}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          aria-label="Worktree mode"
+          aria-pressed={active}
+          disabled={disabled}
+          className={cn(
+            OPTION_BASE_CLASS_NAME,
+            OPTION_INTERACTIVE_CLASS_NAME,
+            LIST_HOVER_TRANSITION,
+            "h-7 shrink-0",
+            active
+              ? "bg-state-active text-foreground hover:bg-state-active"
+              : OPTION_MUTED_CLASS_NAME,
+          )}
+        >
+          <span className={OPTION_TRIGGER_CONTENT_CLASS_NAME}>
+            <Icon name="GitBranch" className="size-3.5 shrink-0" aria-hidden />
+            <span>Worktree</span>
+          </span>
+          <Icon
+            name="ChevronDown"
+            className="size-3.5 shrink-0 text-muted-foreground"
+            aria-hidden
+          />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64" mobileTitle="Worktree">
+        <DropdownMenuLabel>Worktree</DropdownMenuLabel>
+        {WORKTREE_MODE_OPTIONS.map((option) => {
+          const disabledOption = option.value === "reuse" && reuseDisabled;
+          return (
+            <DropdownMenuItem
+              key={option.value}
+              disabled={disabledOption}
+              onSelect={() => {
+                if (!disabledOption) {
+                  onChange(option.value);
+                }
+              }}
+              className={cn(
+                "flex items-start justify-between gap-3 whitespace-normal",
+                LIST_HOVER_TRANSITION,
+              )}
+            >
+              <span className="flex min-w-0 items-start gap-2">
+                <Icon
+                  name={option.icon}
+                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
+                <span className="min-w-0">
+                  <span className="block text-xs">{option.label}</span>
+                  <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
+                    {disabledOption
+                      ? "No worktrees in this project yet."
+                      : option.description}
+                  </span>
+                </span>
+              </span>
+              <Icon
+                name="Check"
+                className={cn(
+                  "size-4 shrink-0",
+                  option.value === value ? "opacity-100" : "opacity-0",
+                )}
+                aria-hidden
+              />
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function TimezonePicker({
+  id,
+  value,
+  options,
+  invalid,
+  describedBy,
+  onChange,
+  onBlur,
+}: {
+  id: string;
+  value: string;
+  options: readonly PickerOption<string>[];
+  invalid: boolean;
+  describedBy: string;
+  onChange: (value: string) => void;
+  onBlur: () => void;
+}) {
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          id={id}
+          type="button"
+          variant="outline"
+          size="sm"
+          aria-label="Timezone"
+          aria-invalid={invalid}
+          aria-describedby={describedBy}
+          onBlur={onBlur}
+          className="h-9 w-full justify-between px-3 font-normal"
+        >
+          <span className="min-w-0 truncate">{value}</span>
+          <Icon
+            name="ChevronDown"
+            className="size-4 shrink-0 text-muted-foreground"
+            aria-hidden
+          />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        className="max-h-72 w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto"
+        mobileTitle="Timezone"
+      >
+        <DropdownMenuLabel>Timezone</DropdownMenuLabel>
+        {options.map((option) => (
+          <DropdownMenuItem
+            key={option.value}
+            onSelect={() => onChange(option.value)}
+            className={LIST_HOVER_TRANSITION}
+          >
+            <span className="min-w-0 truncate">{option.label}</span>
+            <Icon
+              name="Check"
+              className={cn(
+                "ml-auto size-4 shrink-0",
+                option.value === value ? "opacity-100" : "opacity-0",
+              )}
+              aria-hidden
+            />
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function CreateAutomationDialog({
   open,
   onOpenChange,
@@ -442,11 +813,18 @@ export function CreateAutomationDialog({
   const cronId = useId();
   const scheduleTimeId = useId();
   const timezoneId = useId();
+  const modelControlId = useId();
+  const nameErrorId = `${nameId}-error`;
+  const instructionsErrorId = `${instructionsId}-error`;
+  const permissionsErrorId = `${instructionsId}-permissions-error`;
+  const scheduleTimeErrorId = `${scheduleTimeId}-error`;
+  const cronErrorId = `${cronId}-error`;
+  const timezoneErrorId = `${timezoneId}-error`;
+  const modelErrorId = `${modelControlId}-error`;
   const cronInputRef = useRef<HTMLInputElement>(null);
   const wasOpenRef = useRef(false);
   const sidebarNavigation = useSidebarNavigation({ enabled: open });
   const primaryHost = usePrimaryHost({ enabled: open });
-  const { isLocalDaemonHost } = useHostDaemon();
   const projectOptions = useMemo(
     () => getProjectOptions(sidebarNavigation.data),
     [sidebarNavigation.data],
@@ -479,6 +857,7 @@ export function CreateAutomationDialog({
     () => parseEnvironmentValue(environmentValue),
     [environmentValue],
   );
+  const worktreeMode = getWorktreeMode(parsedEnvironment);
   const selectedReuseEnvironmentId =
     parsedEnvironment?.type === "reuse"
       ? parsedEnvironment.environmentId
@@ -543,22 +922,18 @@ export function CreateAutomationDialog({
     () => modelOptionsFromModels(selectedOnlyModels),
     [selectedOnlyModels],
   );
-  const selectableModelOptions = useMemo((): PickerOption<string>[] => {
-    const seen = new Set<string>();
-    return [...modelOptions, ...moreModelOptions].filter((option) => {
-      if (seen.has(option.value)) {
-        return false;
-      }
-      seen.add(option.value);
-      return true;
-    });
-  }, [modelOptions, moreModelOptions]);
+  const timezoneOptions = useMemo(
+    () => getTimezoneOptions(timezone),
+    [timezone],
+  );
   const cadenceLabel = useMemo(() => {
     if (scheduleCadence === "manual") {
       return "Runs only when started manually.";
     }
     return formatCronCadence(cron);
   }, [cron, scheduleCadence]);
+  const showTimeControls = cadenceUsesTime(scheduleCadence);
+  const showScheduleControls = showTimeControls || scheduleCadence === "custom";
   const validation = useMemo(
     () =>
       validateForm({
@@ -710,10 +1085,61 @@ export function CreateAutomationDialog({
     );
   }, [permissionMode, supportedPermissionModes]);
 
-  const handleProviderChange = useCallback((nextProviderId: string) => {
-    setProviderId(nextProviderId);
-    setModel("");
-  }, []);
+  const handleProviderChange = useCallback(
+    (nextProviderId: string) => {
+      setProviderId(nextProviderId);
+      setModel("");
+      markTouched("provider");
+      setServerError(null);
+    },
+    [markTouched],
+  );
+
+  const handleModelChange = useCallback(
+    (nextModel: string) => {
+      setModel(nextModel);
+      markTouched("model");
+      setServerError(null);
+    },
+    [markTouched],
+  );
+
+  const handleProjectChange = useCallback(
+    (nextProjectId: string) => {
+      const nextProject = projectOptions.find(
+        (project) => project.id === nextProjectId,
+      );
+      setProjectId(nextProjectId);
+      setEnvironmentValue(
+        getDefaultEnvironmentValue({
+          primaryHostId: primaryHost?.id ?? null,
+          project: nextProject,
+          projectId: nextProjectId,
+        }),
+      );
+      markTouched("project");
+      markTouched("environment");
+      setServerError(null);
+    },
+    [markTouched, primaryHost?.id, projectOptions],
+  );
+
+  const handleWorktreeModeChange = useCallback(
+    (nextMode: WorktreeMode) => {
+      const hostId = primaryHost?.id ?? null;
+      if (nextMode === "reuse") {
+        setEnvironmentValue(REUSE_VALUE_WITHOUT_ENVIRONMENT);
+      } else {
+        if (!hostId) {
+          return;
+        }
+        setEnvironmentValue(encodeHostValue(hostId, nextMode));
+      }
+      markTouched("environment");
+      setServerError(null);
+    },
+    [markTouched, primaryHost?.id],
+  );
 
   const handleCadenceSelect = useCallback(
     (cadence: AutomationScheduleCadence) => {
@@ -733,10 +1159,13 @@ export function CreateAutomationDialog({
         new Set([
           "name",
           "instructions",
+          "project",
           "cron",
           "timezone",
           "environment",
           "time",
+          "provider",
+          "model",
         ]),
       );
       setServerError(null);
@@ -795,6 +1224,16 @@ export function CreateAutomationDialog({
     (field: FieldKey) => touched.has(field) && validation[field] !== null,
     [touched, validation],
   );
+  const permissionsError = showError("project")
+    ? validation.project
+    : showError("environment")
+      ? validation.environment
+      : null;
+  const modelSelectionError = showError("provider")
+    ? validation.provider
+    : showError("model")
+      ? validation.model
+      : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -807,7 +1246,7 @@ export function CreateAutomationDialog({
           </DialogDescription>
         </DialogHeader>
         <form className="grid min-h-0 gap-4" onSubmit={handleSubmit}>
-          <div className="grid max-h-[min(72vh,42rem)] gap-5 overflow-y-auto pr-1">
+          <div className="grid max-h-[min(72vh,42rem)] gap-5 overflow-x-hidden overflow-y-auto pr-1">
             <div className="grid gap-2">
               <label
                 className="text-xs font-medium text-muted-foreground"
@@ -824,11 +1263,13 @@ export function CreateAutomationDialog({
                 }}
                 onBlur={() => markTouched("name")}
                 aria-invalid={showError("name")}
+                aria-describedby={nameErrorId}
                 placeholder="Daily standup digest"
               />
-              {showError("name") ? (
-                <p className="text-xs text-destructive">{validation.name}</p>
-              ) : null}
+              <FieldError
+                id={nameErrorId}
+                message={showError("name") ? validation.name : null}
+              />
             </div>
 
             <div className="grid gap-2">
@@ -838,105 +1279,90 @@ export function CreateAutomationDialog({
               >
                 Instructions
               </label>
-              <Textarea
-                id={instructionsId}
-                value={instructions}
-                onChange={(event) => {
-                  setInstructions(event.target.value);
-                  setServerError(null);
-                }}
-                onBlur={() => markTouched("instructions")}
-                aria-invalid={showError("instructions")}
-                className="min-h-32 resize-y"
-                placeholder="Summarize the latest project updates and call out blockers."
-              />
-              {showError("instructions") ? (
-                <p className="text-xs text-destructive">
-                  {validation.instructions}
-                </p>
-              ) : null}
-            </div>
-
-            <section className="grid gap-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h3 className="text-sm font-medium">Permissions</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Ask permissions and choose where bb should work.
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <PermissionModePicker
-                    value={permissionMode}
-                    options={permissionOptions}
-                    onChange={setPermissionMode}
-                    supported={permissionOptions.length > 1}
-                    muted={false}
-                    modal={false}
-                  />
-                  {permissionOptions.length === 1 ? (
-                    <span className="rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground">
-                      {getPermissionLabel(permissionMode)}
+              <div className="rounded-md border border-input bg-transparent has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-ring">
+                <Textarea
+                  id={instructionsId}
+                  value={instructions}
+                  onChange={(event) => {
+                    setInstructions(event.target.value);
+                    setServerError(null);
+                  }}
+                  onBlur={() => markTouched("instructions")}
+                  aria-invalid={showError("instructions")}
+                  aria-describedby={`${instructionsErrorId} ${permissionsErrorId}`}
+                  className="min-h-32 resize-y rounded-b-none border-0 focus-visible:ring-0"
+                  placeholder="Summarize the latest project updates and call out blockers."
+                />
+                <div className="grid gap-1.5 border-t border-border bg-surface-recessed px-2 py-1.5">
+                  <div className="flex min-h-7 items-center justify-between gap-2">
+                    <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                      <Icon
+                        name="Lock"
+                        className="size-3.5 shrink-0"
+                        aria-hidden
+                      />
+                      <span className="truncate">Ask permissions</span>
                     </span>
-                  ) : null}
+                    <div className="flex shrink-0 items-center">
+                      <PermissionModePicker
+                        value={permissionMode}
+                        options={permissionOptions}
+                        onChange={(nextMode) => {
+                          setPermissionMode(nextMode);
+                          setServerError(null);
+                        }}
+                        supported={permissionOptions.length > 1}
+                        className="h-7"
+                        modal={false}
+                      />
+                      {permissionOptions.length === 1 ? (
+                        <span className="rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground">
+                          {getPermissionLabel(permissionMode)}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex min-h-7 items-center justify-between gap-2">
+                    <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
+                      <ProjectFolderPicker
+                        projects={projectOptions}
+                        value={projectId}
+                        onChange={handleProjectChange}
+                        disabled={sidebarNavigation.isLoading}
+                      />
+                      {parsedEnvironment?.type === "reuse" ? (
+                        <WorktreePicker
+                          options={reuseThreadOptions}
+                          value={selectedReuseEnvironmentId}
+                          onChange={(environmentId) => {
+                            setEnvironmentValue(
+                              encodeReuseValue(environmentId),
+                            );
+                            markTouched("environment");
+                            setServerError(null);
+                          }}
+                          muted
+                          modal={false}
+                        />
+                      ) : null}
+                    </div>
+                    <WorktreeModeMenu
+                      value={worktreeMode}
+                      onChange={handleWorktreeModeChange}
+                      disabled={!primaryHost}
+                      reuseDisabled={reuseThreadOptions.length === 0}
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <ProjectSelector
-                  projects={projectOptions}
-                  value={projectId || null}
-                  onChange={(nextProjectId) => {
-                    const nextId = nextProjectId ?? "";
-                    const nextProject = projectOptions.find(
-                      (project) => project.id === nextId,
-                    );
-                    setProjectId(nextId);
-                    setEnvironmentValue(
-                      getDefaultEnvironmentValue({
-                        primaryHostId: primaryHost?.id ?? null,
-                        project: nextProject,
-                        projectId: nextId,
-                      }),
-                    );
-                    setServerError(null);
-                  }}
-                  disabled={sidebarNavigation.isLoading}
-                  className="min-w-44 justify-between"
-                  modal={false}
-                />
-                <EnvironmentPickerUI
-                  value={environmentValue}
-                  onChange={(nextValue) => {
-                    setEnvironmentValue(nextValue);
-                    setServerError(null);
-                  }}
-                  sources={selectedProject?.sources ?? []}
-                  host={primaryHost}
-                  isLocal={isLocalDaemonHost(primaryHost?.id)}
-                  reuseDisabled={reuseThreadOptions.length === 0}
-                  muted={false}
-                  modal={false}
-                />
-                {parsedEnvironment?.type === "reuse" ? (
-                  <WorktreePicker
-                    options={reuseThreadOptions}
-                    value={selectedReuseEnvironmentId}
-                    onChange={(environmentId) => {
-                      setEnvironmentValue(encodeReuseValue(environmentId));
-                      setServerError(null);
-                    }}
-                    muted={false}
-                    modal={false}
-                  />
-                ) : null}
-              </div>
-              {validation.project ||
-              (showError("environment") && validation.environment) ? (
-                <p className="text-xs text-destructive">
-                  {validation.project ?? validation.environment}
-                </p>
-              ) : null}
-            </section>
+              <FieldError
+                id={instructionsErrorId}
+                message={
+                  showError("instructions") ? validation.instructions : null
+                }
+              />
+              <FieldError id={permissionsErrorId} message={permissionsError} />
+            </div>
 
             <section className="grid gap-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -964,85 +1390,92 @@ export function CreateAutomationDialog({
                   ))}
                 </div>
               </div>
-              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_14rem]">
-                {cadenceUsesTime(scheduleCadence) ? (
-                  <div className="grid gap-2">
-                    <label
-                      className="text-xs font-medium text-muted-foreground"
-                      htmlFor={scheduleTimeId}
-                    >
-                      At HH:MM
-                    </label>
-                    <Input
-                      id={scheduleTimeId}
-                      type="time"
-                      value={scheduleTime}
-                      onChange={(event) => {
-                        setScheduleTime(event.target.value);
-                        setServerError(null);
-                      }}
-                      onBlur={() => markTouched("time")}
-                      aria-invalid={showError("time")}
-                    />
-                    {showError("time") ? (
-                      <p className="text-xs text-destructive">
-                        {validation.time}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-                {scheduleCadence === "custom" ? (
-                  <div className="grid gap-2">
-                    <label
-                      className="text-xs font-medium text-muted-foreground"
-                      htmlFor={cronId}
-                    >
-                      Cron expression
-                    </label>
-                    <Input
-                      ref={cronInputRef}
-                      id={cronId}
-                      value={customCron}
-                      onChange={(event) => {
-                        setCustomCron(event.target.value);
-                        setServerError(null);
-                      }}
-                      onBlur={() => markTouched("cron")}
-                      aria-invalid={showError("cron")}
-                      spellCheck={false}
-                    />
-                    {showError("cron") ? (
-                      <p className="text-xs text-destructive">
-                        {validation.cron}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-                <div className="grid gap-2">
-                  <label
-                    className="text-xs font-medium text-muted-foreground"
-                    htmlFor={timezoneId}
-                  >
-                    Timezone
-                  </label>
-                  <Input
-                    id={timezoneId}
-                    value={timezone}
-                    onChange={(event) => {
-                      setTimezone(event.target.value);
-                      setServerError(null);
-                    }}
-                    onBlur={() => markTouched("timezone")}
-                    aria-invalid={showError("timezone")}
-                    spellCheck={false}
-                  />
-                  {showError("timezone") ? (
-                    <p className="text-xs text-destructive">
-                      {validation.timezone}
-                    </p>
+              {showScheduleControls ? (
+                <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_14rem]">
+                  {showTimeControls ? (
+                    <div className="grid gap-2">
+                      <label
+                        className="text-xs font-medium text-muted-foreground"
+                        htmlFor={scheduleTimeId}
+                      >
+                        At HH:MM
+                      </label>
+                      <Input
+                        id={scheduleTimeId}
+                        type="time"
+                        value={scheduleTime}
+                        onChange={(event) => {
+                          setScheduleTime(event.target.value);
+                          setServerError(null);
+                        }}
+                        onBlur={() => markTouched("time")}
+                        aria-invalid={showError("time")}
+                        aria-describedby={scheduleTimeErrorId}
+                      />
+                      <FieldError
+                        id={scheduleTimeErrorId}
+                        message={showError("time") ? validation.time : null}
+                      />
+                    </div>
+                  ) : null}
+                  {scheduleCadence === "custom" ? (
+                    <div className="grid gap-2">
+                      <label
+                        className="text-xs font-medium text-muted-foreground"
+                        htmlFor={cronId}
+                      >
+                        Cron expression
+                      </label>
+                      <Input
+                        ref={cronInputRef}
+                        id={cronId}
+                        value={customCron}
+                        onChange={(event) => {
+                          setCustomCron(event.target.value);
+                          setServerError(null);
+                        }}
+                        onBlur={() => markTouched("cron")}
+                        aria-invalid={showError("cron")}
+                        aria-describedby={cronErrorId}
+                        spellCheck={false}
+                      />
+                      <FieldError
+                        id={cronErrorId}
+                        message={showError("cron") ? validation.cron : null}
+                      />
+                    </div>
+                  ) : null}
+                  {showTimeControls ? (
+                    <div className="grid gap-2">
+                      <label
+                        className="text-xs font-medium text-muted-foreground"
+                        htmlFor={timezoneId}
+                      >
+                        Timezone
+                      </label>
+                      <TimezonePicker
+                        id={timezoneId}
+                        value={timezone}
+                        options={timezoneOptions}
+                        invalid={showError("timezone")}
+                        describedBy={timezoneErrorId}
+                        onBlur={() => markTouched("timezone")}
+                        onChange={(nextTimezone) => {
+                          setTimezone(nextTimezone);
+                          markTouched("timezone");
+                          setServerError(null);
+                        }}
+                      />
+                      <FieldError
+                        id={timezoneErrorId}
+                        message={
+                          showError("timezone") ? validation.timezone : null
+                        }
+                      />
+                    </div>
                   ) : null}
                 </div>
-              </div>
+              ) : null}
             </section>
 
             <section className="grid gap-3">
@@ -1052,55 +1485,51 @@ export function CreateAutomationDialog({
                   Provider and model for the agent run.
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {providerOptions.length > 0 ? (
-                  <OptionPicker
-                    label="Provider"
-                    value={providerId}
-                    options={providerOptions}
-                    onChange={handleProviderChange}
+              <div
+                aria-describedby={modelErrorId}
+                className="flex min-h-8 flex-wrap items-center gap-2"
+              >
+                {providerOptions.length > 0 ||
+                executionOptionsQuery.isLoading ? (
+                  <ModelReasoningPicker
+                    providerOptions={providerOptions}
+                    selectedProviderId={providerId}
+                    onSelectedProviderChange={handleProviderChange}
+                    hasMultipleProviders={providerOptions.length > 1}
+                    modelValue={model}
+                    modelOptions={modelOptions}
+                    moreModelOptions={moreModelOptions}
+                    modelIsLoading={executionOptionsQuery.isLoading}
+                    modelLoadFailed={executionOptionsQuery.isError}
+                    modelLoadError={executionOptions?.modelLoadError ?? null}
+                    onModelChange={handleModelChange}
+                    formatModelLabel={formatModelLabel}
+                    reasoningValue={MODEL_ONLY_REASONING_VALUE}
+                    reasoningOptions={EMPTY_REASONING_OPTIONS}
+                    onReasoningChange={() => undefined}
+                    fastModeEnabled={false}
+                    onFastModeChange={() => undefined}
+                    showFastModeToggle={false}
                     muted={false}
                     modal={false}
-                    contentClassName="max-w-72"
+                    ariaLabel="Provider and model"
                   />
                 ) : (
                   <span className="rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground">
-                    {executionOptionsQuery.isLoading
-                      ? "Loading providers..."
-                      : "No providers available"}
-                  </span>
-                )}
-                {selectableModelOptions.length > 0 && model ? (
-                  <OptionPicker
-                    label="Model"
-                    value={model}
-                    options={selectableModelOptions}
-                    onChange={setModel}
-                    muted={false}
-                    modal={false}
-                    contentClassName="max-w-80"
-                  />
-                ) : (
-                  <span className="rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground">
-                    {executionOptionsQuery.isLoading
-                      ? "Loading models..."
-                      : "No models available"}
+                    No providers available
                   </span>
                 )}
               </div>
-              {validation.provider || validation.model ? (
-                <p className="text-xs text-destructive">
-                  {validation.provider ?? validation.model}
-                </p>
-              ) : null}
+              <FieldError id={modelErrorId} message={modelSelectionError} />
             </section>
           </div>
 
-          {serverError ? (
-            <p role="alert" className="text-sm text-destructive">
-              {serverError}
-            </p>
-          ) : null}
+          <p
+            role={serverError ? "alert" : undefined}
+            className="min-h-5 text-sm leading-5 text-destructive"
+          >
+            {serverError ?? ""}
+          </p>
 
           <DialogFooter>
             <Button

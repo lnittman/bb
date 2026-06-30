@@ -109,6 +109,8 @@ interface ModelReasoningPickerProps {
   defaultOpen?: boolean;
   /** Whether the popover blocks page interaction. Defaults to true. */
   modal?: boolean;
+  /** Accessible label for the trigger. Defaults to the full prompt-bar control. */
+  ariaLabel?: string;
   /**
    * Render the trigger as a non-interactive, dimmed label showing the same
    * model/reasoning summary — the popover never opens. Used by read-only
@@ -142,6 +144,7 @@ export function ModelReasoningPicker({
   muted,
   defaultOpen = false,
   modal = true,
+  ariaLabel = "Provider, model and reasoning",
   disabled,
 }: ModelReasoningPickerProps) {
   const isCompactViewport = useIsCompactViewport();
@@ -408,7 +411,7 @@ export function ModelReasoningPicker({
       type="button"
       variant="ghost"
       size="sm"
-      aria-label="Provider, model and reasoning"
+      aria-label={ariaLabel}
       disabled={disabled}
       className={cn(
         OPTION_BASE_CLASS_NAME,
@@ -502,7 +505,7 @@ export function ModelReasoningPicker({
                     }
                   }}
                   className={cn(
-                    "flex items-center justify-center border-b-2 focus-visible:outline-none",
+                    "flex items-center justify-center rounded-sm border-b-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                     LIST_HOVER_TRANSITION,
                     isCompactViewport
                       ? COMPACT_PROVIDER_TAB_CLASS_NAME
@@ -725,6 +728,7 @@ function MoreModelsToggleRow({
       aria-expanded={expanded}
       className={cn(
         "relative flex w-full cursor-default select-none items-center gap-1 rounded-sm px-2 text-xs text-muted-foreground outline-none hover:bg-state-hover hover:text-foreground",
+        "focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring",
         LIST_HOVER_TRANSITION,
         MENU_ITEM_LAST_HOVERED_CLASS,
         isCompactViewport
@@ -816,6 +820,7 @@ function MoreModelsSubmenu({
           }}
           className={cn(
             "relative flex w-full cursor-default select-none items-center gap-1 rounded-sm px-2 py-[0.3125rem] text-xs text-muted-foreground outline-none hover:bg-state-hover hover:text-foreground",
+            "focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring",
             LIST_HOVER_TRANSITION,
             MENU_ITEM_LAST_HOVERED_CLASS,
           )}
@@ -889,6 +894,7 @@ function MenuRowButton({
       onClick={onClick}
       className={cn(
         "relative flex w-full cursor-default select-none items-center justify-between gap-3 rounded-sm px-2 text-xs outline-none hover:bg-state-hover hover:text-foreground",
+        "focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring",
         LIST_HOVER_TRANSITION,
         MENU_ITEM_LAST_HOVERED_CLASS,
         isCompactViewport

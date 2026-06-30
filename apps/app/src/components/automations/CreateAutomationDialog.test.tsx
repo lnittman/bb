@@ -225,15 +225,24 @@ function seedQueries(
   );
 }
 
-function fillRequiredFields() {
+function getExpectedDefaultTimezone(): string {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "UTC";
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(
+      new Date(0),
+    );
+    return timezone;
+  } catch {
+    return "UTC";
+  }
+}
+
+async function fillRequiredFields() {
   fireEvent.change(screen.getByLabelText("Name"), {
     target: { value: "Daily digest" },
   });
   fireEvent.change(screen.getByLabelText("Instructions"), {
     target: { value: "Summarize updates." },
-  });
-  fireEvent.change(screen.getByLabelText("Timezone"), {
-    target: { value: "America/New_York" },
   });
 }
 
@@ -290,6 +299,36 @@ describe("CreateAutomationDialog", () => {
     expect(postAutomation).not.toHaveBeenCalled();
   });
 
+  it("renders the polished footer, timezone dropdown, and model picker", async () => {
+    renderDialog();
+
+    expect(screen.queryByRole("heading", { name: "Permissions" })).toBeNull();
+    expect(screen.getByText("Ask permissions")).not.toBeNull();
+    expect(
+      (await screen.findByRole("button", { name: "Permission mode" }))
+        .textContent,
+    ).toContain("Default");
+    expect(
+      screen.getByRole("button", { name: "Select folder" }).textContent,
+    ).toContain("bb");
+    expect(
+      screen.getByRole("button", { name: "Worktree mode" }),
+    ).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Timezone" })).not.toBeNull();
+    expect(
+      (await screen.findByRole("button", { name: "Provider and model" }))
+        .textContent,
+    ).toContain("5.5");
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Timezone" }), {
+      button: 0,
+    });
+    expect(
+      await screen.findByRole("menuitem", { name: "America/New_York" }),
+    ).not.toBeNull();
+    fireEvent.click(screen.getByRole("menuitem", { name: "America/New_York" }));
+  });
+
   it("posts the typed create payload, closes, and invalidates the overview", async () => {
     postAutomation.mockResolvedValue(
       new Response(JSON.stringify(makeAutomation()), {
@@ -301,7 +340,7 @@ describe("CreateAutomationDialog", () => {
     const { queryClient } = renderDialog({ onOpenChange });
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 
-    fillRequiredFields();
+    await fillRequiredFields();
     await submitForm();
 
     const expectedPayload = {
@@ -310,7 +349,7 @@ describe("CreateAutomationDialog", () => {
       trigger: {
         triggerType: "schedule",
         cron: "0 9 * * *",
-        timezone: "America/New_York",
+        timezone: getExpectedDefaultTimezone(),
       },
       execution: {
         mode: "agent",
@@ -352,13 +391,14 @@ describe("CreateAutomationDialog", () => {
     renderDialog({
       sidebarNavigation: makeSidebarNavigation([makeWorktreeThread()]),
     });
-    fillRequiredFields();
+    await fillRequiredFields();
 
-    fireEvent.pointerDown(screen.getByRole("button", { name: "Environment" }), {
-      button: 0,
-    });
+    fireEvent.pointerDown(
+      screen.getByRole("button", { name: "Worktree mode" }),
+      { button: 0 },
+    );
     fireEvent.click(
-      await screen.findByRole("menuitem", { name: "Existing worktree" }),
+      await screen.findByRole("menuitem", { name: /Existing worktree/u }),
     );
 
     const worktreeTrigger = await screen.findByRole("button", {
@@ -430,7 +470,7 @@ describe("CreateAutomationDialog", () => {
         }),
       );
       renderDialog();
-      fillRequiredFields();
+      await fillRequiredFields();
 
       fireEvent.click(screen.getByRole("button", { name: label }));
       if (time) {
@@ -454,7 +494,7 @@ describe("CreateAutomationDialog", () => {
               trigger: {
                 triggerType: "schedule",
                 cron,
-                timezone: "America/New_York",
+                timezone: getExpectedDefaultTimezone(),
               },
             }),
           }),
