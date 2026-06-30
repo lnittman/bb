@@ -11,6 +11,30 @@ interface AutomationInvalidationArg extends QueryClientArg {
   automationId: string;
 }
 
+interface AutomationCreateInvalidationArg extends QueryClientArg {
+  projectId: string;
+  automationId: string;
+}
+
+/**
+ * Invalidate cached automation views after creating a new automation. Creation
+ * always affects the cross-project overview and may immediately navigate to the
+ * created automation detail route.
+ */
+export function invalidateAutomationCreateMutationQueries({
+  projectId,
+  automationId,
+  queryClient,
+}: AutomationCreateInvalidationArg): void {
+  invalidateQueryKeys({
+    queryClient,
+    queryKeys: [
+      automationsQueryKey(),
+      automationDetailQueryKey(projectId, automationId),
+    ],
+  });
+}
+
 /**
  * Invalidate every cached view of an automation after a pause/resume/run/delete
  * mutation: the cross-project overview, the automation detail record, and its

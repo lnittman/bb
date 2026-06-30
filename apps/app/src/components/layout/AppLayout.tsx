@@ -10,11 +10,6 @@ import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import { Link, useLocation } from "react-router-dom";
 import type { ProjectResponse } from "@bb/server-contract";
-import { Button } from "@/components/ui/button.js";
-import {
-  COARSE_POINTER_COMPACT_ROW_HEIGHT_CLASS,
-  COARSE_POINTER_ICON_SIZE_CLASS,
-} from "@/components/ui/coarse-pointer-sizing.js";
 import { Icon } from "@/components/ui/icon.js";
 import {
   SidebarInset,
@@ -23,7 +18,7 @@ import {
 } from "@/components/ui/sidebar.js";
 import { AppSidebar } from "@/components/sidebar/AppSidebar";
 import { AppPageHeader, HEADER_ICON_BUTTON_CLASS } from "./AppPageHeader";
-import { CREATE_LOOP_PROMPT } from "@/components/promptbox/PromptBoxActionsMenu";
+import { AutomationCreateMenu } from "@/components/automations/AutomationCreateMenu";
 import { stripProjectThreads } from "@/hooks/queries/project-queries";
 import { useAutomationDetail } from "@/hooks/queries/automation-queries";
 import { useSidebarNavigation } from "@/hooks/queries/sidebar-navigation-query";
@@ -359,23 +354,7 @@ function AppHeader({
         ) : null}
       </>
     ) : isAutomationsListView ? (
-      <Button
-        asChild
-        variant="secondary"
-        size="sm"
-        className={COARSE_POINTER_COMPACT_ROW_HEIGHT_CLASS}
-      >
-        <Link
-          to={getRootComposeRoutePath()}
-          state={{ focusPrompt: true, initialPrompt: CREATE_LOOP_PROMPT }}
-        >
-          <Icon
-            name="MessageSquarePlus"
-            className={COARSE_POINTER_ICON_SIZE_CLASS}
-          />
-          Create via chat
-        </Link>
-      </Button>
+      <AutomationCreateMenu defaultProjectId={projectId} />
     ) : null;
 
   return (
@@ -512,24 +491,24 @@ export function AppLayout({ children }: AppLayoutProps) {
                 { label: "Archived" },
               ],
             }
-      : isSettingsView && projectId
-        ? {
-            title: "",
-            subtitle: undefined,
-            breadcrumbs: [
-              {
-                label: projectLabel ?? projectId,
-                to: getLegacyProjectComposeRoutePath(projectId),
-              },
-              { label: "Settings" },
-            ],
-          }
-        : projectId
+        : isSettingsView && projectId
           ? {
-              title: projectLabel ?? projectId,
+              title: "",
               subtitle: undefined,
+              breadcrumbs: [
+                {
+                  label: projectLabel ?? projectId,
+                  to: getLegacyProjectComposeRoutePath(projectId),
+                },
+                { label: "Settings" },
+              ],
             }
-          : (routeTitles[location.pathname] ?? { title: "" });
+          : projectId
+            ? {
+                title: projectLabel ?? projectId,
+                subtitle: undefined,
+              }
+            : (routeTitles[location.pathname] ?? { title: "" });
 
   const documentTitle = (() => {
     if (isThreadView) {

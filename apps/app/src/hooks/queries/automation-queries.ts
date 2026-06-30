@@ -4,9 +4,13 @@ import type {
   AutomationRunListResponse,
   AutomationRunResponse,
   AutomationsOverviewResponse,
+  CreateAutomationRequest,
 } from "@bb/server-contract";
 import * as api from "@/lib/api";
-import { invalidateAutomationMutationQueries } from "@/hooks/cache-owners/automation-cache-effects";
+import {
+  invalidateAutomationCreateMutationQueries,
+  invalidateAutomationMutationQueries,
+} from "@/hooks/cache-owners/automation-cache-effects";
 import {
   useProjectListRealtimeSubscription,
   useThreadListRealtimeSubscription,
@@ -88,6 +92,28 @@ export function useAutomationRuns(
 interface AutomationMutationRequest {
   projectId: string;
   automationId: string;
+}
+
+interface CreateAutomationMutationRequest {
+  projectId: string;
+  payload: CreateAutomationRequest;
+}
+
+export function useCreateAutomation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<Automation, Error, CreateAutomationMutationRequest>({
+    meta: { errorMessage: "Failed to create automation." },
+    mutationFn: ({ projectId, payload }) =>
+      api.createAutomation(projectId, payload),
+    onSuccess: (automation, variables) => {
+      invalidateAutomationCreateMutationQueries({
+        projectId: variables.projectId,
+        automationId: automation.id,
+        queryClient,
+      });
+    },
+  });
 }
 
 export function usePauseAutomation() {

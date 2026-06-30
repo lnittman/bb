@@ -18,6 +18,7 @@ import type {
   AutomationRunResponse,
   AutomationsOverviewResponse,
   CommandListResponse,
+  CreateAutomationRequest,
   CreateProjectSourceRequest,
   CreateProjectRequest,
   CreateThreadFolderRequest,
@@ -632,6 +633,18 @@ export async function listAutomationRuns({
       },
       requestOptions(signal),
     ),
+  );
+}
+
+export async function createAutomation(
+  projectId: string,
+  req: CreateAutomationRequest,
+): Promise<Automation> {
+  return request<Automation>(
+    apiClient.projects[":id"].automations.$post({
+      param: { id: projectId },
+      json: req,
+    }),
   );
 }
 
