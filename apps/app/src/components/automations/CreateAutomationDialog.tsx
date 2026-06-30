@@ -78,6 +78,7 @@ import { useCreateAutomation } from "@/hooks/queries/automation-queries";
 import { useSidebarNavigation } from "@/hooks/queries/sidebar-navigation-query";
 import { usePrimaryHost } from "@/hooks/queries/host-queries";
 import { useSystemExecutionOptions } from "@/hooks/queries/system-queries";
+import { useScrollOverflowState } from "@/components/thread/timeline/useScrollOverflowState";
 import { cn } from "@/lib/utils";
 
 export interface CreateAutomationDialogProps {
@@ -218,6 +219,47 @@ const MODEL_ONLY_REASONING_VALUE: ReasoningLevel = "medium";
 const EMPTY_REASONING_OPTIONS: readonly PickerOption<ReasoningLevel>[] = [];
 const EMPTY_PROVIDERS: readonly ProviderInfo[] = [];
 const EMPTY_MODELS: readonly AvailableModel[] = [];
+const CREATE_AUTOMATION_SCROLL_FADE_SIZE = "2rem";
+
+interface CreateAutomationScrollMaskState {
+  aboveOverflow: boolean;
+  belowOverflow: boolean;
+}
+
+const EMPTY_SCROLL_MASK_STATE: CreateAutomationScrollMaskState = {
+  aboveOverflow: false,
+  belowOverflow: false,
+};
+
+interface CreateAutomationScrollMaskStyle {
+  maskImage: string;
+  WebkitMaskImage: string;
+  maskMode: "alpha";
+}
+
+export function buildCreateAutomationScrollMaskStyle({
+  aboveOverflow,
+  belowOverflow,
+}: CreateAutomationScrollMaskState):
+  | CreateAutomationScrollMaskStyle
+  | undefined {
+  if (!aboveOverflow && !belowOverflow) {
+    return undefined;
+  }
+  const topEdge = aboveOverflow
+    ? `transparent 0, black ${CREATE_AUTOMATION_SCROLL_FADE_SIZE}`
+    : "black 0";
+  const bottomEdge = belowOverflow
+    ? `black calc(100% - ${CREATE_AUTOMATION_SCROLL_FADE_SIZE}), transparent 100%`
+    : "black 100%";
+  const maskImage = `linear-gradient(to bottom, ${topEdge}, ${bottomEdge})`;
+
+  return {
+    maskImage,
+    WebkitMaskImage: maskImage,
+    maskMode: "alpha",
+  };
+}
 
 function getDefaultTimezone(): string {
   const timezone =
@@ -963,6 +1005,101 @@ export function CreateAutomationDialog({
   );
   const isFormValid = !hasValidationErrors(validation);
   const canSubmit = isFormValid && !createAutomation.isPending;
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(
+    null,
+  );
+  const {
+    aboveOverflow,
+    belowOverflow,
+    bottomSentinelRef,
+    scrollRef,
+    topSentinelRef,
+  } = useScrollOverflowState<HTMLDivElement>({
+    measureOverflow: true,
+  });
+  const [measuredScrollOverflow, setMeasuredScrollOverflow] = useState(
+    EMPTY_SCROLL_MASK_STATE,
+  );
+  // Dialog content is mounted only after opening, so this local pass wakes the
+  // shared sentinel pattern up as soon as the scroll body exists.
+  useEffect(() => {
+    if (!open || typeof window === "undefined") {
+      return;
+    }
+    const scroll = scrollElement;
+    if (!scroll) {
+      return;
+    }
+
+    let frame: number | null = null;
+    const measure = () => {
+      frame = null;
+      const next = {
+        aboveOverflow: scroll.scrollTop > 1,
+        belowOverflow:
+          scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight > 1,
+      };
+      setMeasuredScrollOverflow((previous) => {
+        if (
+          previous.aboveOverflow === next.aboveOverflow &&
+          previous.belowOverflow === next.belowOverflow
+        ) {
+          return previous;
+        }
+        return next;
+      });
+    };
+    const scheduleMeasure = () => {
+      if (frame !== null) return;
+      frame =
+        typeof window.requestAnimationFrame === "function"
+          ? window.requestAnimationFrame(measure)
+          : window.setTimeout(measure, 0);
+    };
+
+    scheduleMeasure();
+    scroll.addEventListener("scroll", scheduleMeasure, { passive: true });
+
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(scheduleMeasure);
+    resizeObserver?.observe(scroll);
+
+    const mutationObserver =
+      typeof MutationObserver === "undefined"
+        ? null
+        : new MutationObserver(scheduleMeasure);
+    mutationObserver?.observe(scroll, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+
+    return () => {
+      if (frame !== null) {
+        if (typeof window.cancelAnimationFrame === "function") {
+          window.cancelAnimationFrame(frame);
+        } else {
+          window.clearTimeout(frame);
+        }
+      }
+      scroll.removeEventListener("scroll", scheduleMeasure);
+      resizeObserver?.disconnect();
+      mutationObserver?.disconnect();
+    };
+  }, [open, scrollElement]);
+  const handleScrollBodyRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      scrollRef.current = node;
+      setScrollElement(node);
+    },
+    [scrollRef],
+  );
+  const scrollMaskStyle = buildCreateAutomationScrollMaskStyle({
+    aboveOverflow: aboveOverflow || measuredScrollOverflow.aboveOverflow,
+    belowOverflow: belowOverflow || measuredScrollOverflow.belowOverflow,
+  });
 
   const markTouched = useCallback((field: FieldKey) => {
     setTouched((current) => {
@@ -1246,282 +1383,302 @@ export function CreateAutomationDialog({
           </DialogDescription>
         </DialogHeader>
         <form className="grid min-h-0 gap-4" onSubmit={handleSubmit}>
-          <div className="grid max-h-[min(72vh,42rem)] gap-5 overflow-x-hidden overflow-y-auto pr-1">
-            <div className="grid gap-2">
-              <label
-                className="text-xs font-medium text-muted-foreground"
-                htmlFor={nameId}
-              >
-                Name
-              </label>
-              <Input
-                id={nameId}
-                value={name}
-                onChange={(event) => {
-                  setName(event.target.value);
-                  setServerError(null);
-                }}
-                onBlur={() => markTouched("name")}
-                aria-invalid={showError("name")}
-                aria-describedby={nameErrorId}
-                placeholder="Daily standup digest"
-              />
-              <FieldError
-                id={nameErrorId}
-                message={showError("name") ? validation.name : null}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <label
-                className="text-xs font-medium text-muted-foreground"
-                htmlFor={instructionsId}
-              >
-                Instructions
-              </label>
-              <div className="rounded-md border border-input bg-transparent has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-ring">
-                <Textarea
-                  id={instructionsId}
-                  value={instructions}
+          <div
+            ref={handleScrollBodyRef}
+            data-create-automation-scroll-body=""
+            className="max-h-[min(72vh,42rem)] min-h-0 overflow-x-hidden overflow-y-auto pr-1"
+            style={scrollMaskStyle}
+          >
+            <div
+              ref={topSentinelRef}
+              aria-hidden
+              className="-mb-px h-px w-full opacity-0"
+            />
+            <div className="grid gap-5">
+              <div className="grid gap-2">
+                <label
+                  className="text-xs font-medium text-muted-foreground"
+                  htmlFor={nameId}
+                >
+                  Name
+                </label>
+                <Input
+                  id={nameId}
+                  value={name}
                   onChange={(event) => {
-                    setInstructions(event.target.value);
+                    setName(event.target.value);
                     setServerError(null);
                   }}
-                  onBlur={() => markTouched("instructions")}
-                  aria-invalid={showError("instructions")}
-                  aria-describedby={`${instructionsErrorId} ${permissionsErrorId}`}
-                  className="min-h-32 resize-y rounded-b-none border-0 focus-visible:ring-0"
-                  placeholder="Summarize the latest project updates and call out blockers."
+                  onBlur={() => markTouched("name")}
+                  aria-invalid={showError("name")}
+                  aria-describedby={nameErrorId}
+                  placeholder="Daily standup digest"
                 />
-                <div className="grid gap-1.5 border-t border-border bg-surface-recessed px-2 py-1.5">
-                  <div className="flex min-h-7 items-center justify-between gap-2">
-                    <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-                      <Icon
-                        name="Lock"
-                        className="size-3.5 shrink-0"
-                        aria-hidden
-                      />
-                      <span className="truncate">Ask permissions</span>
-                    </span>
-                    <div className="flex shrink-0 items-center">
-                      <PermissionModePicker
-                        value={permissionMode}
-                        options={permissionOptions}
-                        onChange={(nextMode) => {
-                          setPermissionMode(nextMode);
-                          setServerError(null);
-                        }}
-                        supported={permissionOptions.length > 1}
-                        className="h-7"
-                        modal={false}
-                      />
-                      {permissionOptions.length === 1 ? (
-                        <span className="rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground">
-                          {getPermissionLabel(permissionMode)}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className="flex min-h-7 items-center justify-between gap-2">
-                    <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
-                      <ProjectFolderPicker
-                        projects={projectOptions}
-                        value={projectId}
-                        onChange={handleProjectChange}
-                        disabled={sidebarNavigation.isLoading}
-                      />
-                      {parsedEnvironment?.type === "reuse" ? (
-                        <WorktreePicker
-                          options={reuseThreadOptions}
-                          value={selectedReuseEnvironmentId}
-                          onChange={(environmentId) => {
-                            setEnvironmentValue(
-                              encodeReuseValue(environmentId),
-                            );
-                            markTouched("environment");
+                <FieldError
+                  id={nameErrorId}
+                  message={showError("name") ? validation.name : null}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <label
+                  className="text-xs font-medium text-muted-foreground"
+                  htmlFor={instructionsId}
+                >
+                  Instructions
+                </label>
+                <div className="rounded-md border border-input bg-transparent has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-ring">
+                  <Textarea
+                    id={instructionsId}
+                    value={instructions}
+                    onChange={(event) => {
+                      setInstructions(event.target.value);
+                      setServerError(null);
+                    }}
+                    onBlur={() => markTouched("instructions")}
+                    aria-invalid={showError("instructions")}
+                    aria-describedby={`${instructionsErrorId} ${permissionsErrorId}`}
+                    className="min-h-32 resize-y rounded-b-none border-0 focus-visible:ring-0"
+                    placeholder="Summarize the latest project updates and call out blockers."
+                  />
+                  <div className="grid gap-1.5 border-t border-border bg-surface-recessed px-2 py-1.5">
+                    <div className="flex min-h-7 items-center justify-between gap-2">
+                      <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                        <Icon
+                          name="Lock"
+                          className="size-3.5 shrink-0"
+                          aria-hidden
+                        />
+                        <span className="truncate">Ask permissions</span>
+                      </span>
+                      <div className="flex shrink-0 items-center">
+                        <PermissionModePicker
+                          value={permissionMode}
+                          options={permissionOptions}
+                          onChange={(nextMode) => {
+                            setPermissionMode(nextMode);
                             setServerError(null);
                           }}
-                          muted
+                          supported={permissionOptions.length > 1}
+                          className="h-7"
                           modal={false}
                         />
-                      ) : null}
+                        {permissionOptions.length === 1 ? (
+                          <span className="rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground">
+                            {getPermissionLabel(permissionMode)}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
-                    <WorktreeModeMenu
-                      value={worktreeMode}
-                      onChange={handleWorktreeModeChange}
-                      disabled={!primaryHost}
-                      reuseDisabled={reuseThreadOptions.length === 0}
-                    />
+                    <div className="flex min-h-7 items-center justify-between gap-2">
+                      <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
+                        <ProjectFolderPicker
+                          projects={projectOptions}
+                          value={projectId}
+                          onChange={handleProjectChange}
+                          disabled={sidebarNavigation.isLoading}
+                        />
+                        {parsedEnvironment?.type === "reuse" ? (
+                          <WorktreePicker
+                            options={reuseThreadOptions}
+                            value={selectedReuseEnvironmentId}
+                            onChange={(environmentId) => {
+                              setEnvironmentValue(
+                                encodeReuseValue(environmentId),
+                              );
+                              markTouched("environment");
+                              setServerError(null);
+                            }}
+                            muted
+                            modal={false}
+                          />
+                        ) : null}
+                      </div>
+                      <WorktreeModeMenu
+                        value={worktreeMode}
+                        onChange={handleWorktreeModeChange}
+                        disabled={!primaryHost}
+                        reuseDisabled={reuseThreadOptions.length === 0}
+                      />
+                    </div>
                   </div>
                 </div>
+                <FieldError
+                  id={instructionsErrorId}
+                  message={
+                    showError("instructions") ? validation.instructions : null
+                  }
+                />
+                <FieldError
+                  id={permissionsErrorId}
+                  message={permissionsError}
+                />
               </div>
-              <FieldError
-                id={instructionsErrorId}
-                message={
-                  showError("instructions") ? validation.instructions : null
-                }
-              />
-              <FieldError id={permissionsErrorId} message={permissionsError} />
-            </div>
 
-            <section className="grid gap-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <section className="grid gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-medium">Schedule</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {cadenceLabel}
+                    </p>
+                  </div>
+                  <div
+                    className="flex flex-wrap items-center gap-1"
+                    role="group"
+                    aria-label="Schedule cadence"
+                  >
+                    {SCHEDULE_CADENCES.map((cadence) => (
+                      <TabPill
+                        key={cadence.id}
+                        label={cadence.label}
+                        title={cadence.title}
+                        isActive={scheduleCadence === cadence.id}
+                        onSelect={() => handleCadenceSelect(cadence.id)}
+                        closeAction={null}
+                        labelMaxWidthClass="max-w-none"
+                      />
+                    ))}
+                  </div>
+                </div>
+                {showScheduleControls ? (
+                  <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_14rem]">
+                    {showTimeControls ? (
+                      <div className="grid gap-2">
+                        <label
+                          className="text-xs font-medium text-muted-foreground"
+                          htmlFor={scheduleTimeId}
+                        >
+                          At HH:MM
+                        </label>
+                        <Input
+                          id={scheduleTimeId}
+                          type="time"
+                          value={scheduleTime}
+                          onChange={(event) => {
+                            setScheduleTime(event.target.value);
+                            setServerError(null);
+                          }}
+                          onBlur={() => markTouched("time")}
+                          aria-invalid={showError("time")}
+                          aria-describedby={scheduleTimeErrorId}
+                        />
+                        <FieldError
+                          id={scheduleTimeErrorId}
+                          message={showError("time") ? validation.time : null}
+                        />
+                      </div>
+                    ) : null}
+                    {scheduleCadence === "custom" ? (
+                      <div className="grid gap-2">
+                        <label
+                          className="text-xs font-medium text-muted-foreground"
+                          htmlFor={cronId}
+                        >
+                          Cron expression
+                        </label>
+                        <Input
+                          ref={cronInputRef}
+                          id={cronId}
+                          value={customCron}
+                          onChange={(event) => {
+                            setCustomCron(event.target.value);
+                            setServerError(null);
+                          }}
+                          onBlur={() => markTouched("cron")}
+                          aria-invalid={showError("cron")}
+                          aria-describedby={cronErrorId}
+                          spellCheck={false}
+                        />
+                        <FieldError
+                          id={cronErrorId}
+                          message={showError("cron") ? validation.cron : null}
+                        />
+                      </div>
+                    ) : null}
+                    {showTimeControls ? (
+                      <div className="grid gap-2">
+                        <label
+                          className="text-xs font-medium text-muted-foreground"
+                          htmlFor={timezoneId}
+                        >
+                          Timezone
+                        </label>
+                        <TimezonePicker
+                          id={timezoneId}
+                          value={timezone}
+                          options={timezoneOptions}
+                          invalid={showError("timezone")}
+                          describedBy={timezoneErrorId}
+                          onBlur={() => markTouched("timezone")}
+                          onChange={(nextTimezone) => {
+                            setTimezone(nextTimezone);
+                            markTouched("timezone");
+                            setServerError(null);
+                          }}
+                        />
+                        <FieldError
+                          id={timezoneErrorId}
+                          message={
+                            showError("timezone") ? validation.timezone : null
+                          }
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </section>
+
+              <section className="grid gap-3">
                 <div>
-                  <h3 className="text-sm font-medium">Schedule</h3>
+                  <h3 className="text-sm font-medium">Model</h3>
                   <p className="text-xs text-muted-foreground">
-                    {cadenceLabel}
+                    Provider and model for the agent run.
                   </p>
                 </div>
                 <div
-                  className="flex flex-wrap items-center gap-1"
-                  role="group"
-                  aria-label="Schedule cadence"
+                  aria-describedby={modelErrorId}
+                  className="flex min-h-8 flex-wrap items-center gap-2"
                 >
-                  {SCHEDULE_CADENCES.map((cadence) => (
-                    <TabPill
-                      key={cadence.id}
-                      label={cadence.label}
-                      title={cadence.title}
-                      isActive={scheduleCadence === cadence.id}
-                      onSelect={() => handleCadenceSelect(cadence.id)}
-                      closeAction={null}
-                      labelMaxWidthClass="max-w-none"
+                  {providerOptions.length > 0 ||
+                  executionOptionsQuery.isLoading ? (
+                    <ModelReasoningPicker
+                      providerOptions={providerOptions}
+                      selectedProviderId={providerId}
+                      onSelectedProviderChange={handleProviderChange}
+                      hasMultipleProviders={providerOptions.length > 1}
+                      modelValue={model}
+                      modelOptions={modelOptions}
+                      moreModelOptions={moreModelOptions}
+                      modelIsLoading={executionOptionsQuery.isLoading}
+                      modelLoadFailed={executionOptionsQuery.isError}
+                      modelLoadError={executionOptions?.modelLoadError ?? null}
+                      onModelChange={handleModelChange}
+                      formatModelLabel={formatModelLabel}
+                      reasoningValue={MODEL_ONLY_REASONING_VALUE}
+                      reasoningOptions={EMPTY_REASONING_OPTIONS}
+                      onReasoningChange={() => undefined}
+                      fastModeEnabled={false}
+                      onFastModeChange={() => undefined}
+                      showFastModeToggle={false}
+                      muted={false}
+                      modal={false}
+                      ariaLabel="Provider and model"
                     />
-                  ))}
+                  ) : (
+                    <span className="rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground">
+                      No providers available
+                    </span>
+                  )}
                 </div>
-              </div>
-              {showScheduleControls ? (
-                <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_14rem]">
-                  {showTimeControls ? (
-                    <div className="grid gap-2">
-                      <label
-                        className="text-xs font-medium text-muted-foreground"
-                        htmlFor={scheduleTimeId}
-                      >
-                        At HH:MM
-                      </label>
-                      <Input
-                        id={scheduleTimeId}
-                        type="time"
-                        value={scheduleTime}
-                        onChange={(event) => {
-                          setScheduleTime(event.target.value);
-                          setServerError(null);
-                        }}
-                        onBlur={() => markTouched("time")}
-                        aria-invalid={showError("time")}
-                        aria-describedby={scheduleTimeErrorId}
-                      />
-                      <FieldError
-                        id={scheduleTimeErrorId}
-                        message={showError("time") ? validation.time : null}
-                      />
-                    </div>
-                  ) : null}
-                  {scheduleCadence === "custom" ? (
-                    <div className="grid gap-2">
-                      <label
-                        className="text-xs font-medium text-muted-foreground"
-                        htmlFor={cronId}
-                      >
-                        Cron expression
-                      </label>
-                      <Input
-                        ref={cronInputRef}
-                        id={cronId}
-                        value={customCron}
-                        onChange={(event) => {
-                          setCustomCron(event.target.value);
-                          setServerError(null);
-                        }}
-                        onBlur={() => markTouched("cron")}
-                        aria-invalid={showError("cron")}
-                        aria-describedby={cronErrorId}
-                        spellCheck={false}
-                      />
-                      <FieldError
-                        id={cronErrorId}
-                        message={showError("cron") ? validation.cron : null}
-                      />
-                    </div>
-                  ) : null}
-                  {showTimeControls ? (
-                    <div className="grid gap-2">
-                      <label
-                        className="text-xs font-medium text-muted-foreground"
-                        htmlFor={timezoneId}
-                      >
-                        Timezone
-                      </label>
-                      <TimezonePicker
-                        id={timezoneId}
-                        value={timezone}
-                        options={timezoneOptions}
-                        invalid={showError("timezone")}
-                        describedBy={timezoneErrorId}
-                        onBlur={() => markTouched("timezone")}
-                        onChange={(nextTimezone) => {
-                          setTimezone(nextTimezone);
-                          markTouched("timezone");
-                          setServerError(null);
-                        }}
-                      />
-                      <FieldError
-                        id={timezoneErrorId}
-                        message={
-                          showError("timezone") ? validation.timezone : null
-                        }
-                      />
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-            </section>
-
-            <section className="grid gap-3">
-              <div>
-                <h3 className="text-sm font-medium">Model</h3>
-                <p className="text-xs text-muted-foreground">
-                  Provider and model for the agent run.
-                </p>
-              </div>
-              <div
-                aria-describedby={modelErrorId}
-                className="flex min-h-8 flex-wrap items-center gap-2"
-              >
-                {providerOptions.length > 0 ||
-                executionOptionsQuery.isLoading ? (
-                  <ModelReasoningPicker
-                    providerOptions={providerOptions}
-                    selectedProviderId={providerId}
-                    onSelectedProviderChange={handleProviderChange}
-                    hasMultipleProviders={providerOptions.length > 1}
-                    modelValue={model}
-                    modelOptions={modelOptions}
-                    moreModelOptions={moreModelOptions}
-                    modelIsLoading={executionOptionsQuery.isLoading}
-                    modelLoadFailed={executionOptionsQuery.isError}
-                    modelLoadError={executionOptions?.modelLoadError ?? null}
-                    onModelChange={handleModelChange}
-                    formatModelLabel={formatModelLabel}
-                    reasoningValue={MODEL_ONLY_REASONING_VALUE}
-                    reasoningOptions={EMPTY_REASONING_OPTIONS}
-                    onReasoningChange={() => undefined}
-                    fastModeEnabled={false}
-                    onFastModeChange={() => undefined}
-                    showFastModeToggle={false}
-                    muted={false}
-                    modal={false}
-                    ariaLabel="Provider and model"
-                  />
-                ) : (
-                  <span className="rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground">
-                    No providers available
-                  </span>
-                )}
-              </div>
-              <FieldError id={modelErrorId} message={modelSelectionError} />
-            </section>
+                <FieldError id={modelErrorId} message={modelSelectionError} />
+              </section>
+            </div>
+            <div
+              ref={bottomSentinelRef}
+              aria-hidden
+              className="-mt-px h-px w-full opacity-0"
+            />
           </div>
 
           <p
@@ -1531,16 +1688,21 @@ export function CreateAutomationDialog({
             {serverError ?? ""}
           </p>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:space-x-0">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={createAutomation.isPending}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={!canSubmit}>
+            <Button
+              type="submit"
+              disabled={!canSubmit}
+              className="w-full sm:w-auto"
+            >
               {createAutomation.isPending ? "Creating..." : "Create automation"}
             </Button>
           </DialogFooter>
