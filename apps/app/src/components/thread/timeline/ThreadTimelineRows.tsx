@@ -16,7 +16,10 @@ import {
   type QueryCacheNotifyEvent,
   type QueryClient,
 } from "@tanstack/react-query";
-import { isBackgroundCommandTaskType } from "@bb/domain";
+import {
+  isBackgroundAgentTaskType,
+  isBackgroundCommandTaskType,
+} from "@bb/domain";
 import type {
   ThreadChildOrigin,
   ThreadRuntimeDisplayStatus,
@@ -966,12 +969,12 @@ function TimelineUnreadDivider({ autoScroll }: TimelineUnreadDividerProps) {
       role="separator"
       aria-label="New messages"
       className={cn(
-        "flex items-center gap-2 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-destructive-text",
+        "flex items-center gap-2 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-timeline-accent",
       )}
       data-testid="thread-unread-divider"
     >
       <span className="shrink-0">New</span>
-      <span className="h-px min-w-0 flex-1 bg-destructive" aria-hidden />
+      <span className="h-px min-w-0 flex-1 bg-timeline-accent" aria-hidden />
     </div>
   );
 }
@@ -1364,10 +1367,14 @@ function leadingIconForWorkRow(
     case "delegation":
       return "UserRoundPlus";
     case "workflow":
-      // Backgrounded shell commands reuse the workflow row but read as commands.
-      return isBackgroundCommandTaskType(row.taskType)
-        ? "Terminal"
-        : "ListTodo";
+      // Background tasks reuse the workflow row shape but read by task type.
+      if (isBackgroundCommandTaskType(row.taskType)) {
+        return "Terminal";
+      }
+      if (isBackgroundAgentTaskType(row.taskType)) {
+        return "UserRoundPlus";
+      }
+      return "ListTodo";
     case "approval":
       return "Lock";
     case "question":

@@ -173,6 +173,9 @@ export type DisabledThreadListQueryKey = readonly [
 ];
 export type ThreadQueryKeyPrefix = readonly [typeof THREAD_QUERY_KEY];
 export type ThreadQueryKey = readonly [typeof THREAD_QUERY_KEY, string];
+export type ThreadDetailBootstrapQueryKeyPrefix = readonly [
+  typeof THREAD_DETAIL_BOOTSTRAP_QUERY_KEY,
+];
 export type ThreadDetailBootstrapQueryKey = readonly [
   typeof THREAD_DETAIL_BOOTSTRAP_QUERY_KEY,
   string,
@@ -272,6 +275,13 @@ export type ThreadHostFilePreviewQueryKey = readonly [
   string,
   string | null | undefined,
   string | null,
+];
+export type AllThreadHostFilePreviewQueryKeyPrefix = readonly [
+  typeof THREAD_HOST_FILE_PREVIEW_QUERY_KEY,
+];
+export type ThreadHostFilePreviewQueryKeyPrefix = readonly [
+  typeof THREAD_HOST_FILE_PREVIEW_QUERY_KEY,
+  string,
 ];
 export type EnvironmentQueryKeyPrefix = readonly [typeof ENVIRONMENT_QUERY_KEY];
 export type EnvironmentQueryKey = readonly [
@@ -635,6 +645,10 @@ export function threadDetailBootstrapQueryKey(
   return [THREAD_DETAIL_BOOTSTRAP_QUERY_KEY, threadId];
 }
 
+export function allThreadDetailBootstrapQueryKeyPrefix(): ThreadDetailBootstrapQueryKeyPrefix {
+  return [THREAD_DETAIL_BOOTSTRAP_QUERY_KEY];
+}
+
 export function allThreadQueryKeyPrefix(): ThreadQueryKeyPrefix {
   return [THREAD_QUERY_KEY];
 }
@@ -782,6 +796,16 @@ export function threadHostFilePreviewQueryKey(
   path: string | null,
 ): ThreadHostFilePreviewQueryKey {
   return [THREAD_HOST_FILE_PREVIEW_QUERY_KEY, threadId, environmentId, path];
+}
+
+export function allThreadHostFilePreviewQueryKeyPrefix(): AllThreadHostFilePreviewQueryKeyPrefix {
+  return [THREAD_HOST_FILE_PREVIEW_QUERY_KEY];
+}
+
+export function threadHostFilePreviewQueryKeyPrefix(
+  threadId: string,
+): ThreadHostFilePreviewQueryKeyPrefix {
+  return [THREAD_HOST_FILE_PREVIEW_QUERY_KEY, threadId];
 }
 
 export function allEnvironmentQueryKeyPrefix(): EnvironmentQueryKeyPrefix {

@@ -1,16 +1,26 @@
 import { describe, expect, it, vi } from "vitest";
 import { QueryObserver } from "@tanstack/react-query";
+import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { createAppQueryClient } from "@/lib/query-client";
 import {
+  automationDetailQueryKey,
+  automationRunsQueryKey,
+  automationsQueryKey,
   environmentDiffFilesQueryKey,
   environmentDiffPatchQueryKey,
   sidebarNavigationQueryKey,
   systemExecutionOptionsQueryKey,
+  terminalsQueryKey,
+  threadConversationOutlineQueryKey,
   threadDefaultExecutionOptionsQueryKey,
+  threadDetailBootstrapQueryKey,
+  threadHostFilePreviewQueryKey,
   threadPendingInteractionsQueryKey,
   threadPromptHistoryQueryKey,
+  threadQueryKey,
   threadQueuedMessagesQueryKey,
   threadSearchQueryKey,
+  threadTimelineQueryKey,
 } from "./queries/query-keys";
 import { invalidateRealtimeQueriesAfterServerReconnect } from "./cache-owners/system-cache-effects";
 
@@ -46,9 +56,47 @@ const EMPTY_EXECUTION_OPTIONS = {
   modelLoadError: null,
 };
 
+interface ObservedQuery {
+  queryFn: ReturnType<typeof vi.fn<() => Promise<string>>>;
+  unsubscribe: () => void;
+}
+
+function observeIdleQuery(
+  queryClient: QueryClient,
+  queryKey: QueryKey,
+): ObservedQuery {
+  const queryFn = vi.fn<() => Promise<string>>().mockResolvedValue("loaded");
+  const observer = new QueryObserver(queryClient, {
+    queryKey,
+    queryFn,
+    refetchOnWindowFocus: false,
+    staleTime: Infinity,
+  });
+  return {
+    queryFn,
+    unsubscribe: observer.subscribe(() => {}),
+  };
+}
+
+async function waitForQueryCalls(
+  queries: readonly ObservedQuery[],
+  expectedCallCount: number,
+): Promise<void> {
+  await vi.waitFor(() => {
+    for (const query of queries) {
+      expect(query.queryFn).toHaveBeenCalledTimes(expectedCallCount);
+    }
+  });
+}
+
 describe("system cache effects", () => {
-  it("invalidates canonical composer caches after reconnect", () => {
+  it("invalidates canonical active thread caches after reconnect", () => {
     const queryClient = createCacheEffectQueryClient();
+    const threadKey = threadQueryKey("thread-1");
+    const threadBootstrapKey = threadDetailBootstrapQueryKey("thread-1");
+    const timelineKey = threadTimelineQueryKey("thread-1");
+    const conversationOutlineKey =
+      threadConversationOutlineQueryKey("thread-1");
     const queuedMessagesKey = threadQueuedMessagesQueryKey("thread-1");
     const promptHistoryKey = threadPromptHistoryQueryKey("thread-1");
     const pendingInteractionsKey =
@@ -59,10 +107,32 @@ describe("system cache effects", () => {
     });
     const defaultExecutionOptionsKey =
       threadDefaultExecutionOptionsQueryKey("thread-1");
+    const threadHostFilePreviewKey = threadHostFilePreviewQueryKey(
+      "thread-1",
+      "env-1",
+      "/tmp/log.txt",
+    );
     const executionOptionsKey = scopedSystemExecutionOptionsKey({
       environmentId: "env-1",
     });
+    const terminalsKey = terminalsQueryKey({
+      kind: "thread",
+      threadId: "thread-1",
+    });
+    const automationsKey = automationsQueryKey();
+    const automationDetailKey = automationDetailQueryKey(
+      "project-1",
+      "automation-1",
+    );
+    const automationRunsKey = automationRunsQueryKey(
+      "project-1",
+      "automation-1",
+    );
     const sidebarNavigationKey = sidebarNavigationQueryKey();
+    queryClient.setQueryData(threadKey, { id: "thread-1" });
+    queryClient.setQueryData(threadBootstrapKey, { id: "thread-1" });
+    queryClient.setQueryData(timelineKey, { rows: [] });
+    queryClient.setQueryData(conversationOutlineKey, { items: [] });
     queryClient.setQueryData(queuedMessagesKey, []);
     queryClient.setQueryData(promptHistoryKey, []);
     queryClient.setQueryData(pendingInteractionsKey, []);
@@ -74,7 +144,18 @@ describe("system cache effects", () => {
       defaultExecutionOptionsKey,
       EMPTY_EXECUTION_OPTIONS,
     );
+    queryClient.setQueryData(threadHostFilePreviewKey, {
+      kind: "text",
+      path: "/tmp/log.txt",
+      url: "/api/v1/threads/thread-1/host-files/content?path=%2Ftmp%2Flog.txt",
+      mimeType: "text/plain",
+      content: "old",
+    });
     queryClient.setQueryData(executionOptionsKey, EMPTY_EXECUTION_OPTIONS);
+    queryClient.setQueryData(terminalsKey, { sessions: [] });
+    queryClient.setQueryData(automationsKey, { automations: [] });
+    queryClient.setQueryData(automationDetailKey, { id: "automation-1" });
+    queryClient.setQueryData(automationRunsKey, { runs: [] });
     queryClient.setQueryData(sidebarNavigationKey, {
       projects: [],
       personalProject: { threads: [] },
@@ -82,6 +163,14 @@ describe("system cache effects", () => {
 
     invalidateRealtimeQueriesAfterServerReconnect({ queryClient });
 
+    expect(queryClient.getQueryState(threadKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(threadBootstrapKey)?.isInvalidated).toBe(
+      true,
+    );
+    expect(queryClient.getQueryState(timelineKey)?.isInvalidated).toBe(true);
+    expect(
+      queryClient.getQueryState(conversationOutlineKey)?.isInvalidated,
+    ).toBe(true);
     expect(queryClient.getQueryState(queuedMessagesKey)?.isInvalidated).toBe(
       true,
     );
@@ -97,12 +186,61 @@ describe("system cache effects", () => {
     expect(
       queryClient.getQueryState(defaultExecutionOptionsKey)?.isInvalidated,
     ).toBe(true);
+    expect(
+      queryClient.getQueryState(threadHostFilePreviewKey)?.isInvalidated,
+    ).toBe(true);
     expect(queryClient.getQueryState(executionOptionsKey)?.isInvalidated).toBe(
+      true,
+    );
+    expect(queryClient.getQueryState(terminalsKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(automationsKey)?.isInvalidated).toBe(
+      true,
+    );
+    expect(queryClient.getQueryState(automationDetailKey)?.isInvalidated).toBe(
+      true,
+    );
+    expect(queryClient.getQueryState(automationRunsKey)?.isInvalidated).toBe(
       true,
     );
     expect(queryClient.getQueryState(sidebarNavigationKey)?.isInvalidated).toBe(
       true,
     );
+  });
+
+  it("refetches active thread bundle queries together after reconnect", async () => {
+    const queryClient = createCacheEffectQueryClient();
+    queryClient.mount();
+    const activeThreadQueries = [
+      observeIdleQuery(queryClient, threadQueryKey("thread-1")),
+      observeIdleQuery(queryClient, threadDetailBootstrapQueryKey("thread-1")),
+      observeIdleQuery(
+        queryClient,
+        threadDefaultExecutionOptionsQueryKey("thread-1"),
+      ),
+      observeIdleQuery(queryClient, threadQueuedMessagesQueryKey("thread-1")),
+      observeIdleQuery(queryClient, threadPromptHistoryQueryKey("thread-1")),
+      observeIdleQuery(
+        queryClient,
+        threadPendingInteractionsQueryKey("thread-1"),
+      ),
+      observeIdleQuery(queryClient, threadTimelineQueryKey("thread-1")),
+      observeIdleQuery(
+        queryClient,
+        threadConversationOutlineQueryKey("thread-1"),
+      ),
+    ];
+
+    await waitForQueryCalls(activeThreadQueries, 1);
+
+    invalidateRealtimeQueriesAfterServerReconnect({ queryClient });
+
+    await waitForQueryCalls(activeThreadQueries, 2);
+
+    for (const query of activeThreadQueries) {
+      query.unsubscribe();
+    }
+    queryClient.unmount();
+    queryClient.clear();
   });
 
   it("refetches an active diff TOC query but evicts the observer-less patch cache after reconnect", async () => {
