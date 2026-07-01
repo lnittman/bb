@@ -2,6 +2,7 @@ import {
   type CSSProperties,
   Fragment,
   useCallback,
+  useId,
   useMemo,
   useState,
 } from "react";
@@ -69,9 +70,12 @@ interface AutomationOverviewEntry {
   project: { id: string; name: string };
 }
 
-interface AutomationStatusGroup {
-  status: "active" | "paused";
+type AutomationStatus = "active" | "paused";
+
+interface AutomationStatusBucket {
+  status: AutomationStatus;
   label: string;
+  emptyMessage: string;
   entries: AutomationOverviewEntry[];
 }
 
@@ -99,14 +103,25 @@ export interface AutomationsOverviewProps {
   onCreateAutomation: CreateAutomationHandler;
 }
 
-/**
- * Group automations into an insertion-ordered set of status groups: enabled
- * automations under "Active", disabled ones under "Paused". Empty groups are
- * omitted so the view only renders sections that have rows.
- */
-function groupAutomationsByStatus(
+const AUTOMATION_STATUS_OPTIONS: readonly Omit<
+  AutomationStatusBucket,
+  "entries"
+>[] = [
+  {
+    status: "active",
+    label: "Active",
+    emptyMessage: "No active automations.",
+  },
+  {
+    status: "paused",
+    label: "Paused",
+    emptyMessage: "No paused automations.",
+  },
+];
+
+function getAutomationStatusBuckets(
   entries: readonly AutomationOverviewEntry[],
-): AutomationStatusGroup[] {
+): Record<AutomationStatus, AutomationOverviewEntry[]> {
   const active: AutomationOverviewEntry[] = [];
   const paused: AutomationOverviewEntry[] = [];
   for (const entry of entries) {
@@ -116,14 +131,20 @@ function groupAutomationsByStatus(
       paused.push(entry);
     }
   }
-  const groups: AutomationStatusGroup[] = [];
-  if (active.length > 0) {
-    groups.push({ status: "active", label: "Active", entries: active });
+  return { active, paused };
+}
+
+function getDefaultAutomationStatus(
+  buckets: Record<AutomationStatus, AutomationOverviewEntry[]>,
+): AutomationStatus {
+  if (buckets.active.length > 0 || buckets.paused.length === 0) {
+    return "active";
   }
-  if (paused.length > 0) {
-    groups.push({ status: "paused", label: "Paused", entries: paused });
-  }
-  return groups;
+  return "paused";
+}
+
+function getStatusTabLabel(label: string, count: number): string {
+  return `${label} ${count}`;
 }
 
 export interface AutomationRowMenuItem {
@@ -316,6 +337,64 @@ function AutomationRow({ entry, actions }: AutomationRowProps) {
           </DropdownMenu>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface AutomationStatusTabsProps {
+  buckets: Record<AutomationStatus, readonly AutomationOverviewEntry[]>;
+  panelId: string;
+  selectedStatus: AutomationStatus;
+  tabIdFor: (status: AutomationStatus) => string;
+  onSelect: (status: AutomationStatus) => void;
+}
+
+function AutomationStatusTabs({
+  buckets,
+  panelId,
+  selectedStatus,
+  tabIdFor,
+  onSelect,
+}: AutomationStatusTabsProps) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Automation status"
+      className="flex min-w-0 items-center gap-1 px-3"
+    >
+      {AUTOMATION_STATUS_OPTIONS.map((option) => {
+        const count = buckets[option.status].length;
+        const isSelected = selectedStatus === option.status;
+        return (
+          <button
+            key={option.status}
+            id={tabIdFor(option.status)}
+            type="button"
+            role="tab"
+            aria-label={getStatusTabLabel(option.label, count)}
+            aria-selected={isSelected}
+            aria-controls={panelId}
+            onClick={() => onSelect(option.status)}
+            className={cn(
+              "inline-flex h-7 shrink-0 items-center rounded-md px-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              LIST_HOVER_TRANSITION,
+              isSelected
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:bg-state-hover hover:text-foreground",
+            )}
+          >
+            <span>{option.label}</span>
+            <span
+              className={cn(
+                "ml-1 shrink-0 font-normal tabular-nums",
+                isSelected ? "text-muted-foreground" : "text-subtle-foreground",
+              )}
+            >
+              {count}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -559,7 +638,22 @@ export function AutomationsOverview({
   actions,
   onCreateAutomation,
 }: AutomationsOverviewProps) {
-  const groups = groupAutomationsByStatus(entries);
+  const buckets = useMemo(() => getAutomationStatusBuckets(entries), [entries]);
+  const defaultStatus = getDefaultAutomationStatus(buckets);
+  const [selectedStatusOverride, setSelectedStatusOverride] =
+    useState<AutomationStatus | null>(null);
+  const selectedStatus = selectedStatusOverride ?? defaultStatus;
+  const selectedEntries = buckets[selectedStatus];
+  const selectedStatusOption =
+    AUTOMATION_STATUS_OPTIONS.find(
+      (option) => option.status === selectedStatus,
+    ) ?? AUTOMATION_STATUS_OPTIONS[0];
+  const tabsId = useId();
+  const panelId = `${tabsId}-automation-status-panel`;
+  const tabIdFor = useCallback(
+    (status: AutomationStatus) => `${tabsId}-automation-status-${status}`,
+    [tabsId],
+  );
   const isEmpty = !isLoading && !hasInitialLoadError && entries.length === 0;
 
   return (
@@ -582,23 +676,34 @@ export function AutomationsOverview({
             </p>
           </EmptyStatePanel>
         ) : (
-          <div className="space-y-5">
-            {groups.map((group) => (
-              <section key={group.status}>
-                <p className="px-3 text-xs font-medium text-muted-foreground">
-                  {group.label}
-                </p>
-                <div className="mt-1.5 space-y-1">
-                  {group.entries.map((entry) => (
-                    <AutomationRow
-                      key={entry.automation.id}
-                      entry={entry}
-                      actions={actions}
-                    />
-                  ))}
+          <div className="space-y-2">
+            <AutomationStatusTabs
+              buckets={buckets}
+              panelId={panelId}
+              selectedStatus={selectedStatus}
+              tabIdFor={tabIdFor}
+              onSelect={setSelectedStatusOverride}
+            />
+            <section
+              id={panelId}
+              role="tabpanel"
+              aria-labelledby={tabIdFor(selectedStatus)}
+              className="space-y-1"
+            >
+              {selectedEntries.length > 0 ? (
+                selectedEntries.map((entry) => (
+                  <AutomationRow
+                    key={entry.automation.id}
+                    entry={entry}
+                    actions={actions}
+                  />
+                ))
+              ) : (
+                <div className="rounded-md px-3 py-4 text-sm text-muted-foreground">
+                  {selectedStatusOption.emptyMessage}
                 </div>
-              </section>
-            ))}
+              )}
+            </section>
           </div>
         )}
       </div>

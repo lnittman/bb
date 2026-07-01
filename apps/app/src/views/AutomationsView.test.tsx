@@ -97,7 +97,7 @@ describe("AutomationsOverview", () => {
     expect(markup).toContain("View all");
   });
 
-  it("groups automations by status into Active and Paused sections", () => {
+  it("renders status tabs with inline counts and shows active rows by default", () => {
     const markup = renderOverview({
       entries: [
         makeEntry(makeAutomation({ id: "auto_active", name: "Active one" })),
@@ -112,12 +112,34 @@ describe("AutomationsOverview", () => {
       ],
     });
 
-    expect(markup).toContain(">Active<");
-    expect(markup).toContain(">Paused<");
+    expect(markup).toContain('role="tablist"');
+    expect(markup).toContain('role="tabpanel"');
+    expect(markup).toContain('aria-label="Active 1"');
+    expect(markup).toContain('aria-label="Paused 1"');
     expect(markup).toContain("Active one");
-    expect(markup).toContain("Paused one");
+    expect(markup).not.toContain("Paused one");
     // Enabled automations render the next-run label; paused ones read "Paused".
     expect(markup).toContain("Next ");
+  });
+
+  it("defaults to the paused tab when there are no active automations", () => {
+    const markup = renderOverview({
+      entries: [
+        makeEntry(
+          makeAutomation({
+            id: "auto_paused_only",
+            name: "Paused only",
+            enabled: false,
+            nextRunAt: null,
+          }),
+        ),
+      ],
+    });
+
+    expect(markup).toContain('aria-label="Active 0"');
+    expect(markup).toContain('aria-label="Paused 1" aria-selected="true"');
+    expect(markup).toContain("Paused only");
+    expect(markup).not.toContain("No active automations.");
   });
 
   it("renders the API badge only for agent-origin automations", () => {
