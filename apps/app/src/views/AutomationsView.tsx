@@ -61,6 +61,7 @@ import {
   type AutomationStarterLoop,
   type AutomationStarterLoopCategory,
 } from "./automations/automation-templates";
+import { LoopTransportGlyph } from "./automations/LoopTransportGlyph";
 
 interface AutomationOverviewEntry {
   automation: Automation;
@@ -257,12 +258,9 @@ function AutomationRow({ entry, actions }: AutomationRowProps) {
       <div className="pointer-events-none relative z-10 grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3 py-2 sm:grid-cols-[minmax(0,1.2fr)_minmax(9rem,0.8fr)_minmax(5.5rem,auto)_1.75rem]">
         <div className="min-w-0 space-y-1">
           <div className="flex min-w-0 items-center gap-2">
-            <span
-              aria-hidden="true"
-              className={cn(
-                "size-1.5 shrink-0 rounded-full",
-                automation.enabled ? "bg-success" : "bg-muted-foreground/50",
-              )}
+            <LoopTransportGlyph
+              enabled={automation.enabled}
+              projectId={automation.projectId}
             />
             <span className="min-w-0 truncate font-medium text-foreground">
               {automation.name}

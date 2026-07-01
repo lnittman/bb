@@ -26,6 +26,7 @@ import {
 } from "@/lib/format-schedule";
 import { getAutomationsRoutePath, getThreadRoutePath } from "@/lib/route-paths";
 import { cn } from "@/lib/utils";
+import { RunLane } from "./automations/RunLane";
 
 const RUN_TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
   month: "short",
@@ -416,14 +417,21 @@ export function AutomationDetailContent({
           ) : runs.length === 0 ? (
             <EmptyStatePanel className="py-6">No runs yet.</EmptyStatePanel>
           ) : (
-            <div className="overflow-hidden rounded-md border border-border">
-              {runs.map((run) => (
-                <RunRow
-                  key={run.id}
-                  run={run}
-                  projectId={automation.projectId}
-                />
-              ))}
+            <div className="space-y-3">
+              <RunLane
+                runs={runs}
+                nextRunAt={automation.nextRunAt}
+                projectId={automation.projectId}
+              />
+              <div className="overflow-hidden rounded-md border border-border">
+                {runs.map((run) => (
+                  <RunRow
+                    key={run.id}
+                    run={run}
+                    projectId={automation.projectId}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </section>

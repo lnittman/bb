@@ -134,6 +134,7 @@ describe("AutomationDetailContent", () => {
     const markup = renderContent({
       runs: [makeRun()],
     });
+    expect(markup).toContain('data-run-lane=""');
     expect(markup).toContain("Succeeded");
     expect(markup).toContain("Disk at 92%");
     expect(markup).toContain("exit 0");
