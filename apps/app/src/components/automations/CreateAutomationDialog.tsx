@@ -1622,13 +1622,13 @@ export function CreateAutomationDialog({
             </p>
           ) : null}
 
-          <DialogFooter className="gap-2 sm:space-x-0">
+          <DialogFooter>
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={createAutomation.isPending}
-              className="w-full sm:w-auto"
+              className="w-full md:w-auto"
             >
               Cancel
             </Button>
@@ -1636,7 +1636,7 @@ export function CreateAutomationDialog({
               type="submit"
               disabled={!canSubmit}
               aria-describedby={submitHint ? submitHintId : undefined}
-              className="w-full sm:w-auto"
+              className="w-full md:w-auto"
             >
               {createAutomation.isPending ? "Creating..." : "Create automation"}
             </Button>

@@ -404,8 +404,19 @@ describe("CreateAutomationDialog", () => {
       modelButton.closest("[data-create-automation-run-context-footer]"),
     ).not.toBeNull();
     const cancelButton = screen.getByRole("button", { name: "Cancel" });
+    const submitButton = screen.getByRole("button", {
+      name: "Create automation",
+    });
+    const footer = cancelButton.parentElement;
+    expect(footer?.className).toContain("max-md:[&>button]:w-full");
+    expect(footer?.className).toContain("md:flex-row");
     expect(cancelButton.className).toContain("border-input");
     expect(cancelButton.className).toContain("w-full");
+    expect(cancelButton.className).toContain("md:w-auto");
+    expect(cancelButton.className).not.toContain("sm:w-auto");
+    expect(submitButton.className).toContain("w-full");
+    expect(submitButton.className).toContain("md:w-auto");
+    expect(submitButton.className).not.toContain("sm:w-auto");
   });
 
   it("keeps the schedule cadence row full-width on mobile and right-aligned on desktop", () => {
