@@ -130,17 +130,17 @@ describe("AutomationDetailContent", () => {
     expect(markup).toContain('data-icon="Trash2"');
   });
 
-  it("renders a succeeded script run with its captured output and exit code", () => {
+  it("renders a succeeded script run as a compact row with its exit code", () => {
     const markup = renderContent({
       runs: [makeRun()],
     });
     expect(markup).toContain('data-run-lane=""');
     expect(markup).toContain("Succeeded");
-    expect(markup).toContain("Disk at 92%");
+    expect(markup).not.toContain("Disk at 92%");
     expect(markup).toContain("exit 0");
   });
 
-  it("renders a failed run with its error output", () => {
+  it("renders a failed run as a compact row with its exit code", () => {
     const markup = renderContent({
       runs: [
         makeRun({
@@ -153,7 +153,7 @@ describe("AutomationDetailContent", () => {
       ],
     });
     expect(markup).toContain("Failed");
-    expect(markup).toContain("df: /xyz: No such file or directory");
+    expect(markup).not.toContain("df: /xyz: No such file or directory");
     expect(markup).toContain("exit 1");
     expect(markup).toContain("text-destructive");
   });
@@ -163,7 +163,7 @@ describe("AutomationDetailContent", () => {
       runs: [makeRun({ id: "run_silent", output: null })],
     });
     expect(markup).toContain("Succeeded · silent");
-    expect(markup).toContain("silent gate");
+    expect(markup).not.toContain("silent gate");
   });
 
   it("links agent runs to their thread", () => {

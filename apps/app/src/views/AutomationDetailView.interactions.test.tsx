@@ -168,6 +168,8 @@ describe("AutomationDetailContent run inspector", () => {
     expect(screen.getByRole("heading", { name: "Run details" })).not.toBeNull();
     expect(screen.getByText("Scheduled")).not.toBeNull();
     expect(screen.getByText("Exit")).not.toBeNull();
+    expect(screen.getByText("Output")).not.toBeNull();
+    expect(screen.getByText("Disk at 92%")).not.toBeNull();
     expect(panelGroupState.setLayout).toHaveBeenLastCalledWith([58, 42]);
 
     fireEvent.click(screen.getByRole("button", { name: "Close run details" }));
@@ -194,6 +196,6 @@ describe("AutomationDetailContent run inspector", () => {
 
     expect(screen.getByRole("heading", { name: "Run details" })).not.toBeNull();
     expect(screen.getByText("Error")).not.toBeNull();
-    expect(screen.getAllByText("disk full").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("disk full")).toHaveLength(1);
   });
 });

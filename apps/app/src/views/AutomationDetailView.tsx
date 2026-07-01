@@ -185,14 +185,10 @@ interface RunRowProps {
 function RunRow({ run, projectId, isSelected, onInspect }: RunRowProps) {
   const status = getRunStatusLabel(run);
   const duration = formatRunDuration(run);
-  const silent = isSilentRun(run);
   const threadPath =
     run.runMode === "agent" && run.threadId
       ? getThreadRoutePath({ projectId, threadId: run.threadId })
       : null;
-  const showOutput =
-    run.runMode === "script" &&
-    (run.output !== null || run.error !== null || silent);
 
   return (
     <div
@@ -267,20 +263,6 @@ function RunRow({ run, projectId, isSelected, onInspect }: RunRowProps) {
         <p className="border-t border-border-seam px-3 py-2 text-xs text-muted-foreground">
           {run.skipReason}
         </p>
-      ) : null}
-      {showOutput ? (
-        <pre
-          className={cn(
-            "whitespace-pre-wrap border-t border-border-seam bg-surface-recessed px-3 py-2 font-mono text-xs leading-relaxed",
-            run.error ? "text-destructive" : "text-foreground",
-            silent && "italic text-subtle-foreground",
-          )}
-        >
-          {run.error ??
-            (silent
-              ? "no output - silent gate, nothing surfaced"
-              : (run.output ?? ""))}
-        </pre>
       ) : null}
     </div>
   );
