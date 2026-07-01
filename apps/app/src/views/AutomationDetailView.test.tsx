@@ -141,6 +141,10 @@ describe("AutomationDetailContent", () => {
     expect(markup).toContain('data-icon="Zap"');
     expect(markup).toContain("Delete</button>");
     expect(markup).toContain('data-icon="Trash2"');
+    expect(markup).toContain("border-destructive");
+    expect(markup).toContain("bg-destructive");
+    expect(markup).toContain("text-destructive-foreground");
+    expect(markup).not.toContain("hover:text-destructive");
     expect(markup).not.toContain('aria-label="Run now"');
     expect(markup).not.toContain('aria-label="Delete automation"');
   });

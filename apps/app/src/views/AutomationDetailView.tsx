@@ -1116,9 +1116,8 @@ export function AutomationDetailContent({
               </Button>
               <Button
                 type="button"
-                variant="outline"
+                variant="destructive"
                 size="sm"
-                className="text-destructive hover:text-destructive"
                 disabled={actionsPending}
                 onClick={onDelete}
               >
