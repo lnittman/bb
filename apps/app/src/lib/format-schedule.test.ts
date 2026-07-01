@@ -3,7 +3,6 @@ import { buildAutomationCron } from "./format-schedule";
 
 describe("buildAutomationCron", () => {
   it.each([
-    ["manual", "09:00", "0 9 * * *"],
     ["hourly", "09:00", "0 * * * *"],
     ["daily", "13:45", "45 13 * * *"],
     ["weekdays", "14:30", "30 14 * * 1-5"],

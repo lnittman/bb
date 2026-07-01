@@ -1,7 +1,6 @@
 import { toString as cronstrueToString } from "cronstrue";
 
 export const automationScheduleCadenceValues = [
-  "manual",
   "hourly",
   "daily",
   "weekdays",
@@ -69,7 +68,6 @@ export function buildAutomationCron({
   }
   const { hour, minute } = parseScheduleTime(time || DEFAULT_SCHEDULE_TIME);
   switch (cadence) {
-    case "manual":
     case "daily":
       return `${minute} ${hour} * * *`;
     case "weekdays":

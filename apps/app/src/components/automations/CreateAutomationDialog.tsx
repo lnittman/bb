@@ -126,7 +126,6 @@ interface ValidationResult {
 }
 
 const SCHEDULE_CADENCES: readonly ScheduleCadenceOption[] = [
-  { id: "manual", label: "Manual", title: "Manual" },
   { id: "hourly", label: "Hourly", title: "Hourly" },
   { id: "daily", label: "Daily", title: "Daily" },
   { id: "weekdays", label: "Weekdays", title: "Weekdays" },
@@ -646,6 +645,8 @@ export function CreateAutomationDialog({
   const modelErrorId = `${modelControlId}-error`;
   const cronInputRef = useRef<HTMLInputElement>(null);
   const wasOpenRef = useRef(false);
+  const hasDialogUserInteractionRef = useRef(false);
+  const fieldsWithUserInteractionRef = useRef<Set<FieldKey>>(new Set());
   const sidebarNavigation = useSidebarNavigation({ enabled: open });
   const primaryHost = usePrimaryHost({ enabled: open });
   const { isLocalDaemonHost } = useHostDaemon();
@@ -668,6 +669,7 @@ export function CreateAutomationDialog({
     DEFAULT_PERMISSION_MODE,
   );
   const [touched, setTouched] = useState<ReadonlySet<FieldKey>>(new Set());
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const createAutomation = useCreateAutomation();
   const selectedProject = projectOptions.find(
@@ -749,12 +751,7 @@ export function CreateAutomationDialog({
     () => getTimezoneOptions(timezone),
     [timezone],
   );
-  const cadenceLabel = useMemo(() => {
-    if (scheduleCadence === "manual") {
-      return "Runs only when started manually.";
-    }
-    return formatCronCadence(cron);
-  }, [cron, scheduleCadence]);
+  const cadenceLabel = useMemo(() => formatCronCadence(cron), [cron]);
   const showTimeControls = cadenceUsesTime(scheduleCadence);
   const showScheduleControls = showTimeControls || scheduleCadence === "custom";
   const validation = useMemo(
@@ -889,8 +886,31 @@ export function CreateAutomationDialog({
       return next;
     });
   }, []);
+  const markFieldInteracted = useCallback((field: FieldKey) => {
+    fieldsWithUserInteractionRef.current.add(field);
+  }, []);
+  const markFieldInteractedAfterDialogInteraction = useCallback(
+    (field: FieldKey) => {
+      if (!hasDialogUserInteractionRef.current) {
+        return;
+      }
+      markFieldInteracted(field);
+    },
+    [markFieldInteracted],
+  );
+  const markTouchedAfterUserInteraction = useCallback(
+    (field: FieldKey) => {
+      if (!fieldsWithUserInteractionRef.current.has(field)) {
+        return;
+      }
+      markTouched(field);
+    },
+    [markTouched],
+  );
 
   const resetForm = useCallback(() => {
+    hasDialogUserInteractionRef.current = false;
+    fieldsWithUserInteractionRef.current.clear();
     setProjectId(getInitialProjectId({ defaultProjectId, projectOptions }));
     setName("");
     setInstructions("");
@@ -914,6 +934,7 @@ export function CreateAutomationDialog({
     setModel("");
     setPermissionMode(DEFAULT_PERMISSION_MODE);
     setTouched(new Set());
+    setHasSubmitted(false);
     setServerError(null);
   }, [defaultProjectId, primaryHost?.id, projectOptions]);
 
@@ -1056,6 +1077,7 @@ export function CreateAutomationDialog({
   const handleSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+      setHasSubmitted(true);
       setTouched(
         new Set([
           "name",
@@ -1080,7 +1102,7 @@ export function CreateAutomationDialog({
       const payload = buildCreateAutomationRequest({
         name,
         cron,
-        enabled: scheduleCadence !== "manual",
+        enabled: true,
         timezone,
         prompt: instructions,
         providerId,
@@ -1116,14 +1138,14 @@ export function CreateAutomationDialog({
       permissionMode,
       projectId,
       providerId,
-      scheduleCadence,
       timezone,
     ],
   );
 
   const showError = useCallback(
-    (field: FieldKey) => touched.has(field) && validation[field] !== null,
-    [touched, validation],
+    (field: FieldKey) =>
+      (touched.has(field) || hasSubmitted) && validation[field] !== null,
+    [hasSubmitted, touched, validation],
   );
   const permissionsError = showError("project")
     ? validation.project
@@ -1138,7 +1160,15 @@ export function CreateAutomationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[calc(100vh-2rem)] max-w-3xl gap-5 overflow-hidden">
+      <DialogContent
+        className="gap-5 md:grid-rows-[auto_minmax(0,1fr)] md:h-[min(85dvh,44rem)] md:w-[calc(100vw-3rem)] md:max-w-2xl md:overflow-hidden"
+        onKeyDownCapture={() => {
+          hasDialogUserInteractionRef.current = true;
+        }}
+        onPointerDownCapture={() => {
+          hasDialogUserInteractionRef.current = true;
+        }}
+      >
         <DialogHeader>
           <DialogTitle>New automation</DialogTitle>
           <DialogDescription>
@@ -1146,11 +1176,15 @@ export function CreateAutomationDialog({
             chat.
           </DialogDescription>
         </DialogHeader>
-        <form className="grid min-h-0 gap-4" onSubmit={handleSubmit}>
+        <form
+          data-create-automation-form=""
+          className="grid min-h-0 gap-4 md:grid-rows-[minmax(0,1fr)_auto_auto]"
+          onSubmit={handleSubmit}
+        >
           <div
             ref={handleScrollBodyRef}
             data-create-automation-scroll-body=""
-            className="max-h-[min(72vh,42rem)] min-h-0 overflow-x-hidden overflow-y-auto pr-1"
+            className="min-h-0 overflow-x-hidden overflow-y-auto pr-1"
             style={scrollMaskStyle}
           >
             <div
@@ -1169,11 +1203,16 @@ export function CreateAutomationDialog({
                 <Input
                   id={nameId}
                   value={name}
+                  onFocus={() =>
+                    markFieldInteractedAfterDialogInteraction("name")
+                  }
+                  onPointerDown={() => markFieldInteracted("name")}
+                  onKeyDown={() => markFieldInteracted("name")}
                   onChange={(event) => {
                     setName(event.target.value);
                     setServerError(null);
                   }}
-                  onBlur={() => markTouched("name")}
+                  onBlur={() => markTouchedAfterUserInteraction("name")}
                   aria-invalid={showError("name")}
                   aria-describedby={nameErrorId}
                   placeholder="Daily standup digest"
@@ -1195,11 +1234,18 @@ export function CreateAutomationDialog({
                   <Textarea
                     id={instructionsId}
                     value={instructions}
+                    onFocus={() =>
+                      markFieldInteractedAfterDialogInteraction("instructions")
+                    }
+                    onPointerDown={() => markFieldInteracted("instructions")}
+                    onKeyDown={() => markFieldInteracted("instructions")}
                     onChange={(event) => {
                       setInstructions(event.target.value);
                       setServerError(null);
                     }}
-                    onBlur={() => markTouched("instructions")}
+                    onBlur={() =>
+                      markTouchedAfterUserInteraction("instructions")
+                    }
                     aria-invalid={showError("instructions")}
                     aria-describedby={`${instructionsErrorId} ${permissionsErrorId}`}
                     className="min-h-32 resize-y rounded-b-none border-0 focus-visible:ring-0"
@@ -1358,7 +1404,7 @@ export function CreateAutomationDialog({
                   </div>
                   <div
                     data-create-automation-schedule-tabs=""
-                    className="flex min-w-0 flex-wrap items-center gap-1 self-start"
+                    className="flex min-w-0 flex-wrap items-center justify-end gap-1 self-start"
                     role="group"
                     aria-label="Schedule cadence"
                   >
@@ -1389,11 +1435,18 @@ export function CreateAutomationDialog({
                           id={scheduleTimeId}
                           type="time"
                           value={scheduleTime}
+                          onFocus={() =>
+                            markFieldInteractedAfterDialogInteraction("time")
+                          }
+                          onPointerDown={() => markFieldInteracted("time")}
+                          onKeyDown={() => markFieldInteracted("time")}
                           onChange={(event) => {
                             setScheduleTime(event.target.value);
                             setServerError(null);
                           }}
-                          onBlur={() => markTouched("time")}
+                          onBlur={() =>
+                            markTouchedAfterUserInteraction("time")
+                          }
                           aria-invalid={showError("time")}
                           aria-describedby={scheduleTimeErrorId}
                         />
@@ -1415,11 +1468,18 @@ export function CreateAutomationDialog({
                           ref={cronInputRef}
                           id={cronId}
                           value={customCron}
+                          onFocus={() =>
+                            markFieldInteractedAfterDialogInteraction("cron")
+                          }
+                          onPointerDown={() => markFieldInteracted("cron")}
+                          onKeyDown={() => markFieldInteracted("cron")}
                           onChange={(event) => {
                             setCustomCron(event.target.value);
                             setServerError(null);
                           }}
-                          onBlur={() => markTouched("cron")}
+                          onBlur={() =>
+                            markTouchedAfterUserInteraction("cron")
+                          }
                           aria-invalid={showError("cron")}
                           aria-describedby={cronErrorId}
                           spellCheck={false}
@@ -1444,7 +1504,9 @@ export function CreateAutomationDialog({
                           options={timezoneOptions}
                           invalid={showError("timezone")}
                           describedBy={timezoneErrorId}
-                          onBlur={() => markTouched("timezone")}
+                          onBlur={() =>
+                            markTouchedAfterUserInteraction("timezone")
+                          }
                           onChange={(nextTimezone) => {
                             setTimezone(nextTimezone);
                             markTouched("timezone");

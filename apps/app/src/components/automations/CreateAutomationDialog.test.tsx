@@ -316,8 +316,27 @@ describe("CreateAutomationDialog", () => {
   it("validates required fields before allowing submit", async () => {
     renderDialog();
 
-    fireEvent.blur(screen.getByLabelText("Name"));
-    fireEvent.blur(screen.getByLabelText("Instructions"));
+    const nameInput = screen.getByLabelText("Name");
+    const instructionsInput = screen.getByLabelText("Instructions");
+
+    expect(screen.queryByText("Name is required.")).toBeNull();
+    expect(screen.queryByText("Instructions are required.")).toBeNull();
+
+    fireEvent.blur(nameInput);
+    fireEvent.blur(instructionsInput);
+
+    expect(screen.queryByText("Name is required.")).toBeNull();
+    expect(screen.queryByText("Instructions are required.")).toBeNull();
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Hourly" }));
+    fireEvent.blur(nameInput);
+
+    expect(screen.queryByText("Name is required.")).toBeNull();
+
+    fireEvent.pointerDown(nameInput);
+    fireEvent.blur(nameInput);
+    fireEvent.pointerDown(instructionsInput);
+    fireEvent.blur(instructionsInput);
 
     expect(await screen.findByText("Name is required.")).not.toBeNull();
     expect(screen.getByText("Instructions are required.")).not.toBeNull();
@@ -326,6 +345,23 @@ describe("CreateAutomationDialog", () => {
         .getByRole("button", { name: "Create automation" })
         .getAttribute("disabled"),
     ).not.toBeNull();
+    expect(postAutomation).not.toHaveBeenCalled();
+  });
+
+  it("shows untouched required errors after a submit attempt", async () => {
+    renderDialog();
+
+    const form = screen
+      .getByRole("button", { name: "Create automation" })
+      .closest("form");
+    if (!form) {
+      throw new Error("Create automation form was not rendered");
+    }
+
+    fireEvent.submit(form);
+
+    expect(await screen.findByText("Name is required.")).not.toBeNull();
+    expect(screen.getByText("Instructions are required.")).not.toBeNull();
     expect(postAutomation).not.toHaveBeenCalled();
   });
 
@@ -359,7 +395,7 @@ describe("CreateAutomationDialog", () => {
     expect(cancelButton.className).toContain("w-full");
   });
 
-  it("keeps the schedule cadence tabs in a stable layout column", () => {
+  it("keeps the schedule cadence tabs right-aligned in a stable layout column", () => {
     renderDialog();
 
     const tabs = screen.getByRole("group", { name: "Schedule cadence" });
@@ -370,11 +406,17 @@ describe("CreateAutomationDialog", () => {
       "grid-cols-[minmax(8.5rem,12rem)_minmax(0,1fr)]",
     );
     expect(tabs.className).toContain("self-start");
+    expect(tabs.className).toContain("justify-end");
+    expect(screen.queryByRole("button", { name: "Manual" })).toBeNull();
+    expect(
+      screen
+        .getByRole("button", { name: "Daily" })
+        .getAttribute("aria-pressed"),
+    ).toBe("true");
 
     const tabParent = tabs.parentElement;
     const tabsClassName = tabs.className;
     for (const cadence of [
-      "Manual",
       "Hourly",
       "Daily",
       "Weekdays",
@@ -384,6 +426,36 @@ describe("CreateAutomationDialog", () => {
       fireEvent.click(screen.getByRole("button", { name: cadence }));
       expect(tabs.parentElement).toBe(tabParent);
       expect(tabs.className).toBe(tabsClassName);
+    }
+  });
+
+  it("pins desktop dialog height and lets the body own overflow", () => {
+    renderDialog();
+
+    const dialog = screen.getByRole("dialog");
+    const form = screen
+      .getByRole("button", { name: "Create automation" })
+      .closest("form");
+    const scrollBody = dialog.querySelector(
+      "[data-create-automation-scroll-body]",
+    );
+
+    expect(dialog.className).toContain("md:h-[min(85dvh,44rem)]");
+    expect(dialog.className).toContain("md:w-[calc(100vw-3rem)]");
+    expect(dialog.className).toContain("md:max-w-2xl");
+    expect(dialog.className).toContain(
+      "md:grid-rows-[auto_minmax(0,1fr)]",
+    );
+    expect(form?.className).toContain(
+      "md:grid-rows-[minmax(0,1fr)_auto_auto]",
+    );
+    expect(scrollBody?.className).toContain("overflow-y-auto");
+    expect(scrollBody?.className).not.toContain("max-h");
+
+    const dialogClassName = dialog.className;
+    for (const cadence of ["Hourly", "Daily", "Weekdays", "Weekly", "Custom"]) {
+      fireEvent.click(screen.getByRole("button", { name: cadence }));
+      expect(dialog.className).toBe(dialogClassName);
     }
   });
 
@@ -483,11 +555,6 @@ describe("CreateAutomationDialog", () => {
   });
 
   it.each([
-    {
-      label: "Manual",
-      enabled: false,
-      cron: "0 9 * * *",
-    },
     {
       label: "Hourly",
       enabled: true,
