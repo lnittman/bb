@@ -385,7 +385,8 @@ describe("CreateAutomationDialog", () => {
     expect(
       screen.queryByText("Provider and model for the agent run."),
     ).toBeNull();
-    expect(screen.getByText("Ask permissions")).not.toBeNull();
+    expect(screen.queryByText("Ask permissions")).toBeNull();
+    expect(screen.getByText("Permissions")).not.toBeNull();
     expect(
       (await screen.findByRole("button", { name: "Permission mode" }))
         .textContent,
@@ -424,6 +425,8 @@ describe("CreateAutomationDialog", () => {
     expect(tabs.className).toContain("md:flex");
     expect(tabs.className).toContain("md:justify-end");
     expect(tabs.className).toContain("md:self-start");
+    expect(screen.getByText("M-F")).not.toBeNull();
+    expect(screen.getByText("Cron")).not.toBeNull();
     expect(screen.queryByRole("button", { name: "Manual" })).toBeNull();
     expect(
       screen
@@ -508,12 +511,16 @@ describe("CreateAutomationDialog", () => {
     expect(initialControls?.className).toContain("md:min-h-0");
 
     fireEvent.click(screen.getByRole("button", { name: "Hourly" }));
-    const reservedControls = dialog.querySelector(
+    const summaryControls = dialog.querySelector(
       "[data-create-automation-schedule-controls]",
     );
-    expect(reservedControls).not.toBeNull();
-    expect(reservedControls?.getAttribute("data-state")).toBe("reserved");
-    expect(reservedControls?.getAttribute("aria-hidden")).toBe("true");
+    expect(summaryControls).not.toBeNull();
+    expect(summaryControls?.getAttribute("data-state")).toBe("summary");
+    expect(summaryControls?.getAttribute("aria-hidden")).toBeNull();
+    expect(screen.getByText("Runs at the top of each hour.")).not.toBeNull();
+    expect(
+      dialog.querySelector("[data-create-automation-hourly-summary]"),
+    ).not.toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Weekdays" }));
     const visibleControls = dialog.querySelector(
@@ -530,6 +537,22 @@ describe("CreateAutomationDialog", () => {
     expect(tabs.className).toBe(stableClassNames.tabs);
   });
 
+  it("shows a submit hint while the disabled create button is blocked", () => {
+    renderDialog();
+
+    const button = screen.getByRole("button", { name: "Create automation" });
+    const hint = screen.getByText("Add a name and instructions to create.");
+
+    expect(button.getAttribute("disabled")).not.toBeNull();
+    expect(button.getAttribute("aria-describedby")).toBe(hint.id);
+
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Daily digest" },
+    });
+
+    expect(screen.getByText("Add instructions to create.")).not.toBeNull();
+  });
+
   it("keeps the form rhythm tight without an empty footer spacer", () => {
     renderDialog();
 
@@ -541,10 +564,14 @@ describe("CreateAutomationDialog", () => {
       "[data-create-automation-scroll-body]",
     );
 
-    expect(dialog.className).toContain("gap-4");
+    expect(dialog.className).toContain("gap-3");
+    expect(dialog.className).toContain("md:gap-4");
     expect(dialog.className).not.toContain("gap-5");
-    expect(form?.className).toContain("gap-2.5");
-    expect(scrollBody?.querySelector(".grid.gap-4")).not.toBeNull();
+    expect(form?.className).toContain("gap-2");
+    expect(form?.className).toContain("md:gap-2.5");
+    const rhythmGrid = scrollBody?.querySelector(".grid.gap-3");
+    expect(rhythmGrid).not.toBeNull();
+    expect(rhythmGrid?.className).toContain("md:gap-4");
     expect(screen.queryByRole("alert")).toBeNull();
     expect(dialog.querySelectorAll("[aria-live='polite']")).toHaveLength(0);
   });

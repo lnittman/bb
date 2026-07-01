@@ -14,6 +14,7 @@ import {
 import { Icon } from "@/components/ui/icon";
 import { CREATE_LOOP_PROMPT } from "@/components/promptbox/PromptBoxActionsMenu";
 import { getRootComposeRoutePath } from "@/lib/route-paths";
+import { buildAutomationDraftRootComposeState } from "@/lib/root-compose-location-state";
 import { CreateAutomationDialog } from "./CreateAutomationDialog";
 
 export interface AutomationCreateMenuProps {
@@ -48,10 +49,9 @@ export function AutomationCreateMenu({
           <DropdownMenuItem
             onSelect={() => {
               navigate(getRootComposeRoutePath(), {
-                state: {
-                  focusPrompt: true,
+                state: buildAutomationDraftRootComposeState({
                   initialPrompt: CREATE_LOOP_PROMPT,
-                },
+                }),
               });
             }}
           >

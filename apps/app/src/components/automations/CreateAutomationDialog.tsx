@@ -110,6 +110,7 @@ interface ProjectOption {
 interface ScheduleCadenceOption {
   id: AutomationScheduleCadence;
   label: string;
+  compactLabel?: string;
   title: string;
 }
 
@@ -128,9 +129,14 @@ interface ValidationResult {
 const SCHEDULE_CADENCES: readonly ScheduleCadenceOption[] = [
   { id: "hourly", label: "Hourly", title: "Hourly" },
   { id: "daily", label: "Daily", title: "Daily" },
-  { id: "weekdays", label: "Weekdays", title: "Weekdays" },
+  {
+    id: "weekdays",
+    label: "Weekdays",
+    compactLabel: "M-F",
+    title: "Weekdays",
+  },
   { id: "weekly", label: "Weekly", title: "Weekly" },
-  { id: "custom", label: "Custom", title: "Custom" },
+  { id: "custom", label: "Custom", compactLabel: "Cron", title: "Custom" },
 ];
 
 const DEFAULT_SCHEDULE_CADENCE: AutomationScheduleCadence = "daily";
@@ -321,6 +327,35 @@ function validateForm(args: {
 
 function hasValidationErrors(validation: ValidationResult): boolean {
   return Object.values(validation).some((message) => message !== null);
+}
+
+function getSubmitBlockedReason(validation: ValidationResult): string | null {
+  const missingBasics = [
+    validation.name ? "name" : null,
+    validation.instructions ? "instructions" : null,
+  ].filter((value): value is string => value !== null);
+  if (missingBasics.length === 2) {
+    return "Add a name and instructions to create.";
+  }
+  if (validation.name) {
+    return "Add a name to create.";
+  }
+  if (validation.instructions) {
+    return "Add instructions to create.";
+  }
+  if (validation.provider || validation.model) {
+    return "Choose a provider and model to create.";
+  }
+  if (validation.project || validation.environment) {
+    return "Choose a project and environment to create.";
+  }
+  if (validation.time || validation.cron) {
+    return "Fix the schedule before creating.";
+  }
+  if (validation.timezone) {
+    return "Choose a valid timezone to create.";
+  }
+  return null;
 }
 
 function getProjectOptions(
@@ -640,6 +675,7 @@ export function CreateAutomationDialog({
   const scheduleTimeId = useId();
   const timezoneId = useId();
   const modelControlId = useId();
+  const submitHintId = useId();
   const nameErrorId = `${nameId}-error`;
   const instructionsErrorId = `${instructionsId}-error`;
   const permissionsErrorId = `${instructionsId}-permissions-error`;
@@ -787,6 +823,10 @@ export function CreateAutomationDialog({
   );
   const isFormValid = !hasValidationErrors(validation);
   const canSubmit = isFormValid && !createAutomation.isPending;
+  const submitHint =
+    !createAutomation.isPending && !isFormValid
+      ? getSubmitBlockedReason(validation)
+      : null;
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(
     null,
   );
@@ -1165,8 +1205,8 @@ export function CreateAutomationDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        mobileContentClassName="h-[calc(100dvh-1rem)] max-h-[48rem]"
-        className="min-h-0 max-md:flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4 overflow-hidden md:h-[min(85dvh,44rem)] md:w-[calc(100vw-3rem)] md:max-w-2xl"
+        mobileSize="full-height"
+        className="min-h-0 max-md:flex-1 grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden md:h-[min(85dvh,44rem)] md:w-[calc(100vw-3rem)] md:max-w-2xl md:gap-4"
         onKeyDownCapture={() => {
           hasDialogUserInteractionRef.current = true;
         }}
@@ -1183,7 +1223,7 @@ export function CreateAutomationDialog({
         </DialogHeader>
         <form
           data-create-automation-form=""
-          className="grid min-h-0 grid-rows-[minmax(0,1fr)_auto_auto] gap-2.5"
+          className="grid min-h-0 grid-rows-[minmax(0,1fr)_auto_auto] gap-2 md:gap-2.5"
           onSubmit={handleSubmit}
         >
           <div
@@ -1197,7 +1237,7 @@ export function CreateAutomationDialog({
               aria-hidden
               className="-mb-px h-px w-full opacity-0"
             />
-            <div className="grid gap-4">
+            <div className="grid gap-3 md:gap-4">
               <div className="grid gap-2">
                 <label
                   className="text-xs font-medium text-muted-foreground"
@@ -1253,14 +1293,14 @@ export function CreateAutomationDialog({
                     }
                     aria-invalid={showError("instructions")}
                     aria-describedby={`${instructionsErrorId} ${permissionsErrorId}`}
-                    className="min-h-28 resize-y rounded-b-none border-0 focus-visible:ring-0 md:min-h-32"
+                    className="min-h-24 resize-y rounded-b-none border-0 focus-visible:ring-0 md:min-h-32"
                     placeholder="Summarize the latest project updates and call out blockers."
                   />
                   <div
                     data-create-automation-run-context-footer=""
-                    className="grid gap-1.5 border-t border-border bg-surface-recessed px-2 py-1.5"
+                    className="grid gap-1 border-t border-border bg-surface-recessed px-2 py-1 md:gap-1.5 md:py-1.5"
                   >
-                    <div className="flex min-h-8 items-center justify-between gap-2">
+                    <div className="flex min-h-7 items-center justify-between gap-2 md:min-h-8">
                       <div
                         aria-describedby={modelErrorId}
                         className="flex min-w-0 flex-1 items-center gap-1"
@@ -1310,7 +1350,7 @@ export function CreateAutomationDialog({
                             className="size-3.5 shrink-0"
                             aria-hidden
                           />
-                          <span className="truncate">Ask permissions</span>
+                          <span className="truncate">Permissions</span>
                         </span>
                         <PermissionModePicker
                           value={permissionMode}
@@ -1330,7 +1370,7 @@ export function CreateAutomationDialog({
                         ) : null}
                       </div>
                     </div>
-                    <div className="flex min-h-8 items-center justify-between gap-2">
+                    <div className="flex min-h-7 items-center justify-between gap-2 md:min-h-8">
                       <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
                         <ProjectSelector
                           projects={projectOptions}
@@ -1417,6 +1457,7 @@ export function CreateAutomationDialog({
                       <TabPill
                         key={cadence.id}
                         label={cadence.label}
+                        compactLabel={cadence.compactLabel}
                         title={cadence.title}
                         isActive={scheduleCadence === cadence.id}
                         onSelect={() => handleCadenceSelect(cadence.id)}
@@ -1428,9 +1469,8 @@ export function CreateAutomationDialog({
                 </div>
                 <div
                   data-create-automation-schedule-controls=""
-                  data-state={showScheduleControls ? "visible" : "reserved"}
-                  aria-hidden={showScheduleControls ? undefined : true}
-                  className="grid min-h-[8.25rem] gap-3 md:min-h-0 md:grid-cols-[minmax(0,1fr)_14rem]"
+                  data-state={showScheduleControls ? "visible" : "summary"}
+                  className="grid min-h-[8.25rem] content-start gap-3 md:min-h-0 md:grid-cols-[minmax(0,1fr)_14rem]"
                 >
                   {showScheduleControls ? (
                     <>
@@ -1533,7 +1573,30 @@ export function CreateAutomationDialog({
                         </div>
                       ) : null}
                     </>
-                  ) : null}
+                  ) : (
+                    <div
+                      data-create-automation-hourly-summary=""
+                      className="grid h-full min-h-0 gap-2 rounded-md border border-border bg-surface-recessed px-3 py-2.5 text-xs text-muted-foreground"
+                    >
+                      <div className="flex min-w-0 items-center justify-between gap-3">
+                        <span className="font-medium text-foreground">
+                          Every hour
+                        </span>
+                        <span className="shrink-0 font-mono tabular-nums">
+                          {cron}
+                        </span>
+                      </div>
+                      <p className="text-pretty">
+                        Runs at the top of each hour.
+                      </p>
+                      <div className="flex min-w-0 items-center justify-between gap-3 border-t border-border pt-2">
+                        <span>Timezone</span>
+                        <span className="min-w-0 truncate text-foreground">
+                          {timezone}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </section>
             </div>
@@ -1547,6 +1610,15 @@ export function CreateAutomationDialog({
           {serverError ? (
             <p role="alert" className="text-sm leading-5 text-destructive">
               {serverError}
+            </p>
+          ) : null}
+          {submitHint ? (
+            <p
+              id={submitHintId}
+              data-create-automation-submit-hint=""
+              className="text-xs leading-4 text-muted-foreground"
+            >
+              {submitHint}
             </p>
           ) : null}
 
@@ -1563,6 +1635,7 @@ export function CreateAutomationDialog({
             <Button
               type="submit"
               disabled={!canSubmit}
+              aria-describedby={submitHint ? submitHintId : undefined}
               className="w-full sm:w-auto"
             >
               {createAutomation.isPending ? "Creating..." : "Create automation"}

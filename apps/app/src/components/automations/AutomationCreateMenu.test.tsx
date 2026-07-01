@@ -78,6 +78,7 @@ describe("AutomationCreateMenu", () => {
     const location = screen.getByTestId("location");
     expect(location.getAttribute("data-pathname")).toBe("/");
     expect(JSON.parse(location.getAttribute("data-state") ?? "{}")).toEqual({
+      automationDraft: { source: "create-via-chat" },
       focusPrompt: true,
       initialPrompt: CREATE_LOOP_PROMPT,
     });

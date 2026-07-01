@@ -54,6 +54,7 @@ import {
   getAutomationDetailRoutePath,
   getRootComposeRoutePath,
 } from "@/lib/route-paths";
+import { buildAutomationDraftRootComposeState } from "@/lib/root-compose-location-state";
 import { cn } from "@/lib/utils";
 import {
   AUTOMATION_STARTER_LOOPS,
@@ -678,11 +679,10 @@ export function AutomationsView() {
   const handleCreateAutomation = useCallback(
     (initialPrompt: string) => {
       navigate(getRootComposeRoutePath(), {
-        state: {
-          focusPrompt: true,
+        state: buildAutomationDraftRootComposeState({
           initialPrompt,
           replacePrompt: true,
-        },
+        }),
       });
     },
     [navigate],

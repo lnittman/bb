@@ -43,6 +43,8 @@ describe("RunLane", () => {
   it("renders the lane container, a now marker, and window edge labels", () => {
     const markup = renderLane({ runs: [makeRun()] });
     expect(markup).toContain('data-run-lane=""');
+    expect(markup).toContain('data-run-lane-count=""');
+    expect(markup).toContain("1 run plotted");
     // The "now" hairline and the trailing "Now" edge label both appear.
     expect(markup).toContain(">Now<");
   });
@@ -89,6 +91,20 @@ describe("RunLane", () => {
       nextRunAt: NOW + DAY,
     });
     expect(markup).toContain('data-run-lane-next=""');
+  });
+
+  it("caps dense histories and summarizes all statuses", () => {
+    const runs = Array.from({ length: 110 }, (_, index) =>
+      makeRun({
+        id: `run_${index}`,
+        startedAt: NOW - (110 - index) * 1000,
+        status: index === 0 ? "failed" : "succeeded",
+      }),
+    );
+    const markup = renderLane({ runs });
+
+    expect(markup).toContain("Showing latest 96 of 110");
+    expect(markup).toContain("1 failed · 109 succeeded");
   });
 
   it("omits the next-fire ghost when there is none", () => {

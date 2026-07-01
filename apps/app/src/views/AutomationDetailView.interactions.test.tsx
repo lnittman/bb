@@ -184,6 +184,14 @@ describe("AutomationDetailContent run inspector", () => {
     expect(screen.getByText("Scheduled")).not.toBeNull();
     expect(screen.getByText("Exit")).not.toBeNull();
     expect(screen.getByText("Output")).not.toBeNull();
+    expect(screen.getByText("1 line · 11 chars")).not.toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Copy run output" }),
+    ).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Download" })).not.toBeNull();
+    expect(
+      screen.getByRole("searchbox", { name: "Search run output" }),
+    ).not.toBeNull();
     expect(screen.getByText("Disk at 92%")).not.toBeNull();
     expect(panelGroupState.setLayout).toHaveBeenLastCalledWith([58, 42]);
 
@@ -212,6 +220,40 @@ describe("AutomationDetailContent run inspector", () => {
     expect(screen.getByRole("heading", { name: "Run details" })).not.toBeNull();
     expect(screen.getByText("Error")).not.toBeNull();
     expect(screen.getAllByText("disk full")).toHaveLength(2);
+  });
+
+  it("keeps long run output collapsed and searchable", () => {
+    const longOutput = Array.from(
+      { length: 30 },
+      (_, index) => `line ${index + 1}`,
+    ).join("\n");
+    renderContent([makeRun({ output: longOutput })]);
+
+    fireEvent.click(screen.getByRole("button", { name: /Inspect run/i }));
+
+    expect(screen.getByText("30 lines · 230 chars")).not.toBeNull();
+    expect(screen.queryByText("line 30")).toBeNull();
+
+    fireEvent.change(
+      screen.getByRole("searchbox", { name: "Search run output" }),
+      {
+        target: { value: "line 30" },
+      },
+    );
+
+    expect(screen.getByText("30: line 30")).not.toBeNull();
+
+    fireEvent.change(
+      screen.getByRole("searchbox", { name: "Search run output" }),
+      {
+        target: { value: "" },
+      },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Show 6 more lines" }));
+
+    expect(
+      document.querySelector("[data-automation-run-output]")?.textContent,
+    ).toContain("line 30");
   });
 
   it("closes the run inspector with Escape and restores row focus", async () => {

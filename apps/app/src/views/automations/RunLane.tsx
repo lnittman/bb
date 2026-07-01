@@ -11,10 +11,14 @@ import { getThreadRoutePath } from "@/lib/route-paths";
 import { cn } from "@/lib/utils";
 import {
   buildRunLane,
+  countRunLaneStatuses,
+  formatRunLaneStatusSummary,
   projectTintStyle,
   type RunLaneClip,
   type RunLaneTone,
 } from "./run-lane";
+
+const RUN_LANE_VISIBLE_CLIP_LIMIT = 96;
 
 const CLIP_TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
   month: "short",
@@ -40,12 +44,16 @@ function formatClipTime(timestamp: number): string {
 const CLIP_TONE_DOT_CLASS: Record<RunLaneTone, string> = {
   ok: "bg-success",
   fail: "bg-destructive",
+  running: "bg-attention",
+  skipped: "bg-warning",
   muted: "bg-muted-foreground/45",
 };
 
 const CLIP_TONE_LABEL: Record<RunLaneTone, string> = {
   ok: "Succeeded",
   fail: "Failed",
+  running: "Running",
+  skipped: "Skipped",
   muted: "No outcome",
 };
 
@@ -152,6 +160,12 @@ export function RunLane({ runs, nextRunAt, projectId, now }: RunLaneProps) {
     nextRunAt,
     now: now ?? mountedNow,
   });
+  const visibleClips =
+    model.clips.length > RUN_LANE_VISIBLE_CLIP_LIMIT
+      ? model.clips.slice(-RUN_LANE_VISIBLE_CLIP_LIMIT)
+      : model.clips;
+  const omittedClipCount = model.clips.length - visibleClips.length;
+  const statusSummary = formatRunLaneStatusSummary(countRunLaneStatuses(runs));
 
   return (
     <TooltipProvider delayDuration={120}>
@@ -185,9 +199,21 @@ export function RunLane({ runs, nextRunAt, projectId, now }: RunLaneProps) {
               style={{ left: `${model.nextPercent}%` }}
             />
           ) : null}
-          {model.clips.map((clip) => (
+          {visibleClips.map((clip) => (
             <RunClipDot key={clip.run.id} clip={clip} projectId={projectId} />
           ))}
+        </div>
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-2xs text-subtle-foreground">
+          <span data-run-lane-count="" className="min-w-0 truncate">
+            {omittedClipCount > 0
+              ? `Showing latest ${visibleClips.length} of ${model.runCount}`
+              : `${model.runCount} ${model.runCount === 1 ? "run" : "runs"} plotted`}
+          </span>
+          {statusSummary ? (
+            <span data-run-lane-status-summary="" className="min-w-0 truncate">
+              {statusSummary}
+            </span>
+          ) : null}
         </div>
         <div className="flex items-center justify-between text-2xs text-subtle-foreground tabular-nums">
           <span>{WINDOW_EDGE_FORMATTER.format(new Date(model.startMs))}</span>

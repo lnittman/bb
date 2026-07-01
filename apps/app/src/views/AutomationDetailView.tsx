@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -17,6 +18,7 @@ import {
 import type { Automation, AutomationRun } from "@bb/server-contract";
 import { Button } from "@/components/ui/button.js";
 import { CopyButton } from "@/components/ui/copy-button.js";
+import { Input } from "@/components/ui/input.js";
 import {
   ConfirmDeleteDialog,
   ConfirmDeleteDialogContent,
@@ -61,6 +63,7 @@ const RUN_PANEL_DRAWER_CONTENT_CLASS =
   "flex h-[92dvh] max-h-[92dvh] min-h-0 flex-col overflow-hidden";
 const RUN_PANEL_DRAWER_BODY_CLASS =
   "flex h-full min-h-0 flex-1 flex-col overflow-hidden";
+const RUN_OUTPUT_PREVIEW_LINE_LIMIT = 24;
 const ignorePanelWidthChange = () => {};
 
 const RUN_TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
@@ -188,6 +191,53 @@ function getRunEvidenceSummary(run: AutomationRun, hasThread: boolean): string {
     return "The script succeeded and produced local output.";
   }
   return "No additional evidence was surfaced for this run.";
+}
+
+function splitRunOutputLines(text: string): string[] {
+  return text.replace(/\r\n/g, "\n").split("\n");
+}
+
+function formatCount(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function getRunOutputStatsLabel(text: string): string {
+  const lineCount = splitRunOutputLines(text).length;
+  return `${formatCount(lineCount, "line", "lines")} · ${formatCount(
+    text.length,
+    "char",
+    "chars",
+  )}`;
+}
+
+function formatRunOutputDownloadFilename({
+  evidence,
+  run,
+}: {
+  evidence: RunOutputEvidence;
+  run: AutomationRun;
+}): string {
+  const suffix = evidence.isError ? "error" : "output";
+  return `automation-run-${run.id}-${suffix}.txt`;
+}
+
+function downloadTextFile(filename: string, text: string): void {
+  if (
+    typeof document === "undefined" ||
+    typeof URL === "undefined" ||
+    typeof URL.createObjectURL !== "function"
+  ) {
+    return;
+  }
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  if (typeof URL.revokeObjectURL === "function") {
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
 }
 
 const RUN_STATUS_TONE_CLASS: Record<RunStatusLabel["tone"], string> = {
@@ -377,6 +427,145 @@ function RunDetailItem({ label, children }: RunDetailItemProps) {
   );
 }
 
+interface RunOutputPanelProps {
+  evidence: RunOutputEvidence;
+  run: AutomationRun;
+}
+
+function RunOutputPanel({ evidence, run }: RunOutputPanelProps) {
+  const searchInputId = useId();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [expanded, setExpanded] = useState(false);
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const allLines = useMemo(
+    () => splitRunOutputLines(evidence.text),
+    [evidence.text],
+  );
+  const matchingLines = useMemo(() => {
+    if (!normalizedQuery) {
+      return allLines.map((line, index) => ({ index, line }));
+    }
+    return allLines
+      .map((line, index) => ({ index, line }))
+      .filter(({ line }) => line.toLowerCase().includes(normalizedQuery));
+  }, [allLines, normalizedQuery]);
+  const isLong = allLines.length > RUN_OUTPUT_PREVIEW_LINE_LIMIT;
+  const canToggleFullOutput = evidence.canCopy && isLong && !normalizedQuery;
+  const visibleLineRecords =
+    normalizedQuery || expanded || !isLong
+      ? matchingLines
+      : matchingLines.slice(0, RUN_OUTPUT_PREVIEW_LINE_LIMIT);
+  const visibleText = visibleLineRecords
+    .map(({ index, line }) =>
+      normalizedQuery ? `${index + 1}: ${line}` : line,
+    )
+    .join("\n");
+  const hiddenLineCount = Math.max(
+    0,
+    allLines.length - RUN_OUTPUT_PREVIEW_LINE_LIMIT,
+  );
+
+  return (
+    <div className="mt-3 space-y-2">
+      <div className="flex min-w-0 items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-medium uppercase text-muted-foreground">
+            {evidence.label}
+          </p>
+          <p className="mt-0.5 text-xs text-subtle-foreground">
+            {getRunOutputStatsLabel(evidence.text)}
+          </p>
+        </div>
+        {evidence.canCopy ? (
+          <div className="flex shrink-0 items-center gap-1">
+            <CopyButton
+              text={evidence.text}
+              label={`Copy run ${evidence.label.toLowerCase()}`}
+              successMessage="Run output copied"
+              errorMessage="Failed to copy run output"
+              className="size-7 rounded-md"
+              iconClassName="size-3.5"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() =>
+                downloadTextFile(
+                  formatRunOutputDownloadFilename({ evidence, run }),
+                  evidence.text,
+                )
+              }
+            >
+              <Icon name="Download" className="size-3.5" aria-hidden />
+              Download
+            </Button>
+          </div>
+        ) : null}
+      </div>
+
+      {evidence.canCopy ? (
+        <div className="relative">
+          <Icon
+            name="Search"
+            className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <label htmlFor={searchInputId} className="sr-only">
+            Search run {evidence.label.toLowerCase()}
+          </label>
+          <Input
+            id={searchInputId}
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={`Search ${evidence.label.toLowerCase()}`}
+            spellCheck={false}
+            className="h-8 pl-8 text-xs"
+          />
+        </div>
+      ) : null}
+
+      {visibleLineRecords.length > 0 ? (
+        <pre
+          data-automation-run-output=""
+          className={cn(
+            "max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-md bg-surface-recessed px-3 py-2 font-mono text-xs leading-relaxed",
+            evidence.isError ? "text-destructive" : "text-foreground",
+            !evidence.canCopy && "italic text-subtle-foreground",
+          )}
+        >
+          {visibleText}
+        </pre>
+      ) : (
+        <p className="rounded-md bg-surface-recessed px-3 py-2 text-xs text-muted-foreground">
+          No matches in {evidence.label.toLowerCase()}.
+        </p>
+      )}
+
+      {canToggleFullOutput ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs text-muted-foreground"
+          onClick={() => setExpanded((value) => !value)}
+        >
+          <Icon
+            name={expanded ? "ChevronUp" : "ChevronDown"}
+            className="size-3.5"
+            aria-hidden
+          />
+          {expanded
+            ? "Show less"
+            : `Show ${formatCount(hiddenLineCount, "more line", "more lines")}`}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
 interface AutomationRunInspectorProps {
   run: AutomationRun;
   projectId: string;
@@ -457,34 +646,7 @@ function AutomationRunInspector({
           </div>
 
           {outputEvidence ? (
-            <div className="mt-3 space-y-1.5">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-medium uppercase text-muted-foreground">
-                  {outputEvidence.label}
-                </p>
-                {outputEvidence.canCopy ? (
-                  <CopyButton
-                    text={outputEvidence.text}
-                    label={`Copy run ${outputEvidence.label.toLowerCase()}`}
-                    successMessage="Run output copied"
-                    errorMessage="Failed to copy run output"
-                    className="size-7 rounded-md"
-                    iconClassName="size-3.5"
-                  />
-                ) : null}
-              </div>
-              <pre
-                className={cn(
-                  "whitespace-pre-wrap break-words rounded-md bg-surface-recessed px-3 py-2 font-mono text-xs leading-relaxed",
-                  outputEvidence.isError
-                    ? "text-destructive"
-                    : "text-foreground",
-                  !outputEvidence.canCopy && "italic text-subtle-foreground",
-                )}
-              >
-                {outputEvidence.text}
-              </pre>
-            </div>
+            <RunOutputPanel key={run.id} evidence={outputEvidence} run={run} />
           ) : (
             <p className="mt-3 text-xs text-muted-foreground">
               No output surfaced for this run.

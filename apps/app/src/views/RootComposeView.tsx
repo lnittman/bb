@@ -62,6 +62,10 @@ import { EmptyStatePanel } from "@/components/ui/empty-state";
 import { Icon } from "@/components/ui/icon.js";
 import { PageShell } from "@/components/ui/page-shell.js";
 import { Button } from "@/components/ui/button.js";
+import {
+  readAutomationDraftFromLocationState,
+  type RootComposeAutomationDraftState,
+} from "@/lib/root-compose-location-state";
 import { useIsCompactViewport } from "@/components/ui/hooks/use-compact-viewport";
 import { usePointerCoarse } from "@/components/ui/hooks/use-pointer-coarse.js";
 import { COARSE_POINTER_COMPACT_ICON_SIZE_CLASS } from "@/components/ui/coarse-pointer-sizing.js";
@@ -82,9 +86,7 @@ import {
 } from "@/hooks/queries/project-queries";
 import { useEnvironment } from "@/hooks/queries/environment-queries";
 import { useProjectDefaultExecutionOptions } from "@/hooks/queries/project-default-execution-options-query";
-import {
-  useHostProviderCliStatus,
-} from "@/hooks/queries/system-queries";
+import { useHostProviderCliStatus } from "@/hooks/queries/system-queries";
 import { useSidebarNavigation } from "@/hooks/queries/sidebar-navigation-query";
 import { useThreads } from "@/hooks/queries/thread-queries";
 import { useCommandSuggestions } from "@/hooks/useCommandSuggestions";
@@ -767,7 +769,9 @@ export function buildRootComposeTerminalSessions({
   environmentTerminalSessions,
   globalTerminalSessions,
   terminalTarget,
-}: BuildRootComposeTerminalSessionsArgs): readonly TerminalSession[] | undefined {
+}: BuildRootComposeTerminalSessionsArgs):
+  | readonly TerminalSession[]
+  | undefined {
   if (terminalTarget?.kind === "environment") {
     return environmentTerminalSessions;
   }
@@ -858,6 +862,46 @@ function CodexCliVersionBanner({
   );
 }
 
+interface AutomationDraftPromptBannerProps {
+  onDismiss: () => void;
+}
+
+function AutomationDraftPromptBanner({
+  onDismiss,
+}: AutomationDraftPromptBannerProps) {
+  return (
+    <PromptStackCard ariaLabel="Automation draft" className="px-3 py-2">
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-2">
+          <span
+            aria-hidden="true"
+            className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-md bg-state-active text-muted-foreground"
+          >
+            <Icon name="Repeat" className="size-3.5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-foreground">
+              Automation draft
+            </p>
+            <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+              This is a chat draft. Send it to have the agent register the
+              scheduled automation.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          aria-label="Dismiss automation draft"
+          className="inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-state-hover hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          onClick={onDismiss}
+        >
+          <Icon name="X" className="size-3.5" aria-hidden />
+        </button>
+      </div>
+    </PromptStackCard>
+  );
+}
+
 export function RootComposeRoute() {
   const { projectId } = useParams<{ projectId: string }>();
 
@@ -924,6 +968,10 @@ export function RootComposeView(props: RootComposeViewProps) {
   const [forkSeed, setForkSeed] = useState<ForkThreadCreateSeed | null>(() =>
     readForkThreadCreateSeedFromLocationState(location.state),
   );
+  const [automationDraft, setAutomationDraft] =
+    useState<RootComposeAutomationDraftState | null>(() =>
+      readAutomationDraftFromLocationState(location.state),
+    );
   const hostsQuery = useHosts();
   const connectedHostIds = useMemo(
     () =>
@@ -937,7 +985,9 @@ export function RootComposeView(props: RootComposeViewProps) {
   const primaryHost = useMemo(() => {
     const hosts = hostsQuery.data;
     if (!hosts || hosts.length === 0) return null;
-    return hosts.find((host) => host.status === "connected") ?? hosts[0] ?? null;
+    return (
+      hosts.find((host) => host.status === "connected") ?? hosts[0] ?? null
+    );
   }, [hostsQuery.data]);
   const primaryHostId = primaryHost?.id ?? null;
   const uploadPromptAttachment = useUploadPromptAttachment();
@@ -1678,6 +1728,7 @@ export function RootComposeView(props: RootComposeViewProps) {
       setLastCreatedThreadId(thread.id);
       clearReuseEnvironment();
       setForkSeed(null);
+      setAutomationDraft(null);
       setRootComposeFolderId(null);
       promptDraft.clearIfCurrentMatches(submittedDraft);
       if (props.surface === "popout") {
@@ -1916,21 +1967,20 @@ export function RootComposeView(props: RootComposeViewProps) {
   const shouldUseRootStorageViewerForActiveTab =
     rawActiveRootStorageFileThreadId !== null &&
     rawActiveRootStorageFileThreadId === rootPanelThreadId;
-  const {
-    threadStorageRootPath: activeStorageThreadStorageRootPath,
-  } = useThreadStorageViewer({
-    activePath: null,
-    fileListEnabled:
-      props.surface === "page" &&
-      rawActiveRootStorageFileThreadId !== null &&
-      !shouldUseRootStorageViewerForActiveTab,
-    filePreviewEnabled: false,
-    threadId:
-      rawActiveRootStorageFileThreadId !== null &&
-      !shouldUseRootStorageViewerForActiveTab
-        ? rawActiveRootStorageFileThreadId
-        : undefined,
-  });
+  const { threadStorageRootPath: activeStorageThreadStorageRootPath } =
+    useThreadStorageViewer({
+      activePath: null,
+      fileListEnabled:
+        props.surface === "page" &&
+        rawActiveRootStorageFileThreadId !== null &&
+        !shouldUseRootStorageViewerForActiveTab,
+      filePreviewEnabled: false,
+      threadId:
+        rawActiveRootStorageFileThreadId !== null &&
+        !shouldUseRootStorageViewerForActiveTab
+          ? rawActiveRootStorageFileThreadId
+          : undefined,
+    });
   const activeStorageFileRootPath = shouldUseRootStorageViewerForActiveTab
     ? rootThreadStorageRootPath
     : activeStorageThreadStorageRootPath;
@@ -1961,7 +2011,8 @@ export function RootComposeView(props: RootComposeViewProps) {
   const loadedTerminalSessions = useMemo(
     () =>
       buildRootComposeTerminalSessions({
-        environmentTerminalSessions: environmentTerminalsListQuery.data?.sessions,
+        environmentTerminalSessions:
+          environmentTerminalsListQuery.data?.sessions,
         globalTerminalSessions: globalTerminalsListQuery.data?.sessions,
         terminalTarget: rootPanelTerminalTarget,
       }),
@@ -1971,8 +2022,7 @@ export function RootComposeView(props: RootComposeViewProps) {
       rootPanelTerminalTarget,
     ],
   );
-  const terminalSessions =
-    loadedTerminalSessions ?? EMPTY_TERMINAL_SESSIONS;
+  const terminalSessions = loadedTerminalSessions ?? EMPTY_TERMINAL_SESSIONS;
   const terminalsListLoaded = loadedTerminalSessions !== undefined;
   const activeTerminalCount = useMemo(
     () =>
@@ -2091,13 +2141,12 @@ export function RootComposeView(props: RootComposeViewProps) {
   const closeRootSecondaryPanel = useCallback(() => {
     setRootSecondaryPanelForSurface(null);
   }, [setRootSecondaryPanelForSurface]);
-  const openRootSecondaryPanel =
-    useCallback<SecondaryPanelChangeHandler>(
-      (panel) => {
-        setRootSecondaryPanelForSurface(panel);
-      },
-      [setRootSecondaryPanelForSurface],
-    );
+  const openRootSecondaryPanel = useCallback<SecondaryPanelChangeHandler>(
+    (panel) => {
+      setRootSecondaryPanelForSurface(panel);
+    },
+    [setRootSecondaryPanelForSurface],
+  );
   const toggleRootPersistedSecondaryPanel = useCallback(() => {
     if (isPersistedSecondaryPanelOpen) {
       closeRootSecondaryPanel();
@@ -2267,11 +2316,7 @@ export function RootComposeView(props: RootComposeViewProps) {
     });
   }, [browserTabIds, openBrowserTabAndReveal]);
   const renderBrowserDeck = useCallback(
-    ({
-      canShowNativeBrowserView,
-    }: {
-      canShowNativeBrowserView: boolean;
-    }) => {
+    ({ canShowNativeBrowserView }: { canShowNativeBrowserView: boolean }) => {
       if (rootPanelThreadId === null) {
         return null;
       }
@@ -2320,14 +2365,13 @@ export function RootComposeView(props: RootComposeViewProps) {
     }
     handleOpenNewTab();
   }, [closeSecondaryPanel, handleOpenNewTab, isSecondaryPanelOpen]);
-  const handleSecondaryPanelChange =
-    useCallback<SecondaryPanelChangeHandler>(
-      (panel) => {
-        clearActiveFileTabs();
-        openSecondaryPanel(panel);
-      },
-      [clearActiveFileTabs, openSecondaryPanel],
-    );
+  const handleSecondaryPanelChange = useCallback<SecondaryPanelChangeHandler>(
+    (panel) => {
+      clearActiveFileTabs();
+      openSecondaryPanel(panel);
+    },
+    [clearActiveFileTabs, openSecondaryPanel],
+  );
   const handleSecondaryPanelFocus = useCallback(() => {
     touchFixedPanelTabsState();
   }, [touchFixedPanelTabsState]);
@@ -3076,6 +3120,12 @@ export function RootComposeView(props: RootComposeViewProps) {
       promptBoxRef.current?.focusEnd();
     });
   }, []);
+  const handleDismissAutomationDraft = useCallback(() => {
+    setAutomationDraft(null);
+    window.requestAnimationFrame(() => {
+      promptBoxRef.current?.focusEnd();
+    });
+  }, []);
 
   const promptHeader = useMemo(() => {
     if (forkSeed === null) {
@@ -3107,21 +3157,34 @@ export function RootComposeView(props: RootComposeViewProps) {
   }, [forkSeed, handleCancelForkDraft]);
 
   const promptBanner = useMemo(() => {
-    if (!isCodexCliVersionBlocked || codexCliStatus === null) {
+    const automationDraftBanner =
+      automationDraft !== null ? (
+        <AutomationDraftPromptBanner onDismiss={handleDismissAutomationDraft} />
+      ) : null;
+    const codexCliBanner =
+      isCodexCliVersionBlocked && codexCliStatus !== null ? (
+        <CodexCliVersionBanner
+          currentVersion={codexCliStatus.currentVersion}
+          minimumSupportedVersion={codexCliStatus.minimumSupportedVersion}
+          issue={codexCliIssue}
+          updating={runningProvider === "codex" || queuedProviders.has("codex")}
+          onUpdate={handleUpdateCodexCli}
+        />
+      ) : null;
+    if (automationDraftBanner === null && codexCliBanner === null) {
       return null;
     }
     return (
-      <CodexCliVersionBanner
-        currentVersion={codexCliStatus.currentVersion}
-        minimumSupportedVersion={codexCliStatus.minimumSupportedVersion}
-        issue={codexCliIssue}
-        updating={runningProvider === "codex" || queuedProviders.has("codex")}
-        onUpdate={handleUpdateCodexCli}
-      />
+      <div className="space-y-2">
+        {automationDraftBanner}
+        {codexCliBanner}
+      </div>
     );
   }, [
+    automationDraft,
     codexCliIssue,
     codexCliStatus,
+    handleDismissAutomationDraft,
     handleUpdateCodexCli,
     isCodexCliVersionBlocked,
     queuedProviders,

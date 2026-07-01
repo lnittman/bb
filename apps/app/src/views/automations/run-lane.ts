@@ -21,7 +21,7 @@ export const RUN_LANE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 export const RUN_LANE_NEXT_GUTTER = 0.12;
 
 /** Outcome bucket a run-clip is tinted by. Silent successes recede to muted. */
-export type RunLaneTone = "ok" | "fail" | "muted";
+export type RunLaneTone = "ok" | "fail" | "running" | "skipped" | "muted";
 
 export interface RunLaneClip {
   run: AutomationRun;
@@ -46,6 +46,14 @@ export interface RunLaneModel {
   runCount: number;
 }
 
+export interface RunLaneStatusCounts {
+  failed: number;
+  running: number;
+  skipped: number;
+  silent: number;
+  succeeded: number;
+}
+
 /** A succeeded script run that surfaced no output reads as "silent" — muted. */
 function isSilentRun(run: AutomationRun): boolean {
   return (
@@ -62,13 +70,63 @@ export function runLaneTone(run: AutomationRun): RunLaneTone {
     case "succeeded":
       return isSilentRun(run) ? "muted" : "ok";
     case "running":
+      return "running";
     case "skipped":
-      return "muted";
+      return "skipped";
     default: {
       const _exhaustive: never = run.status;
       return _exhaustive;
     }
   }
+}
+
+export function countRunLaneStatuses(
+  runs: readonly AutomationRun[],
+): RunLaneStatusCounts {
+  return runs.reduce<RunLaneStatusCounts>(
+    (counts, run) => {
+      switch (run.status) {
+        case "failed":
+          counts.failed += 1;
+          break;
+        case "running":
+          counts.running += 1;
+          break;
+        case "skipped":
+          counts.skipped += 1;
+          break;
+        case "succeeded":
+          if (isSilentRun(run)) {
+            counts.silent += 1;
+          } else {
+            counts.succeeded += 1;
+          }
+          break;
+        default: {
+          const _exhaustive: never = run.status;
+          return _exhaustive;
+        }
+      }
+      return counts;
+    },
+    { failed: 0, running: 0, skipped: 0, silent: 0, succeeded: 0 },
+  );
+}
+
+export function formatRunLaneStatusSummary(
+  counts: RunLaneStatusCounts,
+): string {
+  const parts: Array<[number, string]> = [
+    [counts.failed, "failed"],
+    [counts.running, "running"],
+    [counts.skipped, "skipped"],
+    [counts.silent, "silent"],
+    [counts.succeeded, "succeeded"],
+  ];
+  return parts
+    .filter(([count]) => count > 0)
+    .map(([count, label]) => `${count} ${label}`)
+    .join(" · ");
 }
 
 function clampPercent(value: number): number {

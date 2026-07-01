@@ -27,6 +27,7 @@ export interface TabPillCloseAction {
 
 export interface TabPillProps {
   label: string;
+  compactLabel?: string;
   leadingVisual?: ReactNode;
   secondaryLabel?: string | null;
   /** Extra classes for the label text (e.g. `line-through` for a done tab). */
@@ -40,6 +41,7 @@ export interface TabPillProps {
 
 export function TabPill({
   label,
+  compactLabel,
   leadingVisual,
   secondaryLabel = null,
   labelClassName,
@@ -62,6 +64,7 @@ export function TabPill({
       <button
         type="button"
         onClick={onSelect}
+        aria-label={title}
         aria-pressed={isActive}
         className="flex h-full min-w-0 items-center rounded-md pl-1.5 pr-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
       >
@@ -78,11 +81,29 @@ export function TabPill({
           </span>
         ) : null}
         <span
-          className={cn("truncate", labelMaxWidthClass, labelClassName)}
+          className={cn(
+            "truncate",
+            labelMaxWidthClass,
+            compactLabel ? "hidden md:inline" : null,
+            labelClassName,
+          )}
           title={title}
         >
           {label}
         </span>
+        {compactLabel ? (
+          <span
+            className={cn(
+              "truncate md:hidden",
+              labelMaxWidthClass,
+              labelClassName,
+            )}
+            title={title}
+            aria-hidden
+          >
+            {compactLabel}
+          </span>
+        ) : null}
         {secondaryLabel ? (
           <span className="ml-1 shrink-0 text-muted-foreground">
             {secondaryLabel}

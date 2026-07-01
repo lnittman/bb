@@ -4,6 +4,8 @@ import {
   RUN_LANE_NEXT_GUTTER,
   RUN_LANE_WINDOW_MS,
   buildRunLane,
+  countRunLaneStatuses,
+  formatRunLaneStatusSummary,
   projectTintStyle,
   projectTintTokenIndex,
   runLaneTone,
@@ -41,17 +43,17 @@ describe("runLaneTone", () => {
     );
   });
 
-  it("recedes silent scripts, running, and skipped runs to muted", () => {
+  it("recedes silent scripts while distinguishing running and skipped runs", () => {
     expect(
       runLaneTone(
         makeRun({ status: "succeeded", runMode: "script", output: null }),
       ),
     ).toBe("muted");
     expect(runLaneTone(makeRun({ status: "running", output: null }))).toBe(
-      "muted",
+      "running",
     );
     expect(runLaneTone(makeRun({ status: "skipped", output: null }))).toBe(
-      "muted",
+      "skipped",
     );
   });
 
@@ -61,6 +63,29 @@ describe("runLaneTone", () => {
         makeRun({ status: "succeeded", runMode: "agent", output: null }),
       ),
     ).toBe("ok");
+  });
+});
+
+describe("run lane status summary", () => {
+  it("counts failed, running, skipped, silent, and succeeded outcomes", () => {
+    const counts = countRunLaneStatuses([
+      makeRun({ id: "ok", status: "succeeded", output: "ok" }),
+      makeRun({ id: "silent", status: "succeeded", output: null }),
+      makeRun({ id: "fail", status: "failed", output: null }),
+      makeRun({ id: "running", status: "running", output: null }),
+      makeRun({ id: "skipped", status: "skipped", output: null }),
+    ]);
+
+    expect(counts).toEqual({
+      failed: 1,
+      running: 1,
+      skipped: 1,
+      silent: 1,
+      succeeded: 1,
+    });
+    expect(formatRunLaneStatusSummary(counts)).toBe(
+      "1 failed · 1 running · 1 skipped · 1 silent · 1 succeeded",
+    );
   });
 });
 
@@ -148,7 +173,9 @@ describe("project tint identity", () => {
   });
 
   it("is stable for a given project id and spread across ids", () => {
-    expect(projectTintTokenIndex("proj_bb")).toBe(projectTintTokenIndex("proj_bb"));
+    expect(projectTintTokenIndex("proj_bb")).toBe(
+      projectTintTokenIndex("proj_bb"),
+    );
     const indices = new Set(
       ["proj_a", "proj_b", "proj_c", "proj_d"].map(projectTintTokenIndex),
     );

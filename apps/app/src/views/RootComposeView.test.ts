@@ -13,6 +13,10 @@ import { describe, expect, it, vi } from "vitest";
 import type { ReuseThreadOption } from "@/components/pickers/WorktreePicker";
 import type { PromptDraftState } from "@/lib/prompt-draft";
 import {
+  buildAutomationDraftRootComposeState,
+  readAutomationDraftFromLocationState,
+} from "@/lib/root-compose-location-state";
+import {
   applyInitialPromptToPromptDraft,
   buildRootComposeTerminalSessions,
   buildMobileRecentThreads,
@@ -288,6 +292,35 @@ describe("applyInitialPromptToPromptDraft", () => {
     ).toBe(false);
     expect(restoreIfEmpty).not.toHaveBeenCalled();
     expect(setDraft).not.toHaveBeenCalled();
+  });
+});
+
+describe("automation draft root compose state", () => {
+  it("builds and reads the chat automation draft state", () => {
+    const state = buildAutomationDraftRootComposeState({
+      initialPrompt: "Create a new bb loop to check releases.",
+      replacePrompt: true,
+    });
+
+    expect(state).toEqual({
+      automationDraft: { source: "create-via-chat" },
+      focusPrompt: true,
+      initialPrompt: "Create a new bb loop to check releases.",
+      replacePrompt: true,
+    });
+    expect(readAutomationDraftFromLocationState(state)).toEqual({
+      source: "create-via-chat",
+    });
+  });
+
+  it("ignores non-automation route state", () => {
+    expect(readAutomationDraftFromLocationState(null)).toBeNull();
+    expect(readAutomationDraftFromLocationState({})).toBeNull();
+    expect(
+      readAutomationDraftFromLocationState({
+        automationDraft: { source: "other" },
+      }),
+    ).toBeNull();
   });
 });
 

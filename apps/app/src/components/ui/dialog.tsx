@@ -181,14 +181,24 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 // Content
 // ---------------------------------------------------------------------------
 
+type DialogMobileSize = "content" | "full-height";
+
+const DIALOG_MOBILE_SIZE_CLASS_NAME: Record<
+  DialogMobileSize,
+  string | undefined
+> = {
+  content: undefined,
+  "full-height": "h-[calc(100dvh-1rem)] max-h-[48rem]",
+};
+
 interface DialogContentProps extends React.ComponentPropsWithoutRef<
   typeof DialogPrimitive.Content
 > {
-  mobileContentClassName?: string;
+  mobileSize?: DialogMobileSize;
 }
 
 const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
-  ({ className, mobileContentClassName, children, ...props }, ref) => {
+  ({ className, mobileSize = "content", children, ...props }, ref) => {
     const { isCompactViewport, open, onOpenChange } = useResponsiveDialog();
     useBrowserDimmingModal(open);
 
@@ -198,7 +208,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
         <ResponsiveDrawerShell
           open={open}
           onOpenChange={onOpenChange}
-          contentClassName={mobileContentClassName}
+          contentClassName={DIALOG_MOBILE_SIZE_CLASS_NAME[mobileSize]}
         >
           <div
             ref={ref}
