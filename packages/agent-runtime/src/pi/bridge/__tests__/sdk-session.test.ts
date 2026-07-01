@@ -61,6 +61,7 @@ const {
   mockDispose,
   mockPrompt,
   mockGetModel,
+  mockGetProviders,
 } = vi.hoisted(() => {
   const mockSessionEventListeners: MockAgentSessionEventListener[] = [];
   const mockSubscribe = vi.fn<MockSubscribe>((listener) => {
@@ -117,6 +118,16 @@ const {
     id: modelId,
     provider,
   }));
+  const mockGetProviders = vi.fn(() => [
+    "anthropic",
+    "openai",
+    "openai-codex",
+    "google",
+    "deepseek",
+    "kimi-coding",
+    "zai",
+    "minimax",
+  ]);
 
   return {
     mockGetActiveToolNames,
@@ -133,6 +144,7 @@ const {
     mockDispose,
     mockPrompt,
     mockGetModel,
+    mockGetProviders,
   };
 });
 
@@ -151,6 +163,7 @@ vi.mock("@mariozechner/pi-coding-agent", () => ({
 
 vi.mock("@mariozechner/pi-ai", () => ({
   getModel: mockGetModel,
+  getProviders: mockGetProviders,
 }));
 
 import { PiSdkSession } from "../sdk-session.js";
@@ -277,6 +290,32 @@ describe("PiSdkSession", () => {
         model: {
           id: "gpt-5.5",
           provider: "openai-codex",
+        },
+      }),
+    );
+  });
+
+  it("resolves routed Pi provider models", async () => {
+    const session = new PiSdkSession(
+      {
+        cwd: "/tmp/project",
+        model: "deepseek/deepseek-v4-pro",
+      },
+      vi.fn(),
+      vi.fn(),
+    );
+
+    await session.start();
+
+    expect(mockGetModel).toHaveBeenCalledWith(
+      "deepseek",
+      "deepseek-v4-pro",
+    );
+    expect(mockCreateAgentSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: {
+          id: "deepseek-v4-pro",
+          provider: "deepseek",
         },
       }),
     );

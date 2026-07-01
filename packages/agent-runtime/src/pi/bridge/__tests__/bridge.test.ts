@@ -77,6 +77,13 @@ vi.mock("@mariozechner/pi-coding-agent", async (importOriginal) => {
 
 vi.mock("@mariozechner/pi-ai", () => ({
   getModel: vi.fn(),
+  getProviders: vi.fn(() => [
+    "anthropic",
+    "openai",
+    "openai-codex",
+    "google",
+    "deepseek",
+  ]),
 }));
 
 import { handleLine } from "../bridge.js";

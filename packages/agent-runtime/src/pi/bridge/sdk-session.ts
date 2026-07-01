@@ -16,8 +16,8 @@ import {
   type SessionStats,
   type ToolDefinition,
 } from "@mariozechner/pi-coding-agent";
-import { getModel } from "@mariozechner/pi-ai";
-import type { ImageContent } from "@mariozechner/pi-ai";
+import { getModel, getProviders } from "@mariozechner/pi-ai";
+import type { ImageContent, KnownProvider } from "@mariozechner/pi-ai";
 
 export interface PiSdkSessionOptions {
   cwd: string;
@@ -634,21 +634,9 @@ function resolveModel(
   const provider = modelStr.slice(0, slashIdx);
   const modelId = modelStr.slice(slashIdx + 1);
 
-  try {
-    // getModel is generic over known providers; we try the common ones
-    switch (provider) {
-      case "anthropic":
-        return getModel("anthropic", modelId as never);
-      case "openai":
-        return getModel("openai", modelId as never);
-      case "openai-codex":
-        return getModel("openai-codex", modelId as never);
-      case "google":
-        return getModel("google", modelId as never);
-      default:
-        return undefined;
-    }
-  } catch {
+  if (!getProviders().includes(provider as KnownProvider)) {
     return undefined;
   }
+
+  return getModel(provider as KnownProvider, modelId as never);
 }
