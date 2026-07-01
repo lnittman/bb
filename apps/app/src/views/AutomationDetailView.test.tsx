@@ -191,6 +191,25 @@ describe("AutomationDetailContent", () => {
     expect(markup).toContain("Open run thread");
   });
 
+  it("clamps long agent prompts in the config summary", () => {
+    const markup = renderContent({
+      automation: makeAutomation({
+        execution: {
+          mode: "agent",
+          prompt: Array.from(
+            { length: 12 },
+            (_, index) => `Line ${index}`,
+          ).join("\n"),
+          providerId: "codex",
+          model: "gpt-5",
+          permissionMode: "readonly",
+        },
+      }),
+    });
+    expect(markup).toContain("max-h-20");
+    expect(markup).toContain('aria-expanded="false"');
+  });
+
   it("shows a skip reason for skipped runs", () => {
     const markup = renderContent({
       runs: [

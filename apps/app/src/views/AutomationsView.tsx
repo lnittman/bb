@@ -251,7 +251,7 @@ function AutomationRow({ entry, actions }: AutomationRowProps) {
         aria-label={`Open ${automation.name}`}
         className="absolute inset-0 rounded-md outline-none ring-ring focus-visible:ring-1"
       />
-      <div className="pointer-events-none relative z-10 grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3 py-2 sm:grid-cols-[minmax(0,1.2fr)_minmax(9rem,0.8fr)_minmax(5.5rem,auto)_1.75rem]">
+      <div className="pointer-events-none relative z-10 grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3 py-2 sm:grid-cols-[minmax(0,1.25fr)_minmax(9rem,0.75fr)_7rem_1.75rem]">
         <div className="min-w-0 space-y-1">
           <div className="flex min-w-0 items-center gap-2">
             <LoopTransportGlyph
@@ -278,11 +278,11 @@ function AutomationRow({ entry, actions }: AutomationRowProps) {
         </div>
         <div className="col-span-2 min-w-0 pl-3.5 text-xs text-muted-foreground sm:col-span-1 sm:pl-0">
           <p className="truncate text-foreground/85">{cadence}</p>
-          <p className="truncate">{scheduleStatus}</p>
+          <p className="truncate text-subtle-foreground">{scheduleStatus}</p>
         </div>
         <div
           className={cn(
-            "col-start-1 flex min-w-0 items-center gap-1.5 pl-3.5 text-xs font-medium sm:col-start-auto sm:pl-0",
+            "col-start-1 flex min-w-0 items-center gap-1.5 pl-3.5 text-xs font-medium sm:col-start-auto sm:justify-end sm:pl-0",
             lastRunTone.text,
           )}
         >
@@ -371,9 +371,10 @@ const TEMPLATE_GALLERY_EDGE_FADE = "1.5rem";
  * dialog surface. A mask (not a gradient overlay) sidesteps the Safari
  * transparent-black interpolation fringe, and an edge only fades when the
  * overflow hook reports content past it. */
-function buildTemplateGalleryMaskStyle(
-  overflow: { above: boolean; below: boolean },
-): CSSProperties | undefined {
+function buildTemplateGalleryMaskStyle(overflow: {
+  above: boolean;
+  below: boolean;
+}): CSSProperties | undefined {
   if (!overflow.above && !overflow.below) {
     return undefined;
   }
@@ -496,7 +497,7 @@ function TemplateGallery({ onSelect }: TemplateGalleryProps) {
 
 /** Inline templates: a compact static row of tiles (visually distinct from the
  * automations list below) plus a right-aligned "View all" that opens the full
- * gallery — a responsive Dialog that renders as a vaul drawer on mobile. */
+ * gallery, a responsive Dialog that renders as a vaul drawer on mobile. */
 function TemplatesSection({ onCreateAutomation }: TemplatesSectionProps) {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const inlineStarters = AUTOMATION_STARTER_LOOPS.slice(
