@@ -1165,7 +1165,8 @@ export function CreateAutomationDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="gap-4 md:grid-rows-[auto_minmax(0,1fr)] md:h-[min(85dvh,44rem)] md:w-[calc(100vw-3rem)] md:max-w-2xl md:overflow-hidden"
+        mobileContentClassName="h-[calc(100dvh-1rem)] max-h-[48rem]"
+        className="min-h-0 max-md:flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4 overflow-hidden md:h-[min(85dvh,44rem)] md:w-[calc(100vw-3rem)] md:max-w-2xl"
         onKeyDownCapture={() => {
           hasDialogUserInteractionRef.current = true;
         }}
@@ -1182,7 +1183,7 @@ export function CreateAutomationDialog({
         </DialogHeader>
         <form
           data-create-automation-form=""
-          className="grid min-h-0 gap-2.5 md:grid-rows-[minmax(0,1fr)_auto_auto]"
+          className="grid min-h-0 grid-rows-[minmax(0,1fr)_auto_auto] gap-2.5"
           onSubmit={handleSubmit}
         >
           <div
@@ -1252,7 +1253,7 @@ export function CreateAutomationDialog({
                     }
                     aria-invalid={showError("instructions")}
                     aria-describedby={`${instructionsErrorId} ${permissionsErrorId}`}
-                    className="min-h-32 resize-y rounded-b-none border-0 focus-visible:ring-0"
+                    className="min-h-28 resize-y rounded-b-none border-0 focus-visible:ring-0 md:min-h-32"
                     placeholder="Summarize the latest project updates and call out blockers."
                   />
                   <div
@@ -1398,7 +1399,7 @@ export function CreateAutomationDialog({
               <section className="grid gap-2.5">
                 <div
                   data-create-automation-schedule-layout=""
-                  className="grid grid-cols-[minmax(8.5rem,12rem)_minmax(0,1fr)] items-start gap-3"
+                  className="grid gap-2.5 md:grid-cols-[minmax(8.5rem,12rem)_minmax(0,1fr)] md:items-start md:gap-3"
                 >
                   <div className="min-w-0">
                     <h3 className="text-sm font-medium">Schedule</h3>
@@ -1408,7 +1409,7 @@ export function CreateAutomationDialog({
                   </div>
                   <div
                     data-create-automation-schedule-tabs=""
-                    className="flex min-w-0 flex-wrap items-center justify-end gap-1 self-start"
+                    className="grid min-w-0 grid-cols-5 items-center gap-1 [&>div>button]:w-full [&>div>button]:justify-center [&>div]:min-w-0 [&>div]:w-full md:flex md:flex-wrap md:justify-end md:self-start md:[&>div>button]:w-auto md:[&>div>button]:justify-start md:[&>div]:w-auto"
                     role="group"
                     aria-label="Schedule cadence"
                   >
@@ -1425,104 +1426,115 @@ export function CreateAutomationDialog({
                     ))}
                   </div>
                 </div>
-                {showScheduleControls ? (
-                  <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_14rem]">
-                    {showTimeControls ? (
-                      <div className="grid gap-2">
-                        <label
-                          className="text-xs font-medium text-muted-foreground"
-                          htmlFor={scheduleTimeId}
-                        >
-                          At HH:MM
-                        </label>
-                        <Input
-                          id={scheduleTimeId}
-                          type="time"
-                          value={scheduleTime}
-                          onFocus={() =>
-                            markFieldInteractedAfterDialogInteraction("time")
-                          }
-                          onPointerDown={() => markFieldInteracted("time")}
-                          onKeyDown={() => markFieldInteracted("time")}
-                          onChange={(event) => {
-                            setScheduleTime(event.target.value);
-                            setServerError(null);
-                          }}
-                          onBlur={() => markTouchedAfterUserInteraction("time")}
-                          aria-invalid={showError("time")}
-                          aria-describedby={scheduleTimeErrorId}
-                        />
-                        <FieldError
-                          id={scheduleTimeErrorId}
-                          message={showError("time") ? validation.time : null}
-                        />
-                      </div>
-                    ) : null}
-                    {scheduleCadence === "custom" ? (
-                      <div className="grid gap-2">
-                        <label
-                          className="text-xs font-medium text-muted-foreground"
-                          htmlFor={cronId}
-                        >
-                          Cron expression
-                        </label>
-                        <Input
-                          ref={cronInputRef}
-                          id={cronId}
-                          value={customCron}
-                          onFocus={() =>
-                            markFieldInteractedAfterDialogInteraction("cron")
-                          }
-                          onPointerDown={() => markFieldInteracted("cron")}
-                          onKeyDown={() => markFieldInteracted("cron")}
-                          onChange={(event) => {
-                            setCustomCron(event.target.value);
-                            setServerError(null);
-                          }}
-                          onBlur={() => markTouchedAfterUserInteraction("cron")}
-                          aria-invalid={showError("cron")}
-                          aria-describedby={cronErrorId}
-                          spellCheck={false}
-                        />
-                        <FieldError
-                          id={cronErrorId}
-                          message={showError("cron") ? validation.cron : null}
-                        />
-                      </div>
-                    ) : null}
-                    {showTimeControls ? (
-                      <div className="grid gap-2">
-                        <label
-                          className="text-xs font-medium text-muted-foreground"
-                          htmlFor={timezoneId}
-                        >
-                          Timezone
-                        </label>
-                        <TimezonePicker
-                          id={timezoneId}
-                          value={timezone}
-                          options={timezoneOptions}
-                          invalid={showError("timezone")}
-                          describedBy={timezoneErrorId}
-                          onBlur={() =>
-                            markTouchedAfterUserInteraction("timezone")
-                          }
-                          onChange={(nextTimezone) => {
-                            setTimezone(nextTimezone);
-                            markTouched("timezone");
-                            setServerError(null);
-                          }}
-                        />
-                        <FieldError
-                          id={timezoneErrorId}
-                          message={
-                            showError("timezone") ? validation.timezone : null
-                          }
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
+                <div
+                  data-create-automation-schedule-controls=""
+                  data-state={showScheduleControls ? "visible" : "reserved"}
+                  aria-hidden={showScheduleControls ? undefined : true}
+                  className="grid min-h-[8.25rem] gap-3 md:min-h-0 md:grid-cols-[minmax(0,1fr)_14rem]"
+                >
+                  {showScheduleControls ? (
+                    <>
+                      {showTimeControls ? (
+                        <div className="grid gap-2">
+                          <label
+                            className="text-xs font-medium text-muted-foreground"
+                            htmlFor={scheduleTimeId}
+                          >
+                            At HH:MM
+                          </label>
+                          <Input
+                            id={scheduleTimeId}
+                            type="time"
+                            value={scheduleTime}
+                            onFocus={() =>
+                              markFieldInteractedAfterDialogInteraction("time")
+                            }
+                            onPointerDown={() => markFieldInteracted("time")}
+                            onKeyDown={() => markFieldInteracted("time")}
+                            onChange={(event) => {
+                              setScheduleTime(event.target.value);
+                              setServerError(null);
+                            }}
+                            onBlur={() =>
+                              markTouchedAfterUserInteraction("time")
+                            }
+                            aria-invalid={showError("time")}
+                            aria-describedby={scheduleTimeErrorId}
+                          />
+                          <FieldError
+                            id={scheduleTimeErrorId}
+                            message={showError("time") ? validation.time : null}
+                          />
+                        </div>
+                      ) : null}
+                      {scheduleCadence === "custom" ? (
+                        <div className="grid gap-2">
+                          <label
+                            className="text-xs font-medium text-muted-foreground"
+                            htmlFor={cronId}
+                          >
+                            Cron expression
+                          </label>
+                          <Input
+                            ref={cronInputRef}
+                            id={cronId}
+                            value={customCron}
+                            onFocus={() =>
+                              markFieldInteractedAfterDialogInteraction("cron")
+                            }
+                            onPointerDown={() => markFieldInteracted("cron")}
+                            onKeyDown={() => markFieldInteracted("cron")}
+                            onChange={(event) => {
+                              setCustomCron(event.target.value);
+                              setServerError(null);
+                            }}
+                            onBlur={() =>
+                              markTouchedAfterUserInteraction("cron")
+                            }
+                            aria-invalid={showError("cron")}
+                            aria-describedby={cronErrorId}
+                            spellCheck={false}
+                          />
+                          <FieldError
+                            id={cronErrorId}
+                            message={showError("cron") ? validation.cron : null}
+                          />
+                        </div>
+                      ) : null}
+                      {showTimeControls ? (
+                        <div className="grid gap-2">
+                          <label
+                            className="text-xs font-medium text-muted-foreground"
+                            htmlFor={timezoneId}
+                          >
+                            Timezone
+                          </label>
+                          <TimezonePicker
+                            id={timezoneId}
+                            value={timezone}
+                            options={timezoneOptions}
+                            invalid={showError("timezone")}
+                            describedBy={timezoneErrorId}
+                            onBlur={() =>
+                              markTouchedAfterUserInteraction("timezone")
+                            }
+                            onChange={(nextTimezone) => {
+                              setTimezone(nextTimezone);
+                              markTouched("timezone");
+                              setServerError(null);
+                            }}
+                          />
+                          <FieldError
+                            id={timezoneErrorId}
+                            message={
+                              showError("timezone") ? validation.timezone : null
+                            }
+                          />
+                        </div>
+                      ) : null}
+                    </>
+                  ) : null}
+                </div>
               </section>
             </div>
             <div

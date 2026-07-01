@@ -181,19 +181,25 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 // Content
 // ---------------------------------------------------------------------------
 
-type DialogContentProps = React.ComponentPropsWithoutRef<
+interface DialogContentProps extends React.ComponentPropsWithoutRef<
   typeof DialogPrimitive.Content
->;
+> {
+  mobileContentClassName?: string;
+}
 
 const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
-  ({ className, children, ...props }, ref) => {
+  ({ className, mobileContentClassName, children, ...props }, ref) => {
     const { isCompactViewport, open, onOpenChange } = useResponsiveDialog();
     useBrowserDimmingModal(open);
 
     if (isCompactViewport) {
       const domProps = stripRadixContentProps(props);
       return (
-        <ResponsiveDrawerShell open={open} onOpenChange={onOpenChange}>
+        <ResponsiveDrawerShell
+          open={open}
+          onOpenChange={onOpenChange}
+          contentClassName={mobileContentClassName}
+        >
           <div
             ref={ref}
             className={cn(

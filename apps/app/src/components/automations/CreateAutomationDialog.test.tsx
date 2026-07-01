@@ -27,6 +27,7 @@ import {
   hostsQueryKey,
   systemExecutionOptionsQueryKey,
 } from "@/hooks/queries/query-keys";
+import { CompactViewportOverrideProvider } from "@/components/ui/hooks/use-compact-viewport";
 import { sidebarNavigationQueryKey } from "@/hooks/queries/sidebar-navigation-query";
 import { createQueryClientTestHarness } from "@/test/queryClientTestHarness";
 import {
@@ -263,18 +264,29 @@ async function submitForm() {
 function renderDialog({
   onOpenChange = vi.fn(),
   sidebarNavigation = makeSidebarNavigation(),
+  isCompactViewport,
 }: {
   onOpenChange?: (open: boolean) => void;
   sidebarNavigation?: SidebarBootstrapResponse;
+  isCompactViewport?: boolean;
 } = {}) {
   const { queryClient, wrapper } = createQueryClientTestHarness();
   seedQueries(queryClient, sidebarNavigation);
-  render(
+  const dialog = (
     <CreateAutomationDialog
       open
       onOpenChange={onOpenChange}
       defaultProjectId="proj_bb"
-    />,
+    />
+  );
+  render(
+    isCompactViewport === undefined ? (
+      dialog
+    ) : (
+      <CompactViewportOverrideProvider isCompactViewport={isCompactViewport}>
+        {dialog}
+      </CompactViewportOverrideProvider>
+    ),
     { wrapper },
   );
   return { queryClient, onOpenChange };
@@ -395,18 +407,23 @@ describe("CreateAutomationDialog", () => {
     expect(cancelButton.className).toContain("w-full");
   });
 
-  it("keeps the schedule cadence tabs right-aligned in a stable layout column", () => {
+  it("keeps the schedule cadence row full-width on mobile and right-aligned on desktop", () => {
     renderDialog();
 
     const tabs = screen.getByRole("group", { name: "Schedule cadence" });
     const layout = tabs.closest("[data-create-automation-schedule-layout]");
 
     expect(layout).not.toBeNull();
+    expect(layout?.className).toContain("grid gap-2.5");
     expect(layout?.className).toContain(
-      "grid-cols-[minmax(8.5rem,12rem)_minmax(0,1fr)]",
+      "md:grid-cols-[minmax(8.5rem,12rem)_minmax(0,1fr)]",
     );
-    expect(tabs.className).toContain("self-start");
-    expect(tabs.className).toContain("justify-end");
+    expect(tabs.className).toContain("grid-cols-5");
+    expect(tabs.className).toContain("[&>div]:w-full");
+    expect(tabs.className).toContain("[&>div>button]:justify-center");
+    expect(tabs.className).toContain("md:flex");
+    expect(tabs.className).toContain("md:justify-end");
+    expect(tabs.className).toContain("md:self-start");
     expect(screen.queryByRole("button", { name: "Manual" })).toBeNull();
     expect(
       screen
@@ -437,8 +454,9 @@ describe("CreateAutomationDialog", () => {
     expect(dialog.className).toContain("md:h-[min(85dvh,44rem)]");
     expect(dialog.className).toContain("md:w-[calc(100vw-3rem)]");
     expect(dialog.className).toContain("md:max-w-2xl");
-    expect(dialog.className).toContain("md:grid-rows-[auto_minmax(0,1fr)]");
-    expect(form?.className).toContain("md:grid-rows-[minmax(0,1fr)_auto_auto]");
+    expect(dialog.className).toContain("grid-rows-[auto_minmax(0,1fr)]");
+    expect(dialog.className).toContain("overflow-hidden");
+    expect(form?.className).toContain("grid-rows-[minmax(0,1fr)_auto_auto]");
     expect(scrollBody?.className).toContain("overflow-y-auto");
     expect(scrollBody?.className).not.toContain("max-h");
 
@@ -447,6 +465,69 @@ describe("CreateAutomationDialog", () => {
       fireEvent.click(screen.getByRole("button", { name: cadence }));
       expect(dialog.className).toBe(dialogClassName);
     }
+  });
+
+  it("pins the compact drawer shell height while the inner content fills it", () => {
+    renderDialog({ isCompactViewport: true });
+
+    const dialog = screen.getByRole("dialog");
+    const form = screen
+      .getByRole("button", { name: "Create automation" })
+      .closest("form");
+    const innerContent = form?.parentElement;
+
+    expect(dialog.className).toContain("h-[calc(100dvh-1rem)]");
+    expect(dialog.className).toContain("max-h-[48rem]");
+    expect(innerContent?.className).toContain("max-md:flex-1");
+    expect(innerContent?.className).toContain("overflow-hidden");
+  });
+
+  it("keeps compact drawer chrome stable while schedule controls mount and unmount", () => {
+    renderDialog();
+
+    const dialog = screen.getByRole("dialog");
+    const form = screen
+      .getByRole("button", { name: "Create automation" })
+      .closest("form");
+    const scrollBody = dialog.querySelector(
+      "[data-create-automation-scroll-body]",
+    );
+    const tabs = screen.getByRole("group", { name: "Schedule cadence" });
+    const stableClassNames = {
+      dialog: dialog.className,
+      form: form?.className,
+      scrollBody: scrollBody?.className,
+      tabs: tabs.className,
+    };
+
+    const initialControls = dialog.querySelector(
+      "[data-create-automation-schedule-controls]",
+    );
+    expect(initialControls).not.toBeNull();
+    expect(initialControls?.className).toContain("min-h-[8.25rem]");
+    expect(initialControls?.className).toContain("md:min-h-0");
+
+    fireEvent.click(screen.getByRole("button", { name: "Hourly" }));
+    const reservedControls = dialog.querySelector(
+      "[data-create-automation-schedule-controls]",
+    );
+    expect(reservedControls).not.toBeNull();
+    expect(reservedControls?.getAttribute("data-state")).toBe("reserved");
+    expect(reservedControls?.getAttribute("aria-hidden")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Weekdays" }));
+    const visibleControls = dialog.querySelector(
+      "[data-create-automation-schedule-controls]",
+    );
+    expect(visibleControls).not.toBeNull();
+    expect(visibleControls?.getAttribute("data-state")).toBe("visible");
+    expect(visibleControls?.getAttribute("aria-hidden")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Hourly" }));
+    expect(dialog.className).toBe(stableClassNames.dialog);
+    expect(form?.className).toBe(stableClassNames.form);
+    expect(scrollBody?.className).toBe(stableClassNames.scrollBody);
+    expect(tabs.className).toBe(stableClassNames.tabs);
   });
 
   it("keeps the form rhythm tight without an empty footer spacer", () => {
