@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 
 import type { ReactNode } from "react";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { PERSONAL_PROJECT_ID } from "@bb/domain";
 import type { Automation, AutomationRun } from "@bb/server-contract";
@@ -158,14 +164,23 @@ describe("AutomationDetailContent run inspector", () => {
     panelGroupState.setLayout.mockClear();
   });
 
-  it("opens and closes a right-panel run inspector from the latest-run shortcut", () => {
+  it("opens and closes a right-panel run inspector from the whole run row", async () => {
     renderContent([makeRun()]);
 
     expect(screen.queryByRole("heading", { name: "Run details" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Inspect latest" })).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Inspect latest" }));
+    const row = screen.getByRole("button", { name: /Inspect run/i });
+    expect(row.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(row);
 
     expect(screen.getByRole("heading", { name: "Run details" })).not.toBeNull();
+    expect(row.getAttribute("aria-expanded")).toBe("true");
+    expect(row.getAttribute("aria-controls")).toBe("automation-run-inspector");
+    expect(
+      screen.getByText("The script succeeded and produced local output."),
+    ).not.toBeNull();
     expect(screen.getByText("Scheduled")).not.toBeNull();
     expect(screen.getByText("Exit")).not.toBeNull();
     expect(screen.getByText("Output")).not.toBeNull();
@@ -175,6 +190,8 @@ describe("AutomationDetailContent run inspector", () => {
     fireEvent.click(screen.getByRole("button", { name: "Close run details" }));
 
     expect(screen.queryByRole("heading", { name: "Run details" })).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(row));
+    expect(row.getAttribute("aria-expanded")).toBe("false");
   });
 
   it("opens the selected row in the run inspector", () => {
@@ -190,12 +207,24 @@ describe("AutomationDetailContent run inspector", () => {
       }),
     ]);
 
-    fireEvent.click(
-      screen.getAllByRole("button", { name: /Inspect .* run/i })[1],
-    );
+    fireEvent.click(screen.getAllByRole("button", { name: /Inspect run/i })[1]);
 
     expect(screen.getByRole("heading", { name: "Run details" })).not.toBeNull();
     expect(screen.getByText("Error")).not.toBeNull();
-    expect(screen.getAllByText("disk full")).toHaveLength(1);
+    expect(screen.getAllByText("disk full")).toHaveLength(2);
+  });
+
+  it("closes the run inspector with Escape and restores row focus", async () => {
+    renderContent([makeRun()]);
+
+    const row = screen.getByRole("button", { name: /Inspect run/i });
+    fireEvent.click(row);
+
+    expect(screen.getByRole("heading", { name: "Run details" })).not.toBeNull();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(screen.queryByRole("heading", { name: "Run details" })).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(row));
   });
 });

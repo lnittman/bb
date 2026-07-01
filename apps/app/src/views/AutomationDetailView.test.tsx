@@ -97,37 +97,42 @@ describe("AutomationDetailContent", () => {
     expect(markup).toContain("Every 15 minutes");
   });
 
-  it("renders the config summary with schedule, execution, and environment", () => {
+  it("renders schedule in the header and keeps config to execution context", () => {
     const markup = renderContent({ automation: makeAutomation() });
     expect(markup).toContain("America/New_York");
     expect(markup).toContain("Next ");
     expect(markup).toContain("bash disk.sh");
     expect(markup).toContain("30s timeout");
     expect(markup).toContain("Personal workspace");
+    expect(markup).not.toContain("<dt>Schedule</dt>");
   });
 
   it("shows a Pause icon button for an enabled automation and Resume for a paused one", () => {
     const enabled = renderContent({
       automation: makeAutomation({ enabled: true }),
     });
-    expect(enabled).toContain('aria-label="Pause"');
+    expect(enabled).toContain("Pause</button>");
     expect(enabled).toContain('data-icon="Pause"');
-    expect(enabled).not.toContain('aria-label="Resume"');
+    expect(enabled).not.toContain('aria-label="Pause"');
+    expect(enabled).not.toContain("Resume</button>");
 
     const paused = renderContent({
       automation: makeAutomation({ enabled: false }),
     });
-    expect(paused).toContain('aria-label="Resume"');
+    expect(paused).toContain("Resume</button>");
     expect(paused).toContain('data-icon="Play"');
-    expect(paused).not.toContain('aria-label="Pause"');
+    expect(paused).not.toContain('aria-label="Resume"');
+    expect(paused).not.toContain("Pause</button>");
   });
 
   it("renders Run now and Delete icon actions", () => {
     const markup = renderContent({ automation: makeAutomation() });
-    expect(markup).toContain('aria-label="Run now"');
+    expect(markup).toContain("Run now</button>");
     expect(markup).toContain('data-icon="Zap"');
-    expect(markup).toContain('aria-label="Delete automation"');
+    expect(markup).toContain("Delete</button>");
     expect(markup).toContain('data-icon="Trash2"');
+    expect(markup).not.toContain('aria-label="Run now"');
+    expect(markup).not.toContain('aria-label="Delete automation"');
   });
 
   it("renders a succeeded script run as a compact row with its exit code", () => {
@@ -138,6 +143,8 @@ describe("AutomationDetailContent", () => {
     expect(markup).toContain("Succeeded");
     expect(markup).not.toContain("Disk at 92%");
     expect(markup).toContain("exit 0");
+    expect(markup).toContain('aria-expanded="false"');
+    expect(markup).not.toContain("Inspect latest");
   });
 
   it("renders a failed run as a compact row with its exit code", () => {
@@ -153,7 +160,7 @@ describe("AutomationDetailContent", () => {
       ],
     });
     expect(markup).toContain("Failed");
-    expect(markup).not.toContain("df: /xyz: No such file or directory");
+    expect(markup).toContain("df: /xyz: No such file or directory");
     expect(markup).toContain("exit 1");
     expect(markup).toContain("text-destructive");
   });
@@ -188,7 +195,7 @@ describe("AutomationDetailContent", () => {
       ],
     });
     expect(markup).toContain('href="/threads/thr_run"');
-    expect(markup).toContain("Open run thread");
+    expect(markup).toContain(">Thread</span>");
   });
 
   it("clamps long agent prompts in the config summary", () => {

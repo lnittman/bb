@@ -77,6 +77,12 @@ describe("RunLane", () => {
     expect(markup).toContain('href="/projects/proj_bb/threads/thr_run"');
   });
 
+  it("keeps non-link run clips decorative for accessibility output", () => {
+    const markup = renderLane({ runs: [makeRun()] });
+    expect(markup).not.toContain('role="img"');
+    expect(markup).toContain('aria-hidden="true"');
+  });
+
   it("renders a ghosted next fire when one is upcoming", () => {
     const markup = renderLane({
       runs: [makeRun()],

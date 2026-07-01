@@ -52,7 +52,8 @@ const CLIP_TONE_LABEL: Record<RunLaneTone, string> = {
 function clipStatusLabel(run: AutomationRun, tone: RunLaneTone): string {
   if (run.status === "running") return "Running";
   if (run.status === "skipped") return "Skipped";
-  if (tone === "muted" && run.status === "succeeded") return "Succeeded · silent";
+  if (tone === "muted" && run.status === "succeeded")
+    return "Succeeded · silent";
   return CLIP_TONE_LABEL[tone];
 }
 
@@ -106,9 +107,7 @@ function RunClipDot({ clip, projectId }: RunClipDotProps) {
           </Link>
         ) : (
           <span
-            role="img"
-            aria-label={ariaLabel}
-            tabIndex={0}
+            aria-hidden="true"
             className={targetClass}
             style={{ left: `${leftPercent}%` }}
           >

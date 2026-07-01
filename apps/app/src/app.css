@@ -187,6 +187,67 @@
     container: scroll-overlay / inline-size;
   }
 
+  [data-automation-detail-main] {
+    container: automation-detail-main / inline-size;
+  }
+
+  [data-automation-run-inspector] {
+    container: automation-run-inspector / inline-size;
+  }
+
+  [data-automation-detail-config-row],
+  [data-automation-run-detail-row] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  [data-automation-run-row] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  [data-automation-run-status],
+  [data-automation-run-duration],
+  [data-automation-run-result] {
+    justify-self: start;
+  }
+
+  @container automation-detail-main (min-width: 34rem) {
+    [data-automation-detail-config-row] {
+      grid-template-columns: 7rem minmax(0, 1fr);
+    }
+  }
+
+  @container automation-detail-main (min-width: 42rem) {
+    [data-automation-detail-header] {
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    [data-automation-detail-actions] {
+      justify-content: flex-end;
+    }
+
+    [data-automation-run-row] {
+      grid-template-columns: minmax(0, 1fr) minmax(7rem, 8rem) 4.5rem 5rem;
+    }
+
+    [data-automation-run-status] {
+      justify-self: start;
+    }
+
+    [data-automation-run-duration],
+    [data-automation-run-result] {
+      justify-self: end;
+      text-align: right;
+    }
+  }
+
+  @container automation-run-inspector (min-width: 26rem) {
+    [data-automation-run-detail-row] {
+      grid-template-columns: 6rem minmax(0, 1fr);
+    }
+  }
+
   [data-thread-toc] {
     display: none;
   }
