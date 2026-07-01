@@ -6,9 +6,12 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
+  type Ref,
   type ReactNode,
 } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAtomValue } from "jotai";
 import {
   Panel,
   PanelGroup,
@@ -32,6 +35,7 @@ import {
   PANEL_COLLAPSE_TRANSITION_CLASS,
   PANEL_RESIZE_HIT_AREA_MARGINS,
 } from "@/components/secondary-panel/panelTransitionTokens";
+import { threadSecondaryPanelResizingAtom } from "@/components/secondary-panel/threadSecondaryPanelAtoms";
 import { useSecondaryPanelResize } from "@/components/secondary-panel/useSecondaryPanelResize";
 import { LIST_HOVER_TRANSITION } from "@/components/ui/motion.js";
 import { PageShell } from "@/components/ui/page-shell.js";
@@ -64,6 +68,9 @@ const RUN_PANEL_DRAWER_CONTENT_CLASS =
 const RUN_PANEL_DRAWER_BODY_CLASS =
   "flex h-full min-h-0 flex-1 flex-col overflow-hidden";
 const RUN_OUTPUT_PREVIEW_LINE_LIMIT = 24;
+const RUN_DETAILS_RESIZABLE_PANEL_STYLE: CSSProperties = {
+  pointerEvents: "auto",
+};
 const ignorePanelWidthChange = () => {};
 
 const RUN_TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
@@ -567,13 +574,23 @@ function RunOutputPanel({ evidence, run }: RunOutputPanelProps) {
 }
 
 interface AutomationRunInspectorProps {
+  inlineWidthPercent: number;
+  inspectorRef?: Ref<HTMLElement>;
+  isOpen: boolean;
+  isResizing: boolean;
   run: AutomationRun;
+  renderAsDrawer: boolean;
   projectId: string;
   onClose: () => void;
 }
 
 function AutomationRunInspector({
+  inlineWidthPercent,
+  inspectorRef,
+  isOpen,
+  isResizing,
   run,
+  renderAsDrawer,
   projectId,
   onClose,
 }: AutomationRunInspectorProps) {
@@ -588,9 +605,26 @@ function AutomationRunInspector({
 
   return (
     <aside
+      ref={inspectorRef}
       id={AUTOMATION_RUN_INSPECTOR_ID}
+      aria-hidden={!isOpen}
+      inert={!isOpen}
       data-automation-run-inspector=""
-      className="flex h-full min-h-0 flex-col bg-background"
+      style={
+        !renderAsDrawer && !isResizing
+          ? { width: `var(--secondary-swipe-width, ${inlineWidthPercent}cqw)` }
+          : undefined
+      }
+      className={cn(
+        "flex h-full min-h-0 flex-col overflow-hidden bg-background",
+        renderAsDrawer
+          ? "min-w-0 flex-1"
+          : [
+              "absolute inset-y-0 left-0 border-l border-border-seam-vertical",
+              isResizing && "right-0",
+              !isOpen && "pointer-events-none",
+            ],
+      )}
     >
       <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border-seam px-4">
         <div className="min-w-0">
@@ -717,8 +751,12 @@ function AutomationRunDetailsLayout({
 }: AutomationRunDetailsLayoutProps) {
   const renderAsDrawer = useIsCompactViewport();
   const isRunPanelOpen = selectedRun !== null;
+  const [retainedRun, setRetainedRun] = useState(selectedRun);
   const horizontalPanelGroupRef = useRef<ImperativePanelGroupHandle | null>(
     null,
+  );
+  const isSecondaryPanelResizing = useAtomValue(
+    threadSecondaryPanelResizingAtom,
   );
   const {
     handleSecondaryPanelDragging,
@@ -734,6 +772,13 @@ function AutomationRunDetailsLayout({
     Math.max(persistedWidthPercent, AUTOMATION_RUN_PANEL_MIN_SIZE_PERCENT),
     AUTOMATION_RUN_PANEL_MAX_SIZE_PERCENT,
   );
+  const inspectorRun = selectedRun ?? retainedRun;
+
+  useEffect(() => {
+    if (selectedRun) {
+      setRetainedRun(selectedRun);
+    }
+  }, [selectedRun]);
 
   useLayoutEffect(() => {
     const group = horizontalPanelGroupRef.current;
@@ -754,11 +799,11 @@ function AutomationRunDetailsLayout({
   }, [isRunPanelOpen, renderAsDrawer, runPanelWidthPercent]);
 
   return (
-    <div className="@container flex h-full min-h-0 w-full">
+    <div className="flex h-full min-h-0 w-full">
       <PanelGroup
         ref={horizontalPanelGroupRef}
         direction="horizontal"
-        className="h-full min-w-0 flex-1"
+        className="@container h-full min-w-0 flex-1"
         style={{ overflow: "clip" }}
       >
         <Panel
@@ -820,29 +865,24 @@ function AutomationRunDetailsLayout({
               onCollapse={onClose}
               onResize={handleSecondaryPanelResize}
               order={2}
+              style={RUN_DETAILS_RESIZABLE_PANEL_STYLE}
               className={cn(
-                "min-w-0 overflow-clip border-l border-border-seam-vertical bg-background transition-[flex-grow,flex-basis]",
+                "relative min-w-0 overflow-clip transition-[flex-grow,flex-basis]",
                 PANEL_COLLAPSE_TRANSITION_CLASS,
               )}
             >
-              <div
-                ref={(node) => {
-                  if (node) {
-                    secondaryPanelRef.current = node;
-                  }
-                }}
-                aria-hidden={!isRunPanelOpen}
-                inert={!isRunPanelOpen}
-                className="h-full min-h-0"
-              >
-                {selectedRun ? (
-                  <AutomationRunInspector
-                    run={selectedRun}
-                    projectId={projectId}
-                    onClose={onClose}
-                  />
-                ) : null}
-              </div>
+              {inspectorRun ? (
+                <AutomationRunInspector
+                  inspectorRef={secondaryPanelRef}
+                  inlineWidthPercent={runPanelWidthPercent}
+                  isOpen={isRunPanelOpen}
+                  isResizing={isSecondaryPanelResizing}
+                  renderAsDrawer={false}
+                  run={inspectorRun}
+                  projectId={projectId}
+                  onClose={onClose}
+                />
+              ) : null}
             </Panel>
           </>
         ) : null}
@@ -859,9 +899,14 @@ function AutomationRunDetailsLayout({
           repositionInputs={false}
         >
           <div className={RUN_PANEL_DRAWER_BODY_CLASS}>
-            {selectedRun ? (
+            {inspectorRun ? (
               <AutomationRunInspector
-                run={selectedRun}
+                inspectorRef={secondaryPanelRef}
+                inlineWidthPercent={runPanelWidthPercent}
+                isOpen={isRunPanelOpen}
+                isResizing={false}
+                renderAsDrawer={true}
+                run={inspectorRun}
                 projectId={projectId}
                 onClose={onClose}
               />
@@ -1083,6 +1128,41 @@ export function AutomationDetailContent({
             </div>
           </header>
 
+          <section
+            aria-labelledby="automation-config-heading"
+            className="space-y-2"
+          >
+            <h2
+              id="automation-config-heading"
+              className="text-xs font-medium uppercase text-muted-foreground"
+            >
+              Config
+            </h2>
+            <dl className="divide-y divide-border border-y border-border">
+              <ConfigRow label="Environment">
+                <span className="break-words">
+                  {describeEnvironment(automation)}
+                </span>
+              </ConfigRow>
+              <ConfigRow label="Execution">
+                <span className="break-words">
+                  {describeExecution(automation)}
+                </span>
+              </ConfigRow>
+              {automation.execution.mode === "agent" ? (
+                <ConfigRow label="Prompt">
+                  <ExpandableLine
+                    fullText={automation.execution.prompt}
+                    collapsedClassName="max-h-20 overflow-hidden whitespace-pre-wrap break-words"
+                    className="text-xs text-muted-foreground"
+                  >
+                    {automation.execution.prompt}
+                  </ExpandableLine>
+                </ConfigRow>
+              ) : null}
+            </dl>
+          </section>
+
           <section className="space-y-2">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xs font-medium uppercase text-muted-foreground">
@@ -1124,41 +1204,6 @@ export function AutomationDetailContent({
                 </div>
               </div>
             )}
-          </section>
-
-          <section
-            aria-labelledby="automation-config-heading"
-            className="space-y-2"
-          >
-            <h2
-              id="automation-config-heading"
-              className="text-xs font-medium uppercase text-muted-foreground"
-            >
-              Config
-            </h2>
-            <dl className="divide-y divide-border border-y border-border">
-              <ConfigRow label="Environment">
-                <span className="break-words">
-                  {describeEnvironment(automation)}
-                </span>
-              </ConfigRow>
-              <ConfigRow label="Execution">
-                <span className="break-words">
-                  {describeExecution(automation)}
-                </span>
-              </ConfigRow>
-              {automation.execution.mode === "agent" ? (
-                <ConfigRow label="Prompt">
-                  <ExpandableLine
-                    fullText={automation.execution.prompt}
-                    collapsedClassName="max-h-20 overflow-hidden whitespace-pre-wrap break-words"
-                    className="text-xs text-muted-foreground"
-                  >
-                    {automation.execution.prompt}
-                  </ExpandableLine>
-                </ConfigRow>
-              ) : null}
-            </dl>
           </section>
         </div>
       </AutomationRunDetailsLayout>

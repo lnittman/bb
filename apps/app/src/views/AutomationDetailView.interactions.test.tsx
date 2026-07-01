@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
   cleanup,
   fireEvent,
@@ -21,10 +21,15 @@ interface PanelGroupHandle {
 
 interface PanelGroupProps {
   children?: ReactNode;
+  className?: string;
+  style?: CSSProperties;
 }
 
 interface PanelProps {
   children?: ReactNode;
+  className?: string;
+  id?: string;
+  style?: CSSProperties;
 }
 
 const panelGroupState = vi.hoisted(() => ({
@@ -35,7 +40,7 @@ vi.mock("react-resizable-panels", async () => {
   const React = await import("react");
 
   const PanelGroup = React.forwardRef<PanelGroupHandle, PanelGroupProps>(
-    ({ children }, ref) => {
+    ({ children, className, style }, ref) => {
       React.useImperativeHandle(
         ref,
         () => ({ setLayout: panelGroupState.setLayout }),
@@ -43,7 +48,7 @@ vi.mock("react-resizable-panels", async () => {
       );
       return React.createElement(
         "div",
-        { "data-testid": "automation-panel-group" },
+        { "data-testid": "automation-panel-group", className, style },
         children,
       );
     },
@@ -51,10 +56,10 @@ vi.mock("react-resizable-panels", async () => {
   PanelGroup.displayName = "MockPanelGroup";
 
   const Panel = React.forwardRef<HTMLDivElement, PanelProps>(
-    ({ children }, ref) =>
+    ({ children, className, id, style }, ref) =>
       React.createElement(
         "div",
-        { ref, "data-testid": "automation-panel" },
+        { ref, "data-testid": "automation-panel", className, id, style },
         children,
       ),
   );
@@ -194,10 +199,28 @@ describe("AutomationDetailContent run inspector", () => {
     ).not.toBeNull();
     expect(screen.getByText("Disk at 92%")).not.toBeNull();
     expect(panelGroupState.setLayout).toHaveBeenLastCalledWith([58, 42]);
+    const panelGroup = screen.getByTestId("automation-panel-group");
+    expect(panelGroup.className).toContain("@container");
+    const detailsPanel = document.querySelector(
+      "#automation-run-details-panel",
+    );
+    expect(detailsPanel?.className).toContain("relative");
+    expect(detailsPanel?.className).not.toContain("border-l");
+    const inspector = document.querySelector("[data-automation-run-inspector]");
+    expect(inspector?.getAttribute("aria-hidden")).toBe("false");
+    expect(inspector?.className).toContain("absolute");
+    expect(inspector?.className).toContain("left-0");
+    expect(inspector?.className).toContain("border-l");
+    expect(inspector?.getAttribute("style")).toContain(
+      "--secondary-swipe-width, 42cqw",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Close run details" }));
 
     expect(screen.queryByRole("heading", { name: "Run details" })).toBeNull();
+    expect(inspector?.getAttribute("aria-hidden")).toBe("true");
+    expect(inspector?.hasAttribute("inert")).toBe(true);
+    expect(inspector?.className).toContain("pointer-events-none");
     await waitFor(() => expect(document.activeElement).toBe(row));
     expect(row.getAttribute("aria-expanded")).toBe("false");
   });

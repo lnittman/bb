@@ -107,6 +107,16 @@ describe("AutomationDetailContent", () => {
     expect(markup).not.toContain("<dt>Schedule</dt>");
   });
 
+  it("shows config before run history", () => {
+    const markup = renderContent({
+      automation: makeAutomation(),
+      runs: [makeRun()],
+    });
+    expect(markup.indexOf("Config")).toBeLessThan(
+      markup.indexOf("Run history"),
+    );
+  });
+
   it("shows a Pause icon button for an enabled automation and Resume for a paused one", () => {
     const enabled = renderContent({
       automation: makeAutomation({ enabled: true }),
