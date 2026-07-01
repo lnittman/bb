@@ -416,13 +416,7 @@ describe("CreateAutomationDialog", () => {
 
     const tabParent = tabs.parentElement;
     const tabsClassName = tabs.className;
-    for (const cadence of [
-      "Hourly",
-      "Daily",
-      "Weekdays",
-      "Weekly",
-      "Custom",
-    ]) {
+    for (const cadence of ["Hourly", "Daily", "Weekdays", "Weekly", "Custom"]) {
       fireEvent.click(screen.getByRole("button", { name: cadence }));
       expect(tabs.parentElement).toBe(tabParent);
       expect(tabs.className).toBe(tabsClassName);
@@ -443,12 +437,8 @@ describe("CreateAutomationDialog", () => {
     expect(dialog.className).toContain("md:h-[min(85dvh,44rem)]");
     expect(dialog.className).toContain("md:w-[calc(100vw-3rem)]");
     expect(dialog.className).toContain("md:max-w-2xl");
-    expect(dialog.className).toContain(
-      "md:grid-rows-[auto_minmax(0,1fr)]",
-    );
-    expect(form?.className).toContain(
-      "md:grid-rows-[minmax(0,1fr)_auto_auto]",
-    );
+    expect(dialog.className).toContain("md:grid-rows-[auto_minmax(0,1fr)]");
+    expect(form?.className).toContain("md:grid-rows-[minmax(0,1fr)_auto_auto]");
     expect(scrollBody?.className).toContain("overflow-y-auto");
     expect(scrollBody?.className).not.toContain("max-h");
 
@@ -457,6 +447,25 @@ describe("CreateAutomationDialog", () => {
       fireEvent.click(screen.getByRole("button", { name: cadence }));
       expect(dialog.className).toBe(dialogClassName);
     }
+  });
+
+  it("keeps the form rhythm tight without an empty footer spacer", () => {
+    renderDialog();
+
+    const dialog = screen.getByRole("dialog");
+    const form = screen
+      .getByRole("button", { name: "Create automation" })
+      .closest("form");
+    const scrollBody = dialog.querySelector(
+      "[data-create-automation-scroll-body]",
+    );
+
+    expect(dialog.className).toContain("gap-4");
+    expect(dialog.className).not.toContain("gap-5");
+    expect(form?.className).toContain("gap-2.5");
+    expect(scrollBody?.querySelector(".grid.gap-4")).not.toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(dialog.querySelectorAll("[aria-live='polite']")).toHaveLength(0);
   });
 
   it("posts the typed create payload, closes, and invalidates the overview", async () => {

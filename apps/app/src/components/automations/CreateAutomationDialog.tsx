@@ -183,7 +183,7 @@ const FALLBACK_TIMEZONE_OPTIONS: readonly string[] = [
   "Pacific/Auckland",
 ];
 
-const FIELD_ERROR_CLASS_NAME = "min-h-4 text-xs leading-4 text-destructive";
+const FIELD_ERROR_CLASS_NAME = "text-xs leading-4 text-destructive";
 const MODEL_ONLY_REASONING_VALUE: ReasoningLevel = "medium";
 const EMPTY_REASONING_OPTIONS: readonly PickerOption<ReasoningLevel>[] = [];
 const EMPTY_PROVIDERS: readonly ProviderInfo[] = [];
@@ -551,9 +551,13 @@ function buildCreateAutomationRequest(args: {
 }
 
 function FieldError({ id, message }: { id: string; message: string | null }) {
+  if (!message) {
+    return null;
+  }
+
   return (
     <p id={id} aria-live="polite" className={FIELD_ERROR_CLASS_NAME}>
-      {message ?? ""}
+      {message}
     </p>
   );
 }
@@ -1161,7 +1165,7 @@ export function CreateAutomationDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="gap-5 md:grid-rows-[auto_minmax(0,1fr)] md:h-[min(85dvh,44rem)] md:w-[calc(100vw-3rem)] md:max-w-2xl md:overflow-hidden"
+        className="gap-4 md:grid-rows-[auto_minmax(0,1fr)] md:h-[min(85dvh,44rem)] md:w-[calc(100vw-3rem)] md:max-w-2xl md:overflow-hidden"
         onKeyDownCapture={() => {
           hasDialogUserInteractionRef.current = true;
         }}
@@ -1178,7 +1182,7 @@ export function CreateAutomationDialog({
         </DialogHeader>
         <form
           data-create-automation-form=""
-          className="grid min-h-0 gap-4 md:grid-rows-[minmax(0,1fr)_auto_auto]"
+          className="grid min-h-0 gap-2.5 md:grid-rows-[minmax(0,1fr)_auto_auto]"
           onSubmit={handleSubmit}
         >
           <div
@@ -1192,7 +1196,7 @@ export function CreateAutomationDialog({
               aria-hidden
               className="-mb-px h-px w-full opacity-0"
             />
-            <div className="grid gap-5">
+            <div className="grid gap-4">
               <div className="grid gap-2">
                 <label
                   className="text-xs font-medium text-muted-foreground"
@@ -1391,7 +1395,7 @@ export function CreateAutomationDialog({
                 <FieldError id={modelErrorId} message={modelSelectionError} />
               </div>
 
-              <section className="grid gap-3">
+              <section className="grid gap-2.5">
                 <div
                   data-create-automation-schedule-layout=""
                   className="grid grid-cols-[minmax(8.5rem,12rem)_minmax(0,1fr)] items-start gap-3"
@@ -1422,7 +1426,7 @@ export function CreateAutomationDialog({
                   </div>
                 </div>
                 {showScheduleControls ? (
-                  <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_14rem]">
+                  <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_14rem]">
                     {showTimeControls ? (
                       <div className="grid gap-2">
                         <label
@@ -1444,9 +1448,7 @@ export function CreateAutomationDialog({
                             setScheduleTime(event.target.value);
                             setServerError(null);
                           }}
-                          onBlur={() =>
-                            markTouchedAfterUserInteraction("time")
-                          }
+                          onBlur={() => markTouchedAfterUserInteraction("time")}
                           aria-invalid={showError("time")}
                           aria-describedby={scheduleTimeErrorId}
                         />
@@ -1477,9 +1479,7 @@ export function CreateAutomationDialog({
                             setCustomCron(event.target.value);
                             setServerError(null);
                           }}
-                          onBlur={() =>
-                            markTouchedAfterUserInteraction("cron")
-                          }
+                          onBlur={() => markTouchedAfterUserInteraction("cron")}
                           aria-invalid={showError("cron")}
                           aria-describedby={cronErrorId}
                           spellCheck={false}
@@ -1532,12 +1532,11 @@ export function CreateAutomationDialog({
             />
           </div>
 
-          <p
-            role={serverError ? "alert" : undefined}
-            className="min-h-5 text-sm leading-5 text-destructive"
-          >
-            {serverError ?? ""}
-          </p>
+          {serverError ? (
+            <p role="alert" className="text-sm leading-5 text-destructive">
+              {serverError}
+            </p>
+          ) : null}
 
           <DialogFooter className="gap-2 sm:space-x-0">
             <Button
