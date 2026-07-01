@@ -180,11 +180,7 @@ function AutomationRowActionItems({ entry, actions }: AutomationRowProps) {
         <Fragment key={item.key}>
           {item.key === "delete" ? <DropdownMenuSeparator /> : null}
           <DropdownMenuItem
-            className={
-              item.destructive
-                ? "text-destructive focus:text-destructive"
-                : undefined
-            }
+            variant={item.destructive ? "destructive" : "default"}
             onSelect={() => {
               item.run();
             }}
@@ -243,7 +239,7 @@ function AutomationRow({ entry, actions }: AutomationRowProps) {
   return (
     <div
       className={cn(
-        "group relative rounded-md text-sm hover:bg-state-hover",
+        "group relative rounded-md text-sm hover:bg-state-hover has-[[data-state=open]]:bg-state-hover",
         LIST_HOVER_TRANSITION,
       )}
     >
