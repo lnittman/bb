@@ -256,6 +256,10 @@ window.
   applies to the packaged app and any production server build. Under `pnpm dev`
   the frontend is served by Vite, so `bb ui apply` still builds but the running
   dev page keeps coming from Vite (use Vite's own HMR there).
+- **Public source-dev previews:** when a `pnpm dev` app is exposed through HTTPS
+  tunnels, set `BB_DEV_HMR_URL=https://<app-tunnel-host>` for Vite HMR and
+  `BB_DEV_WS_URL=https://<server-tunnel-host>` for bb app/terminal websockets.
+  These are ambient source-dev env vars, not `bb-app config` keys.
 
 Workflow for a UI change:
 

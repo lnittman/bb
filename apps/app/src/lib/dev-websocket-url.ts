@@ -7,7 +7,26 @@ function resolveBrowserHostDevWebSocketBaseUrl(port: number): string {
   return `${protocol}//${window.location.hostname}:${port}/ws`;
 }
 
+function resolveConfiguredDevWebSocketBaseUrl(rawUrl: string): string {
+  const url = new URL(rawUrl);
+  if (url.protocol === "http:") {
+    url.protocol = "ws:";
+  } else if (url.protocol === "https:") {
+    url.protocol = "wss:";
+  }
+
+  if (url.pathname === "" || url.pathname === "/") {
+    url.pathname = "/ws";
+  }
+
+  return url.toString();
+}
+
 function resolveDevWebSocketBaseUrl(): string | undefined {
+  if (typeof __BB_DEV_WS_URL__ === "string") {
+    return resolveConfiguredDevWebSocketBaseUrl(__BB_DEV_WS_URL__);
+  }
+
   if (typeof __BB_DEV_WS_BROWSER_HOST_PORT__ === "number") {
     return resolveBrowserHostDevWebSocketBaseUrl(
       __BB_DEV_WS_BROWSER_HOST_PORT__,

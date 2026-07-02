@@ -67,6 +67,21 @@ right file and refresh the right server.
 Startup settings such as data directory and ports still apply when the process
 starts.
 
+## Source Dev Public Preview
+
+When exposing a source `pnpm dev` app through an HTTPS tunnel, Vite needs the
+public websocket endpoints instead of local ports:
+
+```bash
+BB_DEV_HMR_URL=https://<app-tunnel-host>
+BB_DEV_WS_URL=https://<server-tunnel-host>
+```
+
+`BB_DEV_HMR_URL` controls Vite's HMR websocket host. `BB_DEV_WS_URL` controls
+bb's app and terminal websocket base URL; `http`/`https` values are converted to
+`ws`/`wss`, and a missing path defaults to `/ws`. These are source-development
+environment variables only; they are not persisted by `bb-app config`.
+
 ## Common Keys
 
 | Key                | Command         | When to set             | Used for                                                                                                                                       |
