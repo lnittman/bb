@@ -5,21 +5,13 @@ import { PageShell } from "@/components/ui/page-shell.js";
 import { Pill } from "@/components/ui/pill.js";
 import { cn } from "@/lib/utils";
 
-type PlanningTab = "focus" | "rings" | "packets" | "proof";
+type PlanningTab = "rings" | "packets";
 type PlanningTone = "active" | "ready" | "queued" | "blocked" | "done";
 
 interface PlanningTabOption {
   id: PlanningTab;
   label: string;
   count: number;
-}
-
-interface FocusItem {
-  title: string;
-  summary: string;
-  tab: PlanningTab;
-  icon: IconName;
-  tone: PlanningTone;
 }
 
 interface OperatingRing {
@@ -42,29 +34,25 @@ interface WorkerPacket {
   status: PlanningTone;
 }
 
-interface ProofLayer {
-  label: string;
-  summary: string;
-  example: string;
-  icon: IconName;
-}
-
 const OPERATING_RINGS: readonly OperatingRing[] = [
   {
     id: "core",
     name: "Core ring",
-    summary: "Config, packages, Abbie, Agents, apps factory, Packet, bb.",
+    summary:
+      "Doctrine, substrate, cockpit, factory, Atoi, bb, docs, mono, agent OS.",
     whenToUse:
-      "Use scarce judgment here when boundaries, runtime homes, package doctrine, or proof contracts are unclear.",
+      "Use scarce judgment here when boundaries, runtime homes, package doctrine, BB control-plane shape, or mono/agent-OS doctrine are unclear.",
     projects: [
       "config",
       "packages",
       "abbie",
       "agents",
       "apps/apps",
-      "packet",
+      "atoi",
       "bb",
-      "sprint docs",
+      "docs",
+      "mono",
+      "~/.agents",
     ],
     icon: "Layers",
     status: "active",
@@ -72,10 +60,17 @@ const OPERATING_RINGS: readonly OperatingRing[] = [
   {
     id: "product",
     name: "Product proving ring",
-    summary: "Atoi, Kumori, Saya, Luke, and any product elevated by evidence.",
+    summary: "Kumori, Luke, Packet, Saya, plugins, and elevated product lanes.",
     whenToUse:
       "Pull a product forward only when it proves or falsifies a larger product, substrate, or boundary claim.",
-    projects: ["atoi", "kumori", "saya", "luke", "elevated active products"],
+    projects: [
+      "kumori",
+      "luke",
+      "packet",
+      "saya",
+      "saya-plugins",
+      "elevated products",
+    ],
     icon: "Target",
     status: "ready",
   },
@@ -83,19 +78,29 @@ const OPERATING_RINGS: readonly OperatingRing[] = [
     id: "alignment",
     name: "Alignment ring",
     summary:
-      "Docs, references, plugins, components, logs, notes, press, email.",
+      "Supporting apps, source surfaces, references, plugins, and long-tail repos.",
     whenToUse:
       "Keep these coherent and visible; avoid spending planning judgment here unless a core decision depends on it.",
     projects: [
+      "bittie",
+      "captures",
       "cic",
       "components",
-      "logs",
-      "notes",
-      "press",
-      "email",
-      "references",
+      "keris",
+      "keris-plugins",
+      "koto",
       "template",
-      "plugins",
+      "logs",
+      "notes -> packet",
+      "press -> packet",
+      "email",
+      "yuba",
+      "voet",
+      "webs",
+      "sine",
+      "squish",
+      "sagu",
+      "~/.references",
       "long-tail apps",
     ],
     icon: "Workflow",
@@ -105,27 +110,27 @@ const OPERATING_RINGS: readonly OperatingRing[] = [
 
 const WORKER_PACKETS: readonly WorkerPacket[] = [
   {
-    id: "planning-ui",
-    objective: "Raise the Planning surface to bb's UI bar.",
-    target: "external/work/bb",
-    mode: "Edit app UI",
-    verification: "typecheck, route tests, browser proof at /planning",
-    stopCondition: "Stop if the page still reads as a dense report.",
-    status: "active",
-  },
-  {
     id: "packet-sequence",
     objective: "Decide Packet convergence sequencing.",
     target: "apps/packet + docs/packet-port-manifest.md",
     mode: "Strategy first",
     verification: "ruling ledger, then bounded Codex worker packets",
     stopCondition: "Stop before porting Notes or Press product work.",
+    status: "active",
+  },
+  {
+    id: "factory-rename",
+    objective: "Clarify apps/apps versus apps/factory doctrine.",
+    target: "apps/apps + factory rename candidate",
+    mode: "Ruling first",
+    verification: "taxonomy ruling plus downstream worker packets",
+    stopCondition: "Stop before renaming paths or rewriting imports.",
     status: "ready",
   },
   {
     id: "product-proving",
     objective: "Create scoped project threads for product proving.",
-    target: "atoi, kumori, saya, luke",
+    target: "kumori, luke, packet, saya, saya-plugins",
     mode: "Project-bound",
     verification: "focused gates plus visual proof per product",
     stopCondition: "Stop when the product no longer informs a bigger ruling.",
@@ -142,71 +147,9 @@ const WORKER_PACKETS: readonly WorkerPacket[] = [
   },
 ];
 
-const PROOF_LAYERS: readonly ProofLayer[] = [
-  {
-    label: "Observed",
-    summary: "The source surface was inspected directly.",
-    example: "repo readback, provider state, thread output, artifact file",
-    icon: "Search",
-  },
-  {
-    label: "Committed",
-    summary: "The local change is in git history.",
-    example: "scoped commit with only intentional files staged",
-    icon: "GitBranch",
-  },
-  {
-    label: "Pushed",
-    summary: "Remote review can see the branch.",
-    example: "origin/fork branch contains the commit",
-    icon: "ArrowUpRight",
-  },
-  {
-    label: "Deployed",
-    summary: "A live or provider surface reflects the change.",
-    example: "Vercel, Convex, App Store, or admin truth checked",
-    icon: "Globe",
-  },
-  {
-    label: "Visually proven",
-    summary: "The user-facing surface was checked as pixels.",
-    example: "browser, device, screenshot, video, or trace evidence",
-    icon: "AppWindow",
-  },
-];
-
-const FOCUS_ITEMS: readonly FocusItem[] = [
-  {
-    title: "Set operating rings",
-    summary:
-      "Keep priority visible without turning every project into sprint work.",
-    tab: "rings",
-    icon: "Layers",
-    tone: "active",
-  },
-  {
-    title: "Shape worker packets",
-    summary:
-      "Turn decisions into owner, path, mutation, proof, and stop contracts.",
-    tab: "packets",
-    icon: "ListTodo",
-    tone: "ready",
-  },
-  {
-    title: "Hold proof standards",
-    summary:
-      "Separate observed, committed, pushed, deployed, and visual proof.",
-    tab: "proof",
-    icon: "CircleCheck",
-    tone: "queued",
-  },
-];
-
 const PLANNING_TABS: readonly PlanningTabOption[] = [
-  { id: "focus", label: "Focus", count: FOCUS_ITEMS.length },
   { id: "rings", label: "Rings", count: OPERATING_RINGS.length },
   { id: "packets", label: "Packets", count: WORKER_PACKETS.length },
-  { id: "proof", label: "Proof", count: PROOF_LAYERS.length },
 ];
 
 const STATUS_LABEL: Record<PlanningTone, string> = {
@@ -295,53 +238,6 @@ function PlanningTabs({
         );
       })}
     </div>
-  );
-}
-
-function FocusPanel({
-  onSelectTab,
-}: {
-  onSelectTab: (tab: PlanningTab) => void;
-}) {
-  return (
-    <section
-      id="planning-panel-focus"
-      role="tabpanel"
-      aria-labelledby="planning-tab-focus"
-      className="space-y-1"
-    >
-      {FOCUS_ITEMS.map((item) => (
-        <button
-          key={item.title}
-          type="button"
-          onClick={() => onSelectTab(item.tab)}
-          className={cn(
-            "grid min-h-16 w-full grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 rounded-md px-3 py-2 text-left text-sm hover:bg-state-hover focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-            LIST_HOVER_TRANSITION,
-          )}
-        >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted/50 text-muted-foreground">
-            <Icon name={item.icon} className="size-4" aria-hidden />
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate font-medium text-foreground">
-              {item.title}
-            </span>
-            <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-              {item.summary}
-            </span>
-          </span>
-          <span className="flex items-center gap-2">
-            <StatusLabel tone={item.tone} />
-            <Icon
-              name="ChevronRight"
-              className="size-3.5 text-muted-foreground"
-              aria-hidden
-            />
-          </span>
-        </button>
-      ))}
-    </section>
   );
 }
 
@@ -525,53 +421,16 @@ function PacketsPanel() {
   );
 }
 
-function ProofPanel() {
-  return (
-    <section
-      id="planning-panel-proof"
-      role="tabpanel"
-      aria-labelledby="planning-tab-proof"
-      className="space-y-1"
-    >
-      {PROOF_LAYERS.map((layer) => (
-        <article
-          key={layer.label}
-          className="grid min-h-16 grid-cols-[2rem_minmax(0,1fr)] items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-state-hover"
-        >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted/50 text-muted-foreground">
-            <Icon name={layer.icon} className="size-4" aria-hidden />
-          </span>
-          <div className="min-w-0">
-            <p className="truncate font-medium text-foreground">
-              {layer.label}
-            </p>
-            <p className="mt-0.5 truncate text-xs text-muted-foreground">
-              {layer.summary}
-            </p>
-            <p className="mt-0.5 truncate text-xs text-subtle-foreground">
-              {layer.example}
-            </p>
-          </div>
-        </article>
-      ))}
-    </section>
-  );
-}
-
 export function PlanningView() {
-  const [activeTab, setActiveTab] = useState<PlanningTab>("focus");
+  const [activeTab, setActiveTab] = useState<PlanningTab>("rings");
 
   return (
     <PageShell contentClassName="pt-3 md:pt-4">
       <div className="w-full space-y-3" aria-label="Planning">
         <PlanningTabs activeTab={activeTab} onSelect={setActiveTab} />
 
-        {activeTab === "focus" ? (
-          <FocusPanel onSelectTab={setActiveTab} />
-        ) : null}
         {activeTab === "rings" ? <RingsPanel /> : null}
         {activeTab === "packets" ? <PacketsPanel /> : null}
-        {activeTab === "proof" ? <ProofPanel /> : null}
       </div>
     </PageShell>
   );
