@@ -179,7 +179,9 @@ interface ProjectListProps {
 
 export interface ProjectListActionButtonsProps {
   onNewChat?: () => void;
+  onOpenPlanning?: () => void;
   onOpenAutomations?: () => void;
+  isPlanningActive?: boolean;
   isAutomationsActive?: boolean;
   threadSearch?: SidebarThreadSearchInputController;
 }
@@ -1187,7 +1189,9 @@ const SortableSidebarSection = memo(function SortableSidebarSection({
 
 export function ProjectListActionButtons({
   onNewChat,
+  onOpenPlanning,
   onOpenAutomations,
+  isPlanningActive = false,
   isAutomationsActive = false,
   threadSearch,
 }: ProjectListActionButtonsProps) {
@@ -1270,6 +1274,22 @@ export function ProjectListActionButtons({
           ) : null}
         </div>
       )}
+      {onOpenPlanning ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className={cn(
+            PROJECT_LIST_ACTION_BUTTON_CLASS,
+            isPlanningActive && "bg-sidebar-accent text-sidebar-foreground",
+          )}
+          aria-current={isPlanningActive ? "page" : undefined}
+          onClick={onOpenPlanning}
+        >
+          <Icon name="Target" />
+          <span className="min-w-0 flex-1 truncate text-left">Planning</span>
+        </Button>
+      ) : null}
       {onOpenAutomations ? (
         <Button
           type="button"

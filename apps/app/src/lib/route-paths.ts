@@ -15,6 +15,7 @@ export const POPOUT_PROJECTLESS_THREAD_DETAIL_ROUTE_PATH =
 export const POPOUT_THREAD_DETAIL_ROUTE_PATH =
   "/popout/projects/:projectId/threads/:threadId";
 export const SETTINGS_ROUTE_PATH = "/settings";
+export const PLANNING_ROUTE_PATH = "/planning";
 export const AUTOMATIONS_ROUTE_PATH = "/automations";
 export const AUTOMATION_DETAIL_ROUTE_PATH =
   "/automations/:projectId/:automationId";
@@ -63,6 +64,10 @@ export function getRootComposeRoutePath(): string {
 
 export function getAutomationsRoutePath(): string {
   return AUTOMATIONS_ROUTE_PATH;
+}
+
+export function getPlanningRoutePath(): string {
+  return PLANNING_ROUTE_PATH;
 }
 
 export interface AutomationDetailRoutePathArgs {
@@ -137,6 +142,7 @@ const baseRoutePatterns: readonly string[] = [
   POPOUT_PROJECTLESS_THREAD_DETAIL_ROUTE_PATH,
   POPOUT_THREAD_DETAIL_ROUTE_PATH,
   SETTINGS_ROUTE_PATH,
+  PLANNING_ROUTE_PATH,
   AUTOMATIONS_ROUTE_PATH,
   AUTOMATION_DETAIL_ROUTE_PATH,
   LEGACY_PROJECT_COMPOSE_ROUTE_PATH,

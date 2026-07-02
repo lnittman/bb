@@ -12,6 +12,8 @@ export interface RouteState {
   isArchivedView: boolean;
   /** On the project settings page. */
   isSettingsView: boolean;
+  /** On the Planning surface. */
+  isPlanningView: boolean;
   /**
    * On the Automations surface: the cross-project list ("/automations") or an
    * automation detail page. True for both so the sidebar entry stays active.
@@ -68,7 +70,8 @@ export function useRouteState(): RouteState {
       : (projectThreadMatch?.params.threadId ??
         popoutProjectThreadMatch?.params.threadId));
   const projectRouteProjectId =
-    projectMatch?.params.projectId ?? popoutProjectThreadMatch?.params.projectId;
+    projectMatch?.params.projectId ??
+    popoutProjectThreadMatch?.params.projectId;
   const projectId =
     projectlessThreadId !== undefined || Boolean(projectlessArchivedMatch)
       ? PERSONAL_PROJECT_ID
@@ -87,6 +90,7 @@ export function useRouteState(): RouteState {
     isArchivedView:
       Boolean(projectArchivedMatch) || Boolean(projectlessArchivedMatch),
     isSettingsView: Boolean(projectSettingsMatch),
+    isPlanningView: location.pathname === "/planning",
     isAutomationsView:
       location.pathname === "/automations" || Boolean(automationDetailMatch),
     isAutomationDetailView: Boolean(automationDetailMatch),
