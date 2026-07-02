@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { PERSONAL_PROJECT_ID } from "@bb/domain";
 import {
   getLegacyProjectComposeRoutePath,
-  getPlanningRoutePath,
   getPopoutRoutePath,
   getPopoutThreadRoutePath,
   getProjectArchivedRoutePath,
@@ -79,11 +78,6 @@ describe("route path helpers", () => {
 
   it("recognizes the global settings route", () => {
     expect(isRoutePath({ path: "/settings" })).toBe(true);
-  });
-
-  it("builds and recognizes the planning route", () => {
-    expect(getPlanningRoutePath()).toBe("/planning");
-    expect(isRoutePath({ path: "/planning" })).toBe(true);
   });
 
   it("recognizes the desktop popout route", () => {

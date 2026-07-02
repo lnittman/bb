@@ -21,7 +21,6 @@ import {
   AUTOMATIONS_ROUTE_PATH,
   AUTOMATION_DETAIL_ROUTE_PATH,
   LEGACY_PROJECT_COMPOSE_ROUTE_PATH,
-  PLANNING_ROUTE_PATH,
   POPOUT_ROUTE_PATH,
   PROJECT_ARCHIVED_ROUTE_PATH,
   PROJECTLESS_ARCHIVED_ROUTE_PATH,
@@ -47,11 +46,6 @@ const SettingsView = lazy(() =>
 const AutomationsView = lazy(() =>
   import("./views/AutomationsView").then((m) => ({
     default: m.AutomationsView,
-  })),
-);
-const PlanningView = lazy(() =>
-  import("./views/PlanningView").then((m) => ({
-    default: m.PlanningView,
   })),
 );
 const AutomationDetailView = lazy(() =>
@@ -109,7 +103,6 @@ function AppRoutes() {
           <Route path={APP_ROOT_ROUTE_PATH} element={<RootComposeRoute />} />
           <Route path={SETTINGS_ROUTE_PATH} element={<SettingsView />} />
           <Route path={AUTOMATIONS_ROUTE_PATH} element={<AutomationsView />} />
-          <Route path={PLANNING_ROUTE_PATH} element={<PlanningView />} />
           <Route
             path={AUTOMATION_DETAIL_ROUTE_PATH}
             element={<AutomationDetailView />}
