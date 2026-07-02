@@ -1,21 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { KnownProvider } from "@mariozechner/pi-ai";
 
-const getProviders = vi.fn<() => KnownProvider[]>();
-const getModels = vi.fn();
-const supportsXhigh = vi.fn();
+const getAll = vi.fn();
+const getSupportedThinkingLevels = vi.fn();
 const hasAuth = vi.fn();
 const createAuthStorage = vi.fn(() => ({ hasAuth }));
+const createModelRegistry = vi.fn(() => ({ getAll }));
 
 vi.mock("@mariozechner/pi-ai", () => ({
-  getProviders,
-  getModels,
-  supportsXhigh,
+  getSupportedThinkingLevels,
 }));
 
 vi.mock("@mariozechner/pi-coding-agent", () => ({
   AuthStorage: {
     create: createAuthStorage,
+  },
+  ModelRegistry: {
+    create: createModelRegistry,
   },
 }));
 
@@ -27,32 +27,28 @@ describe("pi bridge model list", () => {
   });
 
   it("builds available models from the Pi SDK and auth storage", async () => {
-    getProviders.mockReturnValue(["anthropic", "openai"]);
     hasAuth.mockImplementation((provider: string) => provider !== "openai");
-    getModels.mockImplementation((provider: string) => {
-      if (provider === "anthropic") {
-        return [
-          {
-            id: "claude-sonnet-4",
-            input: ["text", "image"],
-            name: "Claude Sonnet 4",
-            provider: "anthropic",
-            reasoning: true,
-          },
-        ];
-      }
-      return [
-        {
-          id: "codex-mini",
-          input: ["text"],
-          name: "Codex Mini",
-          provider: "openai",
-          reasoning: true,
-        },
-      ];
-    });
-    supportsXhigh.mockImplementation(
-      (model: { provider: string }) => model.provider === "anthropic",
+    getAll.mockReturnValue([
+      {
+        id: "claude-sonnet-4",
+        input: ["text", "image"],
+        name: "Claude Sonnet 4",
+        provider: "anthropic",
+        reasoning: true,
+      },
+      {
+        id: "codex-mini",
+        input: ["text"],
+        name: "Codex Mini",
+        provider: "openai",
+        reasoning: true,
+      },
+    ]);
+    getSupportedThinkingLevels.mockImplementation(
+      (model: { provider: string }) =>
+        model.provider === "anthropic"
+          ? ["low", "medium", "high", "xhigh"]
+          : ["low", "medium", "high"],
     );
 
     await expect(listPiBridgeModels()).resolves.toEqual({
@@ -82,10 +78,50 @@ describe("pi bridge model list", () => {
     });
   });
 
-  it("marks the pi-mono default openai-codex model as default when available", async () => {
-    getProviders.mockReturnValue(["openai-codex"]);
+  it("surfaces current Kimi K2.7 Code models from the Pi registry", async () => {
     hasAuth.mockReturnValue(true);
-    getModels.mockReturnValue([
+    getAll.mockReturnValue([
+      {
+        id: "k2p7",
+        input: ["text", "image"],
+        name: "Kimi K2.7 Code",
+        provider: "kimi-coding",
+        reasoning: true,
+      },
+      {
+        id: "moonshotai/kimi-k2.7-code",
+        input: ["text", "image"],
+        name: "Kimi K2.7 Code",
+        provider: "vercel-ai-gateway",
+        reasoning: true,
+      },
+    ]);
+    getSupportedThinkingLevels.mockReturnValue(["low", "medium", "high"]);
+
+    await expect(listPiBridgeModels()).resolves.toMatchObject({
+      models: [
+        {
+          id: "kimi-coding/k2p7",
+          model: "kimi-coding/k2p7",
+          displayName: "Kimi K2.7 Code",
+          supportedReasoningEfforts: [
+            expect.objectContaining({ reasoningEffort: "low" }),
+            expect.objectContaining({ reasoningEffort: "medium" }),
+            expect.objectContaining({ reasoningEffort: "high" }),
+          ],
+        },
+        {
+          id: "moonshotai/kimi-k2.7-code",
+          model: "moonshotai/kimi-k2.7-code",
+          displayName: "Kimi K2.7 Code",
+        },
+      ],
+    });
+  });
+
+  it("marks the pi-mono default openai-codex model as default when available", async () => {
+    hasAuth.mockReturnValue(true);
+    getAll.mockReturnValue([
       {
         id: "gpt-5.5",
         input: ["text", "image"],
@@ -101,7 +137,7 @@ describe("pi bridge model list", () => {
         reasoning: true,
       },
     ]);
-    supportsXhigh.mockReturnValue(false);
+    getSupportedThinkingLevels.mockReturnValue(["low", "medium", "high"]);
 
     await expect(listPiBridgeModels()).resolves.toEqual({
       models: [

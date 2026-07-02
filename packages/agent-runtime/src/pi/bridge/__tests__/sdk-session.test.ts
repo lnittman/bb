@@ -193,6 +193,7 @@ function createQueueUpdateEvent(
 function createAgentEndEvent(): AgentSessionEvent {
   return {
     type: "agent_end",
+    willRetry: false,
     messages: [],
   };
 }
@@ -307,10 +308,7 @@ describe("PiSdkSession", () => {
 
     await session.start();
 
-    expect(mockGetModel).toHaveBeenCalledWith(
-      "deepseek",
-      "deepseek-v4-pro",
-    );
+    expect(mockGetModel).toHaveBeenCalledWith("deepseek", "deepseek-v4-pro");
     expect(mockCreateAgentSession).toHaveBeenCalledWith(
       expect.objectContaining({
         model: {

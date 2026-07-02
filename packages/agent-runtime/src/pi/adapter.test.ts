@@ -665,6 +665,7 @@ describe("pi provider adapter", () => {
     const events = adapter.translateEvent(
       {
         type: "agent_end",
+        willRetry: false,
         messages: [
           {
             role: "user",

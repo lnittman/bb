@@ -24,9 +24,11 @@ interface MockPiResourceLoader {
 }
 
 const {
+  mockAuthStorageCreate,
   mockCreateAgentSession,
   mockDefaultResourceLoader,
   mockInMemory,
+  mockModelRegistryCreate,
   mockOpen,
   mockResourceLoaders,
   mockSettingsInMemory,
@@ -43,11 +45,27 @@ const {
     mockResourceLoaders.push(resourceLoader);
     return resourceLoader;
   });
+  const mockModelRegistryFind = vi.fn((provider: string, modelId: string) =>
+    provider === "unsupported"
+      ? undefined
+      : {
+          id: modelId,
+          input: ["text"],
+          name: modelId,
+          provider,
+          reasoning: true,
+        },
+  );
 
   return {
+    mockAuthStorageCreate: vi.fn(() => ({ kind: "auth-storage" })),
     mockCreateAgentSession: vi.fn(),
     mockDefaultResourceLoader,
     mockInMemory: vi.fn((cwd?: string) => ({ kind: "in-memory", cwd })),
+    mockModelRegistryCreate: vi.fn(() => ({
+      find: mockModelRegistryFind,
+    })),
+    mockModelRegistryFind,
     mockOpen: vi.fn((path: string) => ({ kind: "open", path })),
     mockResourceLoaders,
     mockSettingsInMemory: vi.fn(() => ({ kind: "settings" })),
@@ -61,9 +79,15 @@ vi.mock("@mariozechner/pi-coding-agent", async (importOriginal) => {
   const actual =
     await importOriginal<typeof import("@mariozechner/pi-coding-agent")>();
   return {
+    AuthStorage: {
+      create: mockAuthStorageCreate,
+    },
     createAgentSession: mockCreateAgentSession,
     DefaultResourceLoader: mockDefaultResourceLoader,
     getAgentDir: vi.fn(() => "/tmp/pi-agent"),
+    ModelRegistry: {
+      create: mockModelRegistryCreate,
+    },
     SessionManager: {
       forkFrom: actual.SessionManager.forkFrom.bind(actual.SessionManager),
       open: mockOpen,
@@ -146,7 +170,9 @@ function createControlledPiAgentSession(): ControlledPiAgentSession {
   };
 }
 
-function createQueueUpdateEvent(steering: readonly string[]): AgentSessionEvent {
+function createQueueUpdateEvent(
+  steering: readonly string[],
+): AgentSessionEvent {
   return {
     type: "queue_update",
     steering,
@@ -157,6 +183,7 @@ function createQueueUpdateEvent(steering: readonly string[]): AgentSessionEvent 
 function createAgentEndEvent(): AgentSessionEvent {
   return {
     type: "agent_end",
+    willRetry: false,
     messages: [],
   };
 }

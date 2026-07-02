@@ -1,9 +1,11 @@
 import { dirname } from "node:path";
 import {
   createAgentSession,
+  AuthStorage,
   createBashToolDefinition,
   defineTool,
   DefaultResourceLoader,
+  ModelRegistry,
   SessionManager,
   SettingsManager,
   getAgentDir,
@@ -16,8 +18,7 @@ import {
   type SessionStats,
   type ToolDefinition,
 } from "@mariozechner/pi-coding-agent";
-import { getModel, getProviders } from "@mariozechner/pi-ai";
-import type { ImageContent, KnownProvider } from "@mariozechner/pi-ai";
+import type { ImageContent } from "@mariozechner/pi-ai";
 
 export interface PiSdkSessionOptions {
   cwd: string;
@@ -198,8 +199,12 @@ export class PiSdkSession {
   async start(): Promise<void> {
     assertExclusivePiPromptOverrides(this.options);
 
+    const authStorage = AuthStorage.create();
+    const modelRegistry = ModelRegistry.create(authStorage);
     const sessionOptions: CreateAgentSessionOptions = {
+      authStorage,
       cwd: this.options.cwd,
+      modelRegistry,
       sessionManager: this.options.sessionFilePath
         ? SessionManager.open(
             this.options.sessionFilePath,
@@ -250,7 +255,10 @@ export class PiSdkSession {
       sessionOptions.resourceLoader = resourceLoader;
     }
 
-    const configuredModel = resolveConfiguredModel(this.options.model);
+    const configuredModel = resolveConfiguredModel(
+      this.options.model,
+      modelRegistry,
+    );
     if (configuredModel) {
       sessionOptions.model = configuredModel;
     }
@@ -598,9 +606,7 @@ export class PiSdkSession {
       return { steerConsumptionPromise: steerConsumption?.promise ?? null };
     }
     await this.session.prompt(args.text, {
-      ...(args.images && args.images.length > 0
-        ? { images: args.images }
-        : {}),
+      ...(args.images && args.images.length > 0 ? { images: args.images } : {}),
     });
     return { steerConsumptionPromise: null };
   }
@@ -612,12 +618,13 @@ export class PiSdkSession {
  */
 function resolveConfiguredModel(
   modelStr: string | undefined,
-): ReturnType<typeof getModel> | undefined {
+  modelRegistry: ModelRegistry,
+): CreateAgentSessionOptions["model"] | undefined {
   if (!modelStr) {
     return undefined;
   }
 
-  const model = resolveModel(modelStr);
+  const model = resolveModel(modelStr, modelRegistry);
   if (!model) {
     throw new Error(`Failed to resolve Pi model "${modelStr}"`);
   }
@@ -626,7 +633,8 @@ function resolveConfiguredModel(
 
 function resolveModel(
   modelStr: string,
-): ReturnType<typeof getModel> | undefined {
+  modelRegistry: ModelRegistry,
+): CreateAgentSessionOptions["model"] | undefined {
   // Parse "provider/model-id" format
   const slashIdx = modelStr.indexOf("/");
   if (slashIdx === -1) return undefined;
@@ -634,9 +642,5 @@ function resolveModel(
   const provider = modelStr.slice(0, slashIdx);
   const modelId = modelStr.slice(slashIdx + 1);
 
-  if (!getProviders().includes(provider as KnownProvider)) {
-    return undefined;
-  }
-
-  return getModel(provider as KnownProvider, modelId as never);
+  return modelRegistry.find(provider, modelId);
 }
