@@ -120,6 +120,55 @@ latest_digest_glance() {
   digest_section "$file" "new escalations" | sed -n '1,12p'
 }
 
+fresh_live_goal_runs() {
+  local goals_root="${FABLE_GOALS_ROOT:-/Users/luke/.agents/artifacts/goals}"
+  local rows
+
+  [[ -d "$goals_root" ]] || {
+    printf 'No goals artifact root found at `%s`.\n' "$goals_root"
+    return 0
+  }
+
+  rows="$(
+    find "$goals_root" -maxdepth 1 -type d -name 'run-*' -mtime -1 -print 2>/dev/null |
+      while IFS= read -r dir; do
+        local state="$dir/goal-run-state.json"
+        local detach="$dir/run-detach.json"
+        [[ -f "$state" && -f "$detach" ]] || continue
+
+        local status
+        status="$(jq -r '.status // ""' "$state" 2>/dev/null || true)"
+        [[ "$status" == "running" ]] || continue
+
+        local run_id started repo branch pid alive
+        run_id="$(basename "$dir")"
+        started="$(jq -r '.started_at // ""' "$state" 2>/dev/null || true)"
+        repo="$(jq -r '.target_repo // ""' "$detach" 2>/dev/null || true)"
+        branch="$(jq -r '.branch // ""' "$detach" 2>/dev/null || true)"
+        pid="$(jq -r '.pid // ""' "$detach" 2>/dev/null || true)"
+
+        if [[ -n "$pid" ]] && ps -p "$pid" >/dev/null 2>&1; then
+          alive="alive"
+        else
+          alive="stale-pid"
+        fi
+
+        printf '%s\t| `%s` | `%s` | `%s` | `%s` | %s |\n' \
+          "${started:-unknown}" "$run_id" "${repo:-unknown}" "${branch:-HEAD}" "${pid:-none}" "$alive"
+      done |
+      sort
+  )"
+
+  if [[ -z "$rows" ]]; then
+    printf 'No process-verified detached goal runners found in the last 24h.\n'
+    return 0
+  fi
+
+  printf '| run | repo | branch | pid | state |\n'
+  printf '| --- | --- | --- | --- | --- |\n'
+  printf '%s\n' "$rows" | cut -f 2-
+}
+
 program_card() {
   local slug="$1"
   local label="$2"
@@ -175,6 +224,10 @@ conductor="$DOCS/CONDUCTOR.md"
   else
     printf 'No ACTIVE-LANES file available.\n'
   fi
+  printf '\n\n'
+
+  printf '## Fresh Live Goal Runners\n\n'
+  fresh_live_goal_runs
   printf '\n\n'
 
   printf '## Next Glance\n\n'
