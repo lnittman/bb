@@ -29,6 +29,10 @@ import {
   PLUGIN_PANEL_ROUTE_PATH,
   AUTOMATIONS_PLUGIN_PANEL_PATH,
 } from "@/lib/route-paths";
+import {
+  markPluginFrontendsSettled,
+  resetPluginFrontendBootStateForTest,
+} from "@/lib/plugin-frontend-boot-state";
 import { PluginPanelView } from "@/views/PluginPanelView";
 import {
   PluginPanelHeaderActions,
@@ -86,6 +90,7 @@ function registrationSet(
 afterEach(() => {
   cleanup();
   resetPluginSlotStoreForTest();
+  resetPluginFrontendBootStateForTest();
   resetAllCrashedPluginSlotsForTest();
   vi.restoreAllMocks();
 });
@@ -1395,7 +1400,10 @@ describe("PluginNavSidebarItems + PluginPanelView", () => {
     ).toBe("page");
   });
 
-  it("shows a placeholder for an unknown plugin panel route", () => {
+  it("stays quiet for an unknown panel until plugin frontends have booted", () => {
+    resetPluginFrontendBootStateForTest();
+    // A reload or deep link renders the route before registrations arrive;
+    // that moment must not read as an error.
     render(
       <MemoryRouter initialEntries={["/plugins/ghost/board"]}>
         <Routes>
@@ -1403,6 +1411,9 @@ describe("PluginNavSidebarItems + PluginPanelView", () => {
         </Routes>
       </MemoryRouter>,
     );
+    expect(screen.queryByText(/This plugin panel is not available/)).toBeNull();
+
+    act(() => markPluginFrontendsSettled());
     expect(
       screen.getByText(/This plugin panel is not available/),
     ).toBeDefined();
