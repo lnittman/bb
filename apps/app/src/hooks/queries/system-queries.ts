@@ -4,6 +4,7 @@ import {
   listClaudeCodeFallbackModels,
 } from "@bb/agent-providers";
 import { toRecord } from "@bb/core-ui";
+import { permissionModeValues, type PermissionMode } from "@bb/domain";
 import type {
   SystemCliSkillsStatusResponse,
   SystemConfigResponse,
@@ -74,6 +75,12 @@ const CLAUDE_CODE_PROVIDER_ID = "claude-code";
 // Callers must gate model recovery on `isPlaceholderData` either way: a cached
 // catalog can be stale, so absence from this list is not evidence that a stored
 // model was retired.
+//
+// The placeholder's permission ceiling is the most restrictive mode. Consumers
+// ignore the ceiling while data is provisional, so the value is never used —
+// but a replay must fail safe if a future reader forgets that gate.
+const PLACEHOLDER_PERMISSION_CEILING: PermissionMode = permissionModeValues[0];
+
 function placeholderExecutionOptions(
   cacheKey: string,
   isClaudeCode: boolean,
@@ -86,7 +93,7 @@ function placeholderExecutionOptions(
     providers: listBuiltInAgentProviderInfos(),
     models: cached?.models ?? listClaudeCodeFallbackModels(),
     selectedOnlyModels: cached?.selectedOnlyModels ?? [],
-    permissionCeiling: "full",
+    permissionCeiling: PLACEHOLDER_PERMISSION_CEILING,
     modelLoadError: null,
   };
 }
