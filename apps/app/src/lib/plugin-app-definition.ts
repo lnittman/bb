@@ -156,6 +156,14 @@ export function collectPluginAppRegistrations(
             `${kind}: "experimental_sidebarAccessory" must be a React component function when set`,
           );
         }
+        if (
+          registration.experimental_breadcrumbs !== undefined &&
+          typeof registration.experimental_breadcrumbs !== "function"
+        ) {
+          throw new Error(
+            `${kind}: "experimental_breadcrumbs" must be a function when set`,
+          );
+        }
         navPanels.push({
           id,
           title: requireNonEmptyString(kind, "title", registration.title),
@@ -170,6 +178,11 @@ export function collectPluginAppRegistrations(
             : {}),
           ...(registration.headerContent !== undefined
             ? { headerContent: registration.headerContent }
+            : {}),
+          ...(registration.experimental_breadcrumbs !== undefined
+            ? {
+                experimental_breadcrumbs: registration.experimental_breadcrumbs,
+              }
             : {}),
         });
       },

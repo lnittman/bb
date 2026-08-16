@@ -1,8 +1,10 @@
+import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { WorkerPoolContextProvider } from "@pierre/diffs/react";
 import { PageShell } from "@/components/ui/page-shell.js";
 import { EmptyStatePanel } from "@bb/shared-ui/empty-state";
 import { PluginSlotMount } from "@/components/plugin/PluginSlotMount";
+import { PluginNavPanelMountContext } from "@/components/plugin/plugin-nav-panel-route-label";
 import {
   createDiffWorker,
   getDiffWorkerPoolSize,
@@ -62,6 +64,14 @@ export function PluginPanelView(props: PluginPanelViewProps = {}) {
       (candidate) =>
         candidate.pluginId === pluginId && candidate.path === panelPath,
     ) ?? null;
+  // Scope for `experimental_useNavPanelRouteLabel` inside the panel tree.
+  const navPanelMount = useMemo(
+    () =>
+      panel === null
+        ? null
+        : { pluginId: panel.pluginId, panelId: panel.id, subPath },
+    [panel, subPath],
+  );
 
   if (panel === null) {
     // Registrations arrive after first paint, so on a reload or deep link this
@@ -89,7 +99,9 @@ export function PluginPanelView(props: PluginPanelViewProps = {}) {
       slotKind="navPanel"
       slotId={panel.id}
     >
-      <panel.component subPath={subPath} />
+      <PluginNavPanelMountContext.Provider value={navPanelMount}>
+        <panel.component subPath={subPath} />
+      </PluginNavPanelMountContext.Provider>
     </PluginSlotMount>
   );
   // The provider spawns workers eagerly; environments without Worker

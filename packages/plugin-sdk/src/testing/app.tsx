@@ -160,6 +160,8 @@ interface SlotEnv {
   sidebarActions: PluginSidebarThreadActions;
   sidebarActionCalls: SidebarActionCall[];
   sidebarPullRequests: ReadonlyMap<string, PluginSidebarPullRequest>;
+  /** Latest value handed to `experimental_useNavPanelRouteLabel`. */
+  routeLabel: { current: string | null };
 }
 
 /** One recorded `experimental_useSidebarThreadActions()` call. */
@@ -440,6 +442,17 @@ const testPluginSdkApp = {
   experimental_useSidebarThreadActions(): PluginSidebarThreadActions {
     return useSlotEnv("experimental_useSidebarThreadActions").sidebarActions;
   },
+  experimental_useNavPanelRouteLabel(label): void {
+    const env = useSlotEnv("experimental_useNavPanelRouteLabel");
+    // Mirrors the host: the latest value wins while the publisher is mounted
+    // and clears when it unmounts.
+    useEffect(() => {
+      env.routeLabel.current = label ?? null;
+      return () => {
+        env.routeLabel.current = null;
+      };
+    }, [env, label]);
+  },
   experimental_useSidebarThreadSplit(threadId): PluginSidebarThreadSplit {
     const env = useSlotEnv("experimental_useSidebarThreadSplit");
     return useMemo(
@@ -631,6 +644,14 @@ function collectRegistrations(
             `${kind}: "experimental_sidebarAccessory" must be a React component function when set`,
           );
         }
+        if (
+          registration.experimental_breadcrumbs !== undefined &&
+          typeof registration.experimental_breadcrumbs !== "function"
+        ) {
+          throw new Error(
+            `${kind}: "experimental_breadcrumbs" must be a function when set`,
+          );
+        }
         captured.navPanels.push({
           id,
           title: requireNonEmptyString(kind, "title", registration.title),
@@ -645,6 +666,11 @@ function collectRegistrations(
             : {}),
           ...(registration.headerContent !== undefined
             ? { headerContent: registration.headerContent }
+            : {}),
+          ...(registration.experimental_breadcrumbs !== undefined
+            ? {
+                experimental_breadcrumbs: registration.experimental_breadcrumbs,
+              }
             : {}),
         });
       },
@@ -1072,6 +1098,8 @@ export interface RenderedSlotInspectionState {
   readonly sidebarActionCalls: SidebarActionCall[];
   /** Everything written through `useComposer()`. */
   readonly composer: ComposerLog;
+  /** Latest `experimental_useNavPanelRouteLabel` value, null when none. */
+  readonly navPanelRouteLabel: string | null;
 }
 
 /** Explicit mount controls, separate from behavior inputs and call logs. */
@@ -1190,6 +1218,7 @@ export function renderSlot<
 
   const navigateCalls: NavigateCall[] = [];
   const sidebarActionCalls: SidebarActionCall[] = [];
+  const routeLabel = { current: null as string | null };
   const sidebarPullRequests = new Map(
     Object.entries(options.sidebarPullRequests ?? {}),
   );
@@ -1369,6 +1398,7 @@ export function renderSlot<
     sidebarActions,
     sidebarActionCalls,
     sidebarPullRequests,
+    routeLabel,
   };
 
   const releaseComposerOwnership = (): void => {
@@ -1439,6 +1469,9 @@ export function renderSlot<
     navigateCalls,
     sidebarActionCalls,
     composer: composerLog,
+    get navPanelRouteLabel() {
+      return routeLabel.current;
+    },
     behavior: {
       emitRealtime,
       setRealtimeConnectionState,
@@ -1450,6 +1483,9 @@ export function renderSlot<
       navigateCalls,
       sidebarActionCalls,
       composer: composerLog,
+      get navPanelRouteLabel() {
+        return routeLabel.current;
+      },
     },
     lifecycle: { rerender: rerenderSlot, unmount: unmountSlot },
   };

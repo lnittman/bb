@@ -68,3 +68,5 @@ export const experimental_useSidebarThreadPullRequest =
   runtime.experimental_useSidebarThreadPullRequest;
 export const experimental_useSidebarThreadSplit =
   runtime.experimental_useSidebarThreadSplit;
+export const experimental_useNavPanelRouteLabel =
+  runtime.experimental_useNavPanelRouteLabel;

@@ -645,6 +645,21 @@ describe("collectPluginAppRegistrations", () => {
       /"experimental_sidebarAccessory" must be a React component/,
     ],
     [
+      "nav panel with a non-function experimental breadcrumbs resolver",
+      () =>
+        definePluginApp((app) => {
+          app.slots.navPanel({
+            id: "x",
+            title: "X",
+            icon: "columns",
+            path: "x",
+            component: Component,
+            experimental_breadcrumbs: [{ label: "X" }] as never,
+          });
+        }),
+      /"experimental_breadcrumbs" must be a function/,
+    ],
+    [
       "message directive with uppercase id",
       () =>
         definePluginApp((app) => {
@@ -726,6 +741,23 @@ describe("collectPluginAppRegistrations", () => {
     ).toMatchObject({
       headerContent: Accessory,
     });
+  });
+
+  it("keeps an experimental_breadcrumbs resolver", () => {
+    const resolver = () => [{ label: "Board" }];
+    const definition = definePluginApp((app) => {
+      app.slots.navPanel({
+        id: "board",
+        title: "Board",
+        icon: "columns",
+        path: "board",
+        component: Component,
+        experimental_breadcrumbs: resolver,
+      });
+    });
+    expect(
+      collectPluginAppRegistrations(definition).navPanels[0],
+    ).toMatchObject({ experimental_breadcrumbs: resolver });
   });
 
   it("keeps an experimental_sidebarAccessory registration", () => {

@@ -25,6 +25,7 @@ import {
   useSidebarThreads,
 } from "./plugin-sidebar-hooks";
 import { useSidebarThreadSplit } from "./plugin-sidebar-split";
+import { useNavPanelRouteLabel } from "./plugin-nav-panel-route-label-hook";
 
 /**
  * The real `@get-bb/plugin-sdk/app` surface (plugin design §5.2), assigned to
@@ -64,6 +65,9 @@ export const pluginSdkAppImplementation = {
   experimental_useSidebarThreadActions: useSidebarThreadActions,
   experimental_useSidebarThreadPullRequest: useSidebarThreadPullRequest,
   experimental_useSidebarThreadSplit: useSidebarThreadSplit,
+  // Experimental (see docs/api_to_audit.md): the loaded-label half of nav
+  // panel breadcrumbs (`experimental_breadcrumbs` is registration data).
+  experimental_useNavPanelRouteLabel: useNavPanelRouteLabel,
 } satisfies PluginSdkApp;
 
 /**

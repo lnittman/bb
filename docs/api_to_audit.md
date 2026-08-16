@@ -320,3 +320,53 @@ other pane's copy (or release its owned state). The thread-list slot omits it
 deliberately: it mounts once, and a crash there should disable it everywhere.
 Confirm that split before stabilizing, and decide whether other multi-mount
 slots need the same treatment.
+
+## `PluginNavPanelRegistration.experimental_breadcrumbs` and `experimental_useNavPanelRouteLabel`
+
+**What it does.** Lets a nav panel describe its route depth as plain
+breadcrumb data while BB keeps the shared title bar host-rendered. The
+resolver receives the panel's current props (`subPath`), runs synchronously
+during host rendering, and returns labels plus optional panel-relative
+`subPath` destinations. BB builds and encodes the full links, keeps the final
+segment passive, applies its own typography, separators, and truncation, and
+falls back to the panel icon and title when the resolver is absent, returns
+nothing, returns malformed data, or throws. Everything that touches plugin
+values (the call, the array walk, every property read) runs inside one
+boundary and is copied into host data first; a destination containing `.` or
+`..` segments would leave the panel and is treated as malformed. On narrow
+headers (a split pane, a
+compact window) the trail collapses to its final segment. A mounted panel can
+call `experimental_useNavPanelRouteLabel` after its data loads to replace the
+final segment's label with a loaded name; the value is scoped to that panel
+and its current `subPath` and is cleared on route change, unmount, crash, or a
+nullish update. `headerContent` remains the separate right-side control
+surface.
+
+**Audit before stabilizing.**
+
+1. **Data versus component.** Confirm labels plus panel-relative links cover
+   real consumers (Tasks: collection, project, task; Automations today via a
+   host special-case) without exposing arbitrary center markup, controls,
+   typography, or portals.
+2. **Route grammar and budget.** Revisit the segment-count cap, malformed and
+   throwing resolver fallback (including hostile getters and proxies), the
+   panel-relative grammar and its dot-segment rejection, long labels,
+   localization, browser zoom, and whether query-like data inside a `subPath`
+   stays intuitive.
+3. **Loaded-label ownership.** The host keeps the latest value per panel and
+   `subPath` and cannot arbitrate between publishers; confirm "one publisher
+   per route" is sufficient, or define arbitration.
+4. **Lifecycle and multiple panes.** Verify panel identity, frontend
+   generation, `subPath`, crash, reload, and split-pane cleanup so one pane can
+   never label another (the host mounts at most one instance of a nav panel
+   per window today).
+5. **Compact behavior.** Confirm the container-width collapse rule on narrow
+   split panes and iOS/PWA headers, including interaction with right-side
+   plugin actions and host maximize/close controls.
+6. **Navigation and accessibility.** Confirm ancestor links, the passive final
+   segment, keyboard focus, desktop drag-region exclusion, and fallback stay
+   host-owned.
+7. **Compatibility and migration.** Older registrations keep rendering icon
+   plus title; newer plugins declare the correct SDK floor. Decide whether
+   Automations moves onto this affordance and whether the final crumb should
+   eventually drive `document.title`.

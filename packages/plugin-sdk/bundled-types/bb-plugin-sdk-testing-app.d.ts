@@ -215,6 +215,8 @@ interface RenderedSlotInspectionState {
     readonly sidebarActionCalls: SidebarActionCall[];
     /** Everything written through `useComposer()`. */
     readonly composer: ComposerLog;
+    /** Latest `experimental_useNavPanelRouteLabel` value, null when none. */
+    readonly navPanelRouteLabel: string | null;
 }
 /** Explicit mount controls, separate from behavior inputs and call logs. */
 interface RenderedSlotLifecycleControls {
