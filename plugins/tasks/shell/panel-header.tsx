@@ -23,11 +23,11 @@ export const REFRESH_TASKS_LABEL = "Refresh tasks";
  * The Tasks controls in the host's shared title bar (`headerContent`), next
  * to the host-rendered breadcrumbs: on a task, Back and the sibling pager; on
  * a project, the List/Board switch; everywhere, refresh, New task where a task
- * can be created, and the sidebar toggle. Anchored to the window edge like the
- * app's own panel toggle, so nothing here moves when the Tasks sidebar opens.
- * State comes from the shell through the chrome store; commands go back the
- * same way (the two render in separate trees). The pager owns its own query,
- * so it gets its own refresh provider.
+ * can be created, and the sidebar toggle. Anchored to the header's trailing
+ * edge like the app's own panel toggle, so nothing here moves when the Tasks
+ * sidebar opens. State comes from the shell through the chrome store;
+ * commands go back the same way (the two render in separate trees). The pager
+ * owns its own query, so it gets its own refresh provider.
  */
 export function TasksPanelHeader({ subPath }: PluginNavPanelProps) {
   const route = parseTasksRoute(subPath);
@@ -78,30 +78,30 @@ export function TasksPanelHeader({ subPath }: PluginNavPanelProps) {
               />
             </span>
           ) : null}
-          {/* Refresh sits immediately left of the primary New task action.
-              Fixed geometry while in flight so the title bar does not shift. */}
-          <Tooltip disableHoverableContent>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-7 shrink-0 text-muted-foreground hover:text-foreground active:bg-state-active active:text-foreground max-md:pointer-coarse:size-9"
-                aria-label={REFRESH_TASKS_LABEL}
-                aria-busy={isRefreshing}
-                disabled={!bound || isRefreshing}
-                onClick={() => {
-                  if (!isRefreshing) dispatchTasksChromeCommand("refresh");
-                }}
-              >
-                <Icon
-                  name="RotateCcw"
-                  className={cn("size-3.5", isRefreshing && "animate-spin")}
-                />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">{REFRESH_TASKS_LABEL}</TooltipContent>
-          </Tooltip>
+          {/* Refresh sits immediately left of the primary New task action and
+              wears the same clothes as the GitHub plugin's header refresh: a
+              labeled outline button where the header row is wide enough,
+              icon-only below (the accessible name stays), no tooltip. The
+              label never changes while in flight, so the title bar does not
+              shift; the icon spins instead. */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 w-7 shrink-0 gap-1.5 px-0 @lg/page-header:w-auto @lg/page-header:px-2.5 max-md:pointer-coarse:h-9 max-md:pointer-coarse:w-9"
+            aria-label={REFRESH_TASKS_LABEL}
+            aria-busy={isRefreshing}
+            disabled={!bound || isRefreshing}
+            onClick={() => {
+              if (!isRefreshing) dispatchTasksChromeCommand("refresh");
+            }}
+          >
+            <Icon
+              name="RotateCcw"
+              className={cn("size-3.5", isRefreshing && "animate-spin")}
+            />
+            <span className="hidden @lg/page-header:inline">Refresh</span>
+          </Button>
           {canCreateTask ? (
             <Button
               type="button"

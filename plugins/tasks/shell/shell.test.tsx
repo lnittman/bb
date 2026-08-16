@@ -627,7 +627,7 @@ describe("tasks app shell", () => {
     ).toBeDefined();
   });
 
-  it("exposes a subtle icon-only refresh control left of New task", async () => {
+  it("exposes a labeled refresh control left of New task, without a tooltip", async () => {
     const slot = renderSlot(
       app.navPanels[0]!,
       { subPath: "all" },
@@ -670,10 +670,17 @@ describe("tasks app shell", () => {
       body.queryByRole("button", { name: /(Collapse|Expand) sidebar/ }),
     ).toBeNull();
 
-    // Icon-only: no visible "Refresh" text; accessible name remains.
-    expect(refresh.textContent?.trim() ?? "").not.toMatch(/Refresh/i);
+    // Labeled like the GitHub plugin's header refresh: the "Refresh" text
+    // shows where the header row is wide enough (a container rule, so it is
+    // in the DOM here) and the accessible name stays for the icon-only case.
+    // No tooltip: the label is the explanation.
+    expect(refresh.textContent?.trim()).toBe("Refresh");
     expect(refresh.getAttribute("aria-label")).toBe("Refresh tasks");
-    expect(refresh.className).toMatch(/size-7/);
+    expect(refresh.className).toMatch(/@lg\/page-header:w-auto/);
+    expect(refresh.getAttribute("data-state")).toBeNull();
+    fireEvent.mouseEnter(refresh);
+    fireEvent.pointerEnter(refresh);
+    expect(screen.queryByRole("tooltip")).toBeNull();
 
     // DOM order: refresh → New task → sidebar toggle.
     expect(
@@ -748,12 +755,12 @@ describe("tasks app shell", () => {
       name: "Refresh tasks",
     }) as HTMLButtonElement;
     const idleClassName = refresh.className;
-    expect(idleClassName).toMatch(/size-7/);
+    expect(idleClassName).toMatch(/h-7/);
     expect(refresh.getAttribute("aria-busy")).not.toBe("true");
     expect(refresh.disabled).toBe(false);
-    expect(idleClassName).toMatch(/active:bg-state-active/);
+    const idleText = refresh.textContent;
 
-    // Accessible name is the stable tooltip/label contract.
+    // Accessible name is the stable label contract.
     fireEvent.pointerMove(refresh);
     fireEvent.focus(refresh);
     expect(refresh.getAttribute("aria-label")).toBe("Refresh tasks");
@@ -765,7 +772,9 @@ describe("tasks app shell", () => {
     // In-flight while the deferred RPC is still pending.
     expect(refresh.disabled).toBe(true);
     expect(refresh.getAttribute("aria-busy")).toBe("true");
+    // Same box while in flight: same classes, same label (the icon spins).
     expect(refresh.className).toBe(idleClassName);
+    expect(refresh.textContent).toBe(idleText);
 
     const callsWhilePending = listTasksCalls;
     // Rapid re-activation while pending must not bump generation again.
@@ -809,13 +818,12 @@ describe("tasks app shell", () => {
       expect(button.disabled).toBe(false);
       expect(button.getAttribute("aria-busy")).not.toBe("true");
     });
-    expect(
-      (
-        screen.getByRole("button", {
-          name: "Refresh tasks",
-        }) as HTMLButtonElement
-      ).className,
-    ).toMatch(/size-7/);
+    // Back to the idle box after settling: same classes and label as before.
+    const settled = screen.getByRole("button", {
+      name: "Refresh tasks",
+    }) as HTMLButtonElement;
+    expect(settled.className).toBe(idleClassName);
+    expect(settled.textContent).toBe(idleText);
   });
 
   it("retains stale list data when a manual refresh fails, then recovers", async () => {
