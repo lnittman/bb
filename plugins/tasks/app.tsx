@@ -1,5 +1,6 @@
 import { definePluginApp } from "@get-bb/plugin-sdk/app";
 import { TasksAppShell } from "./shell/app-shell.js";
+import { TasksPanelHeader } from "./shell/panel-header.js";
 import { TasksSidebarAccessory } from "./shell/sidebar-accessory.js";
 import { TaskDirectiveCard, TaskEmbedPanel } from "./views/embed/index.js";
 
@@ -10,6 +11,7 @@ export default definePluginApp((app) => {
     icon: "ListTodo",
     path: "tasks",
     component: TasksAppShell,
+    headerContent: TasksPanelHeader,
     experimental_sidebarAccessory: TasksSidebarAccessory,
   });
   app.slots.threadPanelAction({

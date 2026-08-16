@@ -1,0 +1,84 @@
+import type { PluginNavPanelProps } from "@get-bb/plugin-sdk/app";
+import { Button } from "@bb/shared-ui/button";
+import { Icon } from "@bb/shared-ui/icon";
+import { cn } from "@bb/shared-ui/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@bb/shared-ui/tooltip";
+import {
+  dispatchTasksChromeCommand,
+  useTasksChromeState,
+} from "./chrome-store.js";
+import { parseTasksRoute } from "./routes.js";
+
+export const REFRESH_TASKS_LABEL = "Refresh tasks";
+
+/**
+ * The Tasks controls in the host's shared title bar: refresh, New task, and
+ * the sidebar toggle. Anchored to the window edge like the app's own panel
+ * toggle, so they stay put when the Tasks sidebar opens or closes; the
+ * plugin's own row below keeps the view breadcrumb, pager, and view switch.
+ * State comes from the shell through the chrome store; commands go back the
+ * same way (the two render in separate trees).
+ */
+export function TasksPanelHeader({ subPath }: PluginNavPanelProps) {
+  const route = parseTasksRoute(subPath);
+  const { sidebarCollapsed, isRefreshing } = useTasksChromeState();
+  const canCreateTask = route.kind !== "task" && route.kind !== "manage";
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      {/* Refresh sits immediately left of the primary New task action.
+          Fixed geometry while in flight so the title bar does not shift. */}
+      <TooltipProvider delayDuration={300}>
+        <Tooltip disableHoverableContent>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-7 shrink-0 text-muted-foreground hover:text-foreground active:bg-state-active active:text-foreground max-md:pointer-coarse:size-9"
+              aria-label={REFRESH_TASKS_LABEL}
+              aria-busy={isRefreshing}
+              disabled={isRefreshing}
+              onClick={() => {
+                if (!isRefreshing) dispatchTasksChromeCommand("refresh");
+              }}
+            >
+              <Icon
+                name="RotateCcw"
+                className={cn("size-3.5", isRefreshing && "animate-spin")}
+              />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{REFRESH_TASKS_LABEL}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      {canCreateTask ? (
+        <Button
+          size="sm"
+          className="h-7 gap-1.5 max-md:pointer-coarse:h-9"
+          aria-label="New task"
+          onClick={() => dispatchTasksChromeCommand("newTask")}
+        >
+          <Icon name="Plus" className="size-3.5" />
+          {/* Icon-only on compact viewports, where the title bar shares its
+              width with the app's own controls. */}
+          <span className="hidden md:inline">New task</span>
+        </Button>
+      ) : null}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-7 max-md:pointer-coarse:size-9"
+        aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        aria-expanded={!sidebarCollapsed}
+        onClick={() => dispatchTasksChromeCommand("toggleSidebar")}
+      >
+        <Icon name="PanelRight" className="size-4" />
+      </Button>
+    </div>
+  );
+}

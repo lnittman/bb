@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import type { Project, Task } from "../shared/contract.js";
 import { groupTasksByStatus } from "../views/list/lib.js";
 import { listAllTasks, useTasksQuery } from "./data.js";
@@ -6,16 +6,8 @@ import type { TaskViewMode, TasksRoute } from "./routes.js";
 import { Button } from "@bb/shared-ui/button";
 import { Icon } from "@bb/shared-ui/icon";
 import { cn } from "@bb/shared-ui/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@bb/shared-ui/tooltip";
-import { useTasksRefresh } from "./refresh.js";
 
 /** Accessible name + tooltip for the header refresh control. */
-export const REFRESH_TASKS_LABEL = "Refresh tasks";
 
 export interface PagerPosition {
   /** 1-based position of the task within its sibling list. */
@@ -141,50 +133,9 @@ function ViewToggle({
   );
 }
 
-/**
- * Subtle icon-only refresh control. Shares the BB-19 generation channel; does
- * not add listeners or alternate refresh paths. In-flight state tracks real
- * generation-driven query work (spin + disabled) with fixed geometry so the
- * header does not shift.
- */
-function RefreshTasksButton() {
-  const { refresh, isRefreshing } = useTasksRefresh();
-
-  const handleRefresh = useCallback(() => {
-    if (isRefreshing) return;
-    refresh();
-  }, [isRefreshing, refresh]);
-
-  return (
-    <TooltipProvider delayDuration={300}>
-      <Tooltip disableHoverableContent>
-        <TooltipTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-7 shrink-0 text-muted-foreground hover:text-foreground active:bg-state-active active:text-foreground max-md:pointer-coarse:size-9"
-            aria-label={REFRESH_TASKS_LABEL}
-            aria-busy={isRefreshing}
-            disabled={isRefreshing}
-            onClick={handleRefresh}
-          >
-            <Icon
-              name="RotateCcw"
-              className={cn("size-3.5", isRefreshing && "animate-spin")}
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">{REFRESH_TASKS_LABEL}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
-
 export interface TasksTopbarProps {
   route: TasksRoute;
   projects: Project[] | undefined;
-  sidebarCollapsed: boolean;
   /**
    * Pager scope on task routes: the list/board browsed before (projectId null
    * = All tasks). null when no list/board was visited this session (deep
@@ -192,19 +143,14 @@ export interface TasksTopbarProps {
    */
   pagerScope: { projectId: string | null } | null;
   onNavigate: (route: TasksRoute) => void;
-  onToggleSidebar: () => void;
-  onNewTask: () => void;
   onBack: () => void;
 }
 
 export function TasksTopbar({
   route,
   projects,
-  sidebarCollapsed,
   pagerScope,
   onNavigate,
-  onToggleSidebar,
-  onNewTask,
   onBack,
 }: TasksTopbarProps) {
   const project = useMemo(() => {
@@ -339,31 +285,8 @@ export function TasksTopbar({
           />
         </span>
       ) : null}
-      {/* Refresh sits immediately left of the primary New task action. */}
-      <RefreshTasksButton />
-      {route.kind !== "task" && route.kind !== "manage" ? (
-        <Button
-          size="sm"
-          className="h-7 gap-1.5 max-md:pointer-coarse:h-9"
-          aria-label="New task"
-          onClick={onNewTask}
-        >
-          <Icon name="Plus" className="size-3.5" />
-          {/* Icon-only in narrow containers so the breadcrumb (project name,
-              view toggle) keeps readable width. */}
-          <span className="hidden @lg:inline">New task</span>
-        </Button>
-      ) : null}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-7 max-md:pointer-coarse:size-9"
-        aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        aria-expanded={!sidebarCollapsed}
-        onClick={onToggleSidebar}
-      >
-        <Icon name="PanelRight" className="size-4" />
-      </Button>
+      {/* Refresh, New task, and the sidebar toggle live in the host's shared
+          title bar (see panel-header.tsx), anchored to the window edge. */}
     </header>
   );
 }

@@ -1,5 +1,12 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadPluginApp, renderSlot } from "@get-bb/plugin-sdk/testing/app";
 
@@ -51,6 +58,23 @@ const folder = {
   parentFolderId: null,
   createdAt: "2026-07-15T00:00:00.000Z",
 };
+
+/**
+ * The refresh / New task / sidebar-toggle controls render in the host's title
+ * bar via `headerContent`, a separate tree from the panel. Mount it beside a
+ * slot the way the host does; queries for those controls go through `screen`.
+ */
+function mountHeader(subPath: string) {
+  const HeaderContent = app.navPanels[0]!.headerContent!;
+  const rendered = render(<HeaderContent subPath={subPath} />);
+  return {
+    /** Queries scoped to the title-bar controls only. */
+    within: within(rendered.container),
+    rerender: (nextSubPath: string) =>
+      rendered.rerender(<HeaderContent subPath={nextSubPath} />),
+    unmount: () => rendered.unmount(),
+  };
+}
 
 function seededRpc(overrides: Record<string, unknown> = {}) {
   return {
@@ -179,10 +203,11 @@ describe("tasks app shell", () => {
         rpc: seededRpc(),
       },
     );
+    const slotHeader = mountHeader("all");
     await slot.findByText("Tasks Plugin");
 
     expect(
-      slot
+      screen
         .getByRole("button", { name: "Collapse sidebar" })
         .getAttribute("aria-expanded"),
     ).toBe("true");
@@ -200,9 +225,10 @@ describe("tasks app shell", () => {
         rpc: seededRpc(),
       },
     );
+    const slotHeader = mountHeader("all");
     await slot.findByText("Tasks Plugin");
 
-    fireEvent.click(slot.getByRole("button", { name: "Collapse sidebar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
     expect(slot.queryByRole("button", { name: "Manage" })).toBeNull();
     expect(window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe(
       "true",
@@ -210,14 +236,17 @@ describe("tasks app shell", () => {
 
     const Shell = registration.component;
     slot.lifecycle.rerender(<Shell subPath={`${PROJECT_ID}?view=board`} />);
+    slotHeader.rerender(`${PROJECT_ID}?view=board`);
     await slot.findByText("Backlog");
     expect(
-      slot
+      screen
         .getByRole("button", { name: "Expand sidebar" })
         .getAttribute("aria-expanded"),
     ).toBe("false");
 
     slot.lifecycle.unmount();
+
+    slotHeader.unmount();
     const remounted = renderSlot(
       registration,
       { subPath: "all" },
@@ -225,10 +254,11 @@ describe("tasks app shell", () => {
         rpc: seededRpc(),
       },
     );
+    const remountedHeader = mountHeader("all");
     await remounted.findByText("All tasks");
     expect(remounted.queryByRole("button", { name: "Manage" })).toBeNull();
     expect(
-      remounted.getByRole("button", { name: "Expand sidebar" }),
+      screen.getByRole("button", { name: "Expand sidebar" }),
     ).toBeDefined();
   });
 
@@ -242,8 +272,9 @@ describe("tasks app shell", () => {
         rpc: seededRpc(),
       },
     );
+    const slotHeader = mountHeader("all");
     await slot.findByText("All tasks");
-    fireEvent.click(slot.getByRole("button", { name: "Expand sidebar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Expand sidebar" }));
 
     expect(window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe(
       "false",
@@ -251,6 +282,8 @@ describe("tasks app shell", () => {
     await slot.findByRole("button", { name: "Manage" });
 
     slot.lifecycle.unmount();
+
+    slotHeader.unmount();
     const remounted = renderSlot(
       registration,
       { subPath: "manage" },
@@ -258,9 +291,10 @@ describe("tasks app shell", () => {
         rpc: seededRpc({ listLabels: () => ({ labels: [] }) }),
       },
     );
+    const remountedHeader = mountHeader("manage");
     await remounted.findByText("Labels, agent presets, and folders.");
     expect(
-      remounted.getByRole("button", { name: "Collapse sidebar" }),
+      screen.getByRole("button", { name: "Collapse sidebar" }),
     ).toBeDefined();
     expect(remounted.getByRole("button", { name: "Manage" })).toBeDefined();
   });
@@ -276,11 +310,12 @@ describe("tasks app shell", () => {
         rpc: seededRpc(),
       },
     );
+    const slotHeader = mountHeader("all");
     await slot.findByText("Tasks Plugin");
 
-    fireEvent.click(slot.getByRole("button", { name: "Collapse sidebar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
     expect(
-      slot
+      screen
         .getByRole("button", { name: "Expand sidebar" })
         .getAttribute("aria-expanded"),
     ).toBe("false");
@@ -383,6 +418,7 @@ describe("tasks app shell", () => {
         }),
       },
     );
+    const slotHeader = mountHeader("all");
     await slot.findByText("Stale list title");
 
     title = "Recovered list title";
@@ -392,8 +428,47 @@ describe("tasks app shell", () => {
     await slot.findByText("Recovered list title");
 
     title = "Manually refreshed list title";
-    fireEvent.click(slot.getByRole("button", { name: "Refresh tasks" }));
+    fireEvent.click(screen.getByRole("button", { name: "Refresh tasks" }));
     await slot.findByText("Manually refreshed list title");
+  });
+
+  it("opens the New task dialog from the title-bar control", async () => {
+    const slot = renderSlot(
+      app.navPanels[0]!,
+      { subPath: "all" },
+      { rpc: seededRpc({ listLabels: () => ({ labels: [] }) }) },
+    );
+    const header = mountHeader("all");
+    await slot.findByText("Tasks Plugin");
+    fireEvent.click(header.within.getByRole("button", { name: /New task/i }));
+    await screen.findByRole("dialog");
+    expect(screen.getByRole("textbox", { name: "Task title" })).toBeDefined();
+  });
+
+  it("offers New task only where a task can be created", () => {
+    // Title-bar controls are pure functions of the route (task/manage have
+    // their own creation paths) and of the store; no shell needed to decide.
+    const header = mountHeader(
+      tasksRouteToSubPath({ kind: "task", taskKey: "TSK-4" }),
+    );
+    expect(
+      header.within.queryByRole("button", { name: /New task/i }),
+    ).toBeNull();
+    header.rerender(tasksRouteToSubPath({ kind: "manage" }));
+    expect(
+      header.within.queryByRole("button", { name: /New task/i }),
+    ).toBeNull();
+    header.rerender(tasksRouteToSubPath({ kind: "all" }));
+    expect(
+      header.within.getByRole("button", { name: /New task/i }),
+    ).toBeDefined();
+    // The refresh and sidebar controls are always present.
+    expect(
+      header.within.getByRole("button", { name: "Refresh tasks" }),
+    ).toBeDefined();
+    expect(
+      header.within.getByRole("button", { name: /(Collapse|Expand) sidebar/ }),
+    ).toBeDefined();
   });
 
   it("exposes a subtle icon-only refresh control left of New task", async () => {
@@ -419,11 +494,12 @@ describe("tasks app shell", () => {
         }),
       },
     );
+    const slotHeader = mountHeader("all");
     await slot.findByText("Order probe");
 
-    const refresh = slot.getByRole("button", { name: "Refresh tasks" });
-    const newTask = slot.getByRole("button", { name: /New task/i });
-    const sidebar = slot.getByRole("button", { name: "Collapse sidebar" });
+    const refresh = screen.getByRole("button", { name: "Refresh tasks" });
+    const newTask = screen.getByRole("button", { name: /New task/i });
+    const sidebar = screen.getByRole("button", { name: "Collapse sidebar" });
 
     // Icon-only: no visible "Refresh" text; accessible name remains.
     expect(refresh.textContent?.trim() ?? "").not.toMatch(/Refresh/i);
@@ -494,11 +570,12 @@ describe("tasks app shell", () => {
         }),
       },
     );
+    const slotHeader = mountHeader("all");
     await slot.findByText("Flight title A");
     const baselineCalls = listTasksCalls;
     expect(baselineCalls).toBeGreaterThan(0);
 
-    const refresh = slot.getByRole("button", {
+    const refresh = screen.getByRole("button", {
       name: "Refresh tasks",
     }) as HTMLButtonElement;
     const idleClassName = refresh.className;
@@ -541,7 +618,7 @@ describe("tasks app shell", () => {
     await waitFor(() => {
       expect(
         (
-          slot.getByRole("button", {
+          screen.getByRole("button", {
             name: "Refresh tasks",
           }) as HTMLButtonElement
         ).disabled,
@@ -550,22 +627,25 @@ describe("tasks app shell", () => {
 
     // Deliberate second refresh after completion works.
     title = "Flight title C";
-    fireEvent.click(slot.getByRole("button", { name: "Refresh tasks" }));
+    fireEvent.click(screen.getByRole("button", { name: "Refresh tasks" }));
     await waitFor(() =>
       expect(listTasksCalls).toBeGreaterThan(callsWhilePending),
     );
     releaseAllPending();
     await slot.findByText("Flight title C");
     await waitFor(() => {
-      const button = slot.getByRole("button", {
+      const button = screen.getByRole("button", {
         name: "Refresh tasks",
       }) as HTMLButtonElement;
       expect(button.disabled).toBe(false);
       expect(button.getAttribute("aria-busy")).not.toBe("true");
     });
     expect(
-      (slot.getByRole("button", { name: "Refresh tasks" }) as HTMLButtonElement)
-        .className,
+      (
+        screen.getByRole("button", {
+          name: "Refresh tasks",
+        }) as HTMLButtonElement
+      ).className,
     ).toMatch(/size-7/);
   });
 
@@ -594,17 +674,18 @@ describe("tasks app shell", () => {
         }),
       },
     );
+    const slotHeader = mountHeader("all");
     await slot.findByText("Stable title");
 
     shouldFail = true;
-    fireEvent.click(slot.getByRole("button", { name: "Refresh tasks" }));
+    fireEvent.click(screen.getByRole("button", { name: "Refresh tasks" }));
     // Prior data stays on screen (useTasksQuery retains data on error).
     await waitFor(() => expect(slot.getByText("Stable title")).toBeDefined());
     // Failed generation work clears the shared in-flight bit.
     await waitFor(() => {
       expect(
         (
-          slot.getByRole("button", {
+          screen.getByRole("button", {
             name: "Refresh tasks",
           }) as HTMLButtonElement
         ).disabled,
@@ -614,7 +695,7 @@ describe("tasks app shell", () => {
 
     shouldFail = false;
     title = "Recovered after failure";
-    fireEvent.click(slot.getByRole("button", { name: "Refresh tasks" }));
+    fireEvent.click(screen.getByRole("button", { name: "Refresh tasks" }));
     await slot.findByText("Recovered after failure");
   });
 

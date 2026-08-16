@@ -18,6 +18,11 @@ import {
   storeSidebarCollapsed,
 } from "./sidebar-preference.js";
 import { TasksTopbar } from "./topbar.js";
+import {
+  bindTasksChromeCommands,
+  publishTasksChromeState,
+} from "./chrome-store.js";
+import { useTasksRefresh } from "./refresh.js";
 import { ListView } from "../views/list/index.js";
 import { BoardView } from "../views/board/index.js";
 import { DetailView } from "../views/detail/index.js";
@@ -230,6 +235,28 @@ function TasksAppShellContent({ subPath }: PluginNavPanelProps) {
     storeSidebarCollapsed(next);
   };
 
+  // The title-bar controls (panel-header.tsx) render in the host's header,
+  // outside this tree: publish what they draw and bind what they dispatch.
+  // Handlers go through a ref so the binding never holds a stale closure.
+  const { refresh, isRefreshing } = useTasksRefresh();
+  const chromeCommandsRef = useRef({ toggleSidebar, refresh });
+  chromeCommandsRef.current = { toggleSidebar, refresh };
+  useEffect(
+    () =>
+      bindTasksChromeCommands({
+        toggleSidebar: () => chromeCommandsRef.current.toggleSidebar(),
+        refresh: () => chromeCommandsRef.current.refresh(),
+        newTask: () => setNewTaskOpen(true),
+      }),
+    [],
+  );
+  useEffect(() => {
+    publishTasksChromeState({
+      sidebarCollapsed: effectiveSidebarCollapsed,
+      isRefreshing,
+    });
+  }, [effectiveSidebarCollapsed, isRefreshing]);
+
   const folders = useFolders();
   const projects = useProjects();
   const summaries = useSidebarSummary();
@@ -321,7 +348,6 @@ function TasksAppShellContent({ subPath }: PluginNavPanelProps) {
         <TasksTopbar
           route={route}
           projects={projects.data}
-          sidebarCollapsed={effectiveSidebarCollapsed}
           pagerScope={
             lastBrowseRouteRef.current === null
               ? null
@@ -333,8 +359,6 @@ function TasksAppShellContent({ subPath }: PluginNavPanelProps) {
                 }
           }
           onNavigate={navigation.go}
-          onToggleSidebar={toggleSidebar}
-          onNewTask={() => setNewTaskOpen(true)}
           onBack={backFromTask}
         />
         <div className="min-h-0 flex-1 overflow-auto">

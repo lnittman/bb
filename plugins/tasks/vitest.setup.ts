@@ -1,4 +1,6 @@
 import { configure } from "@testing-library/react";
+import { beforeEach } from "vitest";
+import { resetTasksChromeStoreForTest } from "./shell/chrome-store.js";
 
 // Match slow CI runners: the default 1s async-utility timeout flakes there
 // while the suite-level vitest testTimeout still bounds real hangs.
@@ -32,3 +34,9 @@ if (typeof window !== "undefined" && !window.matchMedia) {
       }) as unknown as MediaQueryList,
   });
 }
+
+// The title-bar controls and the shell share a module-level store; every test
+// starts with it unbound and at its cold-profile state.
+beforeEach(() => {
+  resetTasksChromeStoreForTest();
+});
