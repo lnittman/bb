@@ -83,9 +83,19 @@ const PLACEHOLDER_PERMISSION_CEILING: PermissionMode = permissionModeValues[0];
 
 function placeholderExecutionOptions(
   cacheKey: string,
+  providerCacheKey: string | null,
   isClaudeCode: boolean,
 ): SystemExecutionOptionsResponse | undefined {
-  const cached = readCachedModelCatalog(cacheKey);
+  // The routed key is exact; the provider key holds the latest verified
+  // catalog for the provider from any routing. A composer can mount before its
+  // environment is known (a thread page still loading), so its first key may
+  // never have been fetched to completion — the provider's latest catalog is a
+  // fine provisional stand-in for that frame.
+  const cached =
+    readCachedModelCatalog(cacheKey) ??
+    (providerCacheKey === null
+      ? null
+      : readCachedModelCatalog(providerCacheKey));
   if (cached === null && !isClaudeCode) {
     return undefined;
   }
@@ -135,6 +145,10 @@ export function useSystemExecutionOptions(
     hostId,
     providerId,
   });
+  const providerCatalogCacheKey =
+    providerId === null
+      ? null
+      : modelCatalogCacheKey({ environmentId: null, hostId: null, providerId });
 
   return useQuery<SystemExecutionOptionsResponse>({
     queryKey: systemExecutionOptionsQueryKey({
@@ -153,10 +167,14 @@ export function useSystemExecutionOptions(
       // would let the server's probe-failure fallback masquerade as this
       // routing's real models on the next cold load.
       if (response.modelLoadError === null) {
-        writeCachedModelCatalog(catalogCacheKey, {
+        const catalog = {
           models: response.models,
           selectedOnlyModels: response.selectedOnlyModels,
-        });
+        };
+        writeCachedModelCatalog(catalogCacheKey, catalog);
+        if (providerCatalogCacheKey !== null) {
+          writeCachedModelCatalog(providerCatalogCacheKey, catalog);
+        }
       }
       return response;
     },
@@ -165,7 +183,11 @@ export function useSystemExecutionOptions(
     retry: shouldRetrySystemExecutionOptions,
     retryDelay: SYSTEM_EXECUTION_OPTIONS_RETRY_DELAY_MS,
     placeholderData: () =>
-      placeholderExecutionOptions(catalogCacheKey, isClaudeCode),
+      placeholderExecutionOptions(
+        catalogCacheKey,
+        providerCatalogCacheKey,
+        isClaudeCode,
+      ),
   });
 }
 
