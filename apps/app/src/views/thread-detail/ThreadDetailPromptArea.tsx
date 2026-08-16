@@ -354,10 +354,18 @@ export function ThreadDetailPromptArea({
     },
   );
   const defaultExecutionOptions = defaultExecutionOptionsQuery.data;
+  // A replayed (placeholder) resolution seeds the pickers so the first frame
+  // shows the thread's last-known settings, but it is not proof of anything:
+  // submission and the permission controls wait for the live resolution.
+  const verifiedDefaultExecutionOptions =
+    defaultExecutionOptionsQuery.isPlaceholderData
+      ? undefined
+      : defaultExecutionOptions;
   const hasResolvedDefaultExecutionOptions =
-    defaultExecutionOptions !== undefined;
+    verifiedDefaultExecutionOptions !== undefined;
   const hasConcreteDefaultExecutionOptions =
-    defaultExecutionOptions !== undefined && defaultExecutionOptions !== null;
+    verifiedDefaultExecutionOptions !== undefined &&
+    verifiedDefaultExecutionOptions !== null;
   const defaultExecutionOptionsState = resolveDefaultExecutionOptionsState({
     hasConcreteDefaultExecutionOptions,
     hasResolvedDefaultExecutionOptions,
@@ -1421,9 +1429,7 @@ export function ThreadDetailPromptArea({
             >
               From child thread: {item.childTitle}
             </NavLink>
-            <PluginPendingInteractionComposer
-              interaction={item.interaction}
-            />
+            <PluginPendingInteractionComposer interaction={item.interaction} />
           </div>
         ) : (
           <ThreadPendingInteractionBanner
