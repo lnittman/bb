@@ -23,6 +23,11 @@ import {
   readCachedModelCatalog,
   writeCachedModelCatalog,
 } from "@/lib/model-catalog-cache";
+import {
+  providerListCacheKey,
+  readCachedProviderList,
+  writeCachedProviderList,
+} from "@/lib/provider-list-cache";
 import { useSystemRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import {
   hostProviderCliStatusQueryKey,
@@ -72,6 +77,13 @@ const CLAUDE_CODE_PROVIDER_ID = "claude-code";
 // On a cold cache only Claude Code has curated aliases to fall back on; other
 // providers wait for the probe, exactly as before.
 //
+// The provider list rides along from its own last-known cache: the live list
+// carries the host's custom and installed ACP agents, so replaying only the
+// built-in providers would select the first built-in one for a beat whenever
+// the remembered provider is not built in. If the remembered provider is not
+// in the list we can replay, there is no honest provisional frame and the
+// composer waits, as it did before.
+//
 // Callers must gate model recovery on `isPlaceholderData` either way: a cached
 // catalog can be stale, so absence from this list is not evidence that a stored
 // model was retired.
@@ -81,11 +93,17 @@ const CLAUDE_CODE_PROVIDER_ID = "claude-code";
 // but a replay must fail safe if a future reader forgets that gate.
 const PLACEHOLDER_PERMISSION_CEILING: PermissionMode = permissionModeValues[0];
 
-function placeholderExecutionOptions(
-  cacheKey: string,
-  providerCacheKey: string | null,
-  isClaudeCode: boolean,
-): SystemExecutionOptionsResponse | undefined {
+function placeholderExecutionOptions({
+  cacheKey,
+  providerCacheKey,
+  providersCacheKey,
+  providerId,
+}: {
+  cacheKey: string;
+  providerCacheKey: string | null;
+  providersCacheKey: string;
+  providerId: string | null;
+}): SystemExecutionOptionsResponse | undefined {
   // The routed key is exact; the provider key holds the latest verified
   // catalog for the provider from any routing. A composer can mount before its
   // environment is known (a thread page still loading), so its first key may
@@ -96,11 +114,22 @@ function placeholderExecutionOptions(
     (providerCacheKey === null
       ? null
       : readCachedModelCatalog(providerCacheKey));
-  if (cached === null && !isClaudeCode) {
+  if (cached === null && providerId !== CLAUDE_CODE_PROVIDER_ID) {
+    return undefined;
+  }
+  const remembered = readCachedProviderList(providersCacheKey);
+  const providers =
+    remembered !== null && remembered.length > 0
+      ? remembered
+      : listBuiltInAgentProviderInfos();
+  if (
+    providerId !== null &&
+    !providers.some((provider) => provider.id === providerId)
+  ) {
     return undefined;
   }
   return {
-    providers: listBuiltInAgentProviderInfos(),
+    providers,
     models: cached?.models ?? listClaudeCodeFallbackModels(),
     selectedOnlyModels: cached?.selectedOnlyModels ?? [],
     permissionCeiling: PLACEHOLDER_PERMISSION_CEILING,
@@ -139,7 +168,7 @@ export function useSystemExecutionOptions(
   const providerId = args.providerId ?? null;
   const enabled = args.enabled ?? true;
   useSystemRealtimeSubscription({ enabled });
-  const isClaudeCode = providerId === CLAUDE_CODE_PROVIDER_ID;
+  const providersCacheKey = providerListCacheKey({ environmentId, hostId });
   const catalogCacheKey = modelCatalogCacheKey({
     environmentId,
     hostId,
@@ -163,9 +192,12 @@ export function useSystemExecutionOptions(
         providerId: args.providerId,
         signal,
       });
-      // Only a verified catalog is worth remembering. Caching a provisional list
-      // would let the server's probe-failure fallback masquerade as this
-      // routing's real models on the next cold load.
+      // The provider list is authoritative whether or not the model probe
+      // succeeded. Only a verified catalog is worth remembering, though:
+      // caching a provisional list would let the server's probe-failure
+      // fallback masquerade as this routing's real models on the next cold
+      // load.
+      writeCachedProviderList(providersCacheKey, response.providers);
       if (response.modelLoadError === null) {
         const catalog = {
           models: response.models,
@@ -183,11 +215,12 @@ export function useSystemExecutionOptions(
     retry: shouldRetrySystemExecutionOptions,
     retryDelay: SYSTEM_EXECUTION_OPTIONS_RETRY_DELAY_MS,
     placeholderData: () =>
-      placeholderExecutionOptions(
-        catalogCacheKey,
-        providerCatalogCacheKey,
-        isClaudeCode,
-      ),
+      placeholderExecutionOptions({
+        cacheKey: catalogCacheKey,
+        providerCacheKey: providerCatalogCacheKey,
+        providersCacheKey,
+        providerId,
+      }),
   });
 }
 

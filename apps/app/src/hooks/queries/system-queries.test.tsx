@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, renderHook, waitFor } from "@testing-library/react";
+import { listBuiltInAgentProviderInfos } from "@bb/agent-providers";
 import type { AvailableModel } from "@bb/domain";
 import type {
   OnboardingAgentOverview,
@@ -132,6 +133,7 @@ describe("useSystemExecutionOptions", () => {
   };
   const CODEX_CATALOG: SystemExecutionOptionsResponse = {
     ...EXECUTION_OPTIONS_RESPONSE,
+    providers: listBuiltInAgentProviderInfos(),
     models: [CODEX_MODEL],
   };
   /** A request that never settles, so the pre-fetch render is observable. */
@@ -169,6 +171,85 @@ describe("useSystemExecutionOptions", () => {
         expect.objectContaining({ hostId: "host-a", providerId: "codex" }),
       ),
     );
+  });
+
+  it("replays the host's provider list so a custom provider paints as itself", async () => {
+    const customProvider = {
+      id: "acp:my-agent",
+      displayName: "My agent",
+      logoUrl: null,
+      capabilities: CODEX_CATALOG.providers[0]!.capabilities,
+      composerActions: [],
+      available: true,
+    };
+    const customCatalog: SystemExecutionOptionsResponse = {
+      ...CODEX_CATALOG,
+      providers: [...CODEX_CATALOG.providers, customProvider],
+    };
+    vi.mocked(sdk.system.executionOptions).mockResolvedValue(customCatalog);
+    const first = createQueryClientTestHarness();
+    const warm = renderHook(
+      () =>
+        useSystemExecutionOptions({
+          hostId: "host-a",
+          providerId: customProvider.id,
+        }),
+      { wrapper: first.wrapper },
+    );
+    await waitFor(() =>
+      expect(warm.result.current.data).toEqual(customCatalog),
+    );
+    warm.unmount();
+
+    vi.mocked(sdk.system.executionOptions).mockImplementation(pendingForever);
+    const reload = createQueryClientTestHarness();
+    const { result } = renderHook(
+      () =>
+        useSystemExecutionOptions({
+          hostId: "host-a",
+          providerId: customProvider.id,
+        }),
+      { wrapper: reload.wrapper },
+    );
+    expect(result.current.isPlaceholderData).toBe(true);
+    // The remembered list, not the built-in list: the selected provider is
+    // present, so the composer does not fall back to the first built-in one.
+    expect(result.current.data?.providers).toEqual(customCatalog.providers);
+    expect(result.current.data?.models).toEqual([CODEX_MODEL]);
+  });
+
+  it("withholds the placeholder when the remembered provider is not in any list it can replay", async () => {
+    // Warm the catalog for a custom provider from a routing whose provider
+    // list was never stored (a bumped cache version, a cleared entry): the
+    // built-in fallback list cannot vouch for it, so the composer waits.
+    vi.mocked(sdk.system.executionOptions).mockResolvedValue({
+      ...CODEX_CATALOG,
+      providers: [],
+    });
+    const first = createQueryClientTestHarness();
+    const warm = renderHook(
+      () =>
+        useSystemExecutionOptions({
+          hostId: "host-a",
+          providerId: "acp:my-agent",
+        }),
+      { wrapper: first.wrapper },
+    );
+    await waitFor(() => expect(warm.result.current.data).toBeDefined());
+    warm.unmount();
+
+    vi.mocked(sdk.system.executionOptions).mockImplementation(pendingForever);
+    const reload = createQueryClientTestHarness();
+    const { result } = renderHook(
+      () =>
+        useSystemExecutionOptions({
+          hostId: "host-a",
+          providerId: "acp:my-agent",
+        }),
+      { wrapper: reload.wrapper },
+    );
+    expect(result.current.isPlaceholderData).toBe(false);
+    expect(result.current.data).toBeUndefined();
   });
 
   it("does not preload a catalog that came from a failed probe", async () => {
