@@ -1143,7 +1143,14 @@ function NonThreadPaneContent({
                   usesDesktopChrome={usesDesktopChrome}
                 />
               ) : panelChrome ? (
-                <PluginPanelHeaderCenter chrome={panelChrome} />
+                <PluginPanelHeaderCenter
+                  chrome={panelChrome}
+                  panel={panel ?? null}
+                  subPath={
+                    content.kind === "plugin-panel" ? content.subPath : ""
+                  }
+                  usesDesktopChrome={usesDesktopChrome}
+                />
               ) : (
                 <p
                   className={cn(

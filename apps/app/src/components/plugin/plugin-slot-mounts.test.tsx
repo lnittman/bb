@@ -8,6 +8,7 @@ import {
   fireEvent,
   render,
   screen,
+  within,
 } from "@testing-library/react";
 import { createStore, Provider } from "jotai";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -34,6 +35,10 @@ import {
   resetPluginFrontendBootStateForTest,
 } from "@/lib/plugin-frontend-boot-state";
 import { writeLastKnownPluginNavPanelChrome } from "@/lib/plugin-nav-panel-chrome";
+import {
+  resetPluginNavPanelRouteLabelsForTest,
+  setPluginNavPanelRouteLabel,
+} from "./plugin-nav-panel-route-label";
 import { PluginPanelView } from "@/views/PluginPanelView";
 import {
   PluginPanelHeaderActions,
@@ -92,6 +97,7 @@ afterEach(() => {
   cleanup();
   resetPluginSlotStoreForTest();
   resetPluginFrontendBootStateForTest();
+  resetPluginNavPanelRouteLabelsForTest();
   window.localStorage.clear();
   resetAllCrashedPluginSlotsForTest();
   vi.restoreAllMocks();
@@ -1513,6 +1519,86 @@ describe("plugin panel shared title bar and full-bleed body", () => {
       </MemoryRouter>,
     );
   }
+
+  it("renders a panel's breadcrumbs in the header center, linked and with the loaded label", () => {
+    const panel = panelSlot({
+      experimental_breadcrumbs: ({ subPath }) => [
+        { label: "Demo board", subPath: "" },
+        { label: subPath === "" ? "Home" : subPath },
+      ],
+    });
+    render(
+      <MemoryRouter>
+        <PluginPanelHeaderCenter
+          chrome={panel}
+          panel={panel}
+          subPath="cards/7"
+        />
+      </MemoryRouter>,
+    );
+    const trails = screen.getAllByRole("navigation", { name: "Breadcrumb" });
+    // Wide trail + the current-only trail for narrow headers; CSS chooses.
+    expect(trails).toHaveLength(2);
+    const [wide] = trails;
+    expect(
+      within(wide!)
+        .getByRole("link", { name: "Demo board" })
+        .getAttribute("href"),
+    ).toBe("/plugins/demo/board");
+    expect(
+      within(wide!).getByText("cards/7").getAttribute("aria-current"),
+    ).toBe("page");
+    // No icon + title fallback while breadcrumbs apply.
+    expect(screen.queryByText("Demo board", { selector: "p" })).toBeNull();
+
+    act(() =>
+      setPluginNavPanelRouteLabel(
+        { pluginId: "demo", panelId: "board", subPath: "cards/7" },
+        "Card seven",
+      ),
+    );
+    expect(
+      within(wide!).getByText("Card seven").getAttribute("aria-current"),
+    ).toBe("page");
+    expect(within(wide!).queryByText("cards/7")).toBeNull();
+  });
+
+  it("falls back to icon + title when the panel has no resolver, is not live yet, or the resolver throws", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const plain = panelSlot({});
+    const { rerender } = render(
+      <MemoryRouter>
+        <PluginPanelHeaderCenter chrome={plain} panel={plain} subPath="" />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("Demo board", { selector: "p" })).toBeDefined();
+    expect(screen.queryByRole("navigation", { name: "Breadcrumb" })).toBeNull();
+
+    // Remembered chrome before boot: no live registration to ask.
+    rerender(
+      <MemoryRouter>
+        <PluginPanelHeaderCenter chrome={plain} panel={null} subPath="" />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("Demo board", { selector: "p" })).toBeDefined();
+
+    const throwing = panelSlot({
+      experimental_breadcrumbs: () => {
+        throw new Error("nope");
+      },
+    });
+    rerender(
+      <MemoryRouter>
+        <PluginPanelHeaderCenter
+          chrome={throwing}
+          panel={throwing}
+          subPath=""
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("Demo board", { selector: "p" })).toBeDefined();
+    expect(screen.queryByRole("navigation", { name: "Breadcrumb" })).toBeNull();
+  });
 
   it("hides a throwing headerContent without breaking the header (no crash chip)", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});

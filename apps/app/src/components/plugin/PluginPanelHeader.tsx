@@ -1,8 +1,11 @@
-import { Component, type ReactNode } from "react";
+import { Component, useMemo, type ReactNode } from "react";
+import { AppBreadcrumbs } from "@/components/layout/AppBreadcrumbs";
 import type { PluginNavPanelChrome } from "@/lib/plugin-nav-panel-chrome";
 import type { PluginNavPanelSlot } from "@/lib/plugin-slots";
 import { PluginIcon } from "./PluginIcon";
 import { PluginContext } from "./plugin-context";
+import { resolvePluginNavPanelBreadcrumbs } from "./plugin-nav-panel-breadcrumbs";
+import { usePluginNavPanelRouteLabel } from "./plugin-nav-panel-route-label";
 
 /**
  * The plugin navPanel slices of the shared app header (AppPageHeader via
@@ -39,23 +42,72 @@ class HeaderContentBoundary extends Component<
 }
 
 /**
- * Header center for a plugin panel route: compact plugin icon + panel title.
- * Takes only the panel's chrome so it can paint from a live registration or
- * from the chrome remembered before plugin frontends have booted.
+ * Header center for a plugin panel route. Takes the panel's chrome so it can
+ * paint from a live registration or from the chrome remembered before plugin
+ * frontends have booted; when the live registration describes breadcrumbs
+ * (`experimental_breadcrumbs`) for the current `subPath`, they replace the
+ * icon + title, in the same treatment Automations uses. Wide headers show the
+ * whole trail; narrow ones (a split pane, a compact window — measured against
+ * the header row itself, not the viewport) collapse to the current place.
  */
 export function PluginPanelHeaderCenter({
   chrome,
+  panel = null,
+  subPath = "",
+  usesDesktopChrome = false,
 }: {
   chrome: Pick<PluginNavPanelChrome, "pluginId" | "icon" | "title">;
+  /** The live registration; null before plugin frontends have booted. */
+  panel?: PluginNavPanelSlot | null;
+  subPath?: string;
+  usesDesktopChrome?: boolean;
 }) {
+  const resolver = panel?.experimental_breadcrumbs;
+  const routeLabel = usePluginNavPanelRouteLabel(
+    panel === null
+      ? null
+      : { pluginId: panel.pluginId, panelId: panel.id, subPath },
+  );
+  const breadcrumbs = useMemo(
+    () =>
+      panel === null || resolver === undefined
+        ? null
+        : resolvePluginNavPanelBreadcrumbs({
+            pluginId: panel.pluginId,
+            panelPath: panel.path,
+            subPath,
+            resolver,
+            routeLabel,
+          }),
+    [panel, resolver, routeLabel, subPath],
+  );
+  if (breadcrumbs === null) {
+    return (
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <PluginIcon
+          pluginId={chrome.pluginId}
+          icon={chrome.icon}
+          className="text-muted-foreground"
+        />
+        <p className="truncate text-sm font-semibold">{chrome.title}</p>
+      </div>
+    );
+  }
+  const current = breadcrumbs[breadcrumbs.length - 1]!;
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-2">
-      <PluginIcon
-        pluginId={chrome.pluginId}
-        icon={chrome.icon}
-        className="text-muted-foreground"
-      />
-      <p className="truncate text-sm font-semibold">{chrome.title}</p>
+    <div className="flex min-w-0 flex-1 items-center">
+      <div className="hidden min-w-0 @md/page-header:block">
+        <AppBreadcrumbs
+          breadcrumbs={breadcrumbs}
+          usesDesktopChrome={usesDesktopChrome}
+        />
+      </div>
+      <div className="min-w-0 @md/page-header:hidden">
+        <AppBreadcrumbs
+          breadcrumbs={[current]}
+          usesDesktopChrome={usesDesktopChrome}
+        />
+      </div>
     </div>
   );
 }
