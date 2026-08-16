@@ -29,6 +29,11 @@ import {
   PLUGIN_PANEL_ROUTE_PATH,
   AUTOMATIONS_PLUGIN_PANEL_PATH,
 } from "@/lib/route-paths";
+import {
+  markPluginFrontendsSettled,
+  resetPluginFrontendBootStateForTest,
+} from "@/lib/plugin-frontend-boot-state";
+import { writeLastKnownPluginNavPanelChrome } from "@/lib/plugin-nav-panel-chrome";
 import { PluginPanelView } from "@/views/PluginPanelView";
 import {
   PluginPanelHeaderActions,
@@ -86,6 +91,8 @@ function registrationSet(
 afterEach(() => {
   cleanup();
   resetPluginSlotStoreForTest();
+  resetPluginFrontendBootStateForTest();
+  window.localStorage.clear();
   resetAllCrashedPluginSlotsForTest();
   vi.restoreAllMocks();
 });
@@ -1395,7 +1402,72 @@ describe("PluginNavSidebarItems + PluginPanelView", () => {
     ).toBe("page");
   });
 
-  it("shows a placeholder for an unknown plugin panel route", () => {
+  it("draws a remembered plugin row before boot and keeps the same node when the plugin registers", () => {
+    resetPluginFrontendBootStateForTest();
+    writeLastKnownPluginNavPanelChrome([
+      {
+        pluginId: "demo",
+        id: "board",
+        path: "board",
+        title: "Demo board",
+        icon: "columns",
+      },
+    ]);
+    render(
+      <MemoryRouter>
+        <PluginNavSidebarItems />
+      </MemoryRouter>,
+    );
+    const rememberedRow = screen.getByRole("button", { name: "Demo board" });
+
+    // The live registration lands under the same key: no remount, no flash.
+    act(() => {
+      setPluginSlotRegistrations(
+        "demo",
+        registrationSet({
+          navPanels: [
+            {
+              id: "board",
+              title: "Demo board",
+              icon: "columns",
+              path: "board",
+              component: Board,
+            },
+          ],
+        }),
+      );
+      markPluginFrontendsSettled();
+    });
+    expect(screen.getByRole("button", { name: "Demo board" })).toBe(
+      rememberedRow,
+    );
+  });
+
+  it("drops a remembered plugin row that never registers once frontends have settled", () => {
+    resetPluginFrontendBootStateForTest();
+    writeLastKnownPluginNavPanelChrome([
+      {
+        pluginId: "ghost",
+        id: "board",
+        path: "board",
+        title: "Ghost board",
+        icon: "columns",
+      },
+    ]);
+    render(
+      <MemoryRouter>
+        <PluginNavSidebarItems />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("button", { name: "Ghost board" })).toBeDefined();
+    act(() => markPluginFrontendsSettled());
+    expect(screen.queryByRole("button", { name: "Ghost board" })).toBeNull();
+  });
+
+  it("stays quiet for an unknown panel until plugin frontends have booted", () => {
+    resetPluginFrontendBootStateForTest();
+    // A reload or deep link renders the route before registrations arrive;
+    // that moment must not read as an error.
     render(
       <MemoryRouter initialEntries={["/plugins/ghost/board"]}>
         <Routes>
@@ -1403,6 +1475,9 @@ describe("PluginNavSidebarItems + PluginPanelView", () => {
         </Routes>
       </MemoryRouter>,
     );
+    expect(screen.queryByText(/This plugin panel is not available/)).toBeNull();
+
+    act(() => markPluginFrontendsSettled());
     expect(
       screen.getByText(/This plugin panel is not available/),
     ).toBeDefined();
@@ -1448,7 +1523,7 @@ describe("plugin panel shared title bar and full-bleed body", () => {
     const panel = panelSlot({ headerContent: ExplodingAccessory });
     render(
       <>
-        <PluginPanelHeaderCenter panel={panel} />
+        <PluginPanelHeaderCenter chrome={panel} />
         <PluginPanelHeaderActions panel={panel} subPath="" />
       </>,
     );
@@ -1464,7 +1539,7 @@ describe("plugin panel shared title bar and full-bleed body", () => {
     const panel = panelSlot({ headerContent: Accessory });
     render(
       <>
-        <PluginPanelHeaderCenter panel={panel} />
+        <PluginPanelHeaderCenter chrome={panel} />
         <PluginPanelHeaderActions panel={panel} subPath="notes/today.md" />
       </>,
     );

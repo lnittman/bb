@@ -14,6 +14,7 @@ import { useAppTheme } from "./hooks/useAppTheme";
 import { useFaviconColorSync } from "./lib/favicon-color-preference";
 import { useDesktopThemeSync } from "./hooks/useDesktopThemeSync";
 import { usePluginFrontendBoot } from "./hooks/usePluginFrontendBoot";
+import { useRememberPluginNavPanelChrome } from "@/lib/plugin-nav-panel-chrome";
 import { useWebSocket } from "./hooks/useWebSocket";
 import {
   AUTH_CALLBACK_ROUTE_PATH,
@@ -342,6 +343,7 @@ export function App() {
   useFaviconColorSync();
   // Load plugin frontend bundles once system config resolves.
   usePluginFrontendBoot();
+  useRememberPluginNavPanelChrome();
 
   return (
     <QuickCreateProjectProvider>
