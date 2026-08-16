@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -28,7 +29,7 @@ if (!window.matchMedia) {
 // not be imported before that happens.
 const app = await loadPluginApp(() => import("../app"));
 const { parseTasksRoute, tasksRouteToSubPath } = await import("./routes.js");
-const { pagerPosition } = await import("./topbar.js");
+const { pagerPosition } = await import("./pager.js");
 const { SIDEBAR_COLLAPSED_STORAGE_KEY } =
   await import("./sidebar-preference.js");
 
@@ -64,15 +65,25 @@ const folder = {
  * bar via `headerContent`, a separate tree from the panel. Mount it beside a
  * slot the way the host does; queries for those controls go through `screen`.
  */
-function mountHeader(subPath: string) {
+function mountHeader(
+  subPath: string,
+  options: { rpc?: Record<string, unknown> } = {},
+) {
   const HeaderContent = app.navPanels[0]!.headerContent!;
-  const rendered = render(<HeaderContent subPath={subPath} />);
+  // The header uses SDK hooks (navigation, the pager's query), so it mounts
+  // through the same fake slot environment as the panel, in its own tree.
+  const rendered = renderSlot(
+    { component: HeaderContent },
+    { subPath },
+    { rpc: options.rpc ?? seededRpc() },
+  );
   return {
     /** Queries scoped to the title-bar controls only. */
     within: within(rendered.container),
+    navigateCalls: rendered.navigateCalls,
     rerender: (nextSubPath: string) =>
-      rendered.rerender(<HeaderContent subPath={nextSubPath} />),
-    unmount: () => rendered.unmount(),
+      rendered.lifecycle.rerender(<HeaderContent subPath={nextSubPath} />),
+    unmount: () => rendered.lifecycle.unmount(),
   };
 }
 
@@ -170,27 +181,46 @@ describe("task pager", () => {
     expect(pagerPosition([], "TSK-1")).toBeNull();
   });
 
-  it("renders n / m on the task route and steps to the next sibling", async () => {
+  it("renders n / m in the title bar on the task route and steps to the next sibling", async () => {
+    const rpc = seededRpc({
+      listTasks: () => ({ tasks }),
+      listLabels: () => ({ labels: [] }),
+      listAttachments: () => ({ attachments: [] }),
+      listTaskThreads: () => ({ taskThreads: [] }),
+      listComments: () => ({ comments: [] }),
+    });
     const slot = renderSlot(
       app.navPanels[0]!,
       { subPath: "task/TSK-4" },
-      {
-        rpc: seededRpc({
-          listTasks: () => ({ tasks }),
-          listLabels: () => ({ labels: [] }),
-          listAttachments: () => ({ attachments: [] }),
-          listTaskThreads: () => ({ taskThreads: [] }),
-          listComments: () => ({ comments: [] }),
-        }),
-      },
+      { rpc },
     );
-    await slot.findByText("2 / 4");
-    fireEvent.click(slot.getByRole("button", { name: "Next task" }));
-    expect(slot.navigateCalls).toContainEqual({
+    // The pager lives in the host title bar; the shell publishes its scope
+    // (the task's own project on a deep link) once projects are known.
+    const header = mountHeader("task/TSK-4", { rpc });
+    await header.within.findByText("2 / 4");
+    fireEvent.click(header.within.getByRole("button", { name: "Next task" }));
+    expect(header.navigateCalls).toContainEqual({
       method: "toPluginPanel",
       path: "tasks",
       options: { subPath: "task/TSK-1" },
     });
+    // Nothing of the old second row remains in the panel body.
+    expect(within(slot.container).queryByText("2 / 4")).toBeNull();
+    expect(
+      within(slot.container).queryByRole("button", { name: "Next task" }),
+    ).toBeNull();
+  });
+});
+
+describe("tasks nav panel registration", () => {
+  it("registers the title-bar breadcrumb resolver alongside the header controls", () => {
+    const panel = app.navPanels[0]!;
+    expect(panel.headerContent).toBeTypeOf("function");
+    expect(panel.experimental_breadcrumbs).toBeTypeOf("function");
+    expect(panel.experimental_breadcrumbs!({ subPath: "active" })).toEqual([
+      { label: "Tasks", subPath: "" },
+      { label: "Active" },
+    ]);
   });
 });
 
@@ -255,7 +285,7 @@ describe("tasks app shell", () => {
       },
     );
     const remountedHeader = mountHeader("all");
-    await remounted.findByText("All tasks");
+    await remounted.findByText("No tasks yet");
     expect(remounted.queryByRole("button", { name: "Manage" })).toBeNull();
     expect(
       screen.getByRole("button", { name: "Expand sidebar" }),
@@ -273,7 +303,7 @@ describe("tasks app shell", () => {
       },
     );
     const slotHeader = mountHeader("all");
-    await slot.findByText("All tasks");
+    await slot.findByText("No tasks yet");
     fireEvent.click(screen.getByRole("button", { name: "Expand sidebar" }));
 
     expect(window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY)).toBe(
@@ -467,6 +497,108 @@ describe("tasks app shell", () => {
         }) as HTMLButtonElement
       ).disabled,
     ).toBe(true);
+  });
+
+  it("publishes the project name and the task title as the title-bar route label", async () => {
+    const task = {
+      ...pagerTask("TSK-4", "todo", 1),
+      title: "Fix reconnect handling",
+      description: "",
+      labelIds: [],
+    };
+    const projectSlot = renderSlot(
+      app.navPanels[0]!,
+      { subPath: PROJECT_ID },
+      {
+        rpc: seededRpc({
+          listTasks: () => ({ tasks: [] }),
+          listLabels: () => ({ labels: [] }),
+        }),
+      },
+    );
+    await waitFor(() =>
+      expect(projectSlot.inspection.navPanelRouteLabel).toBe(project.name),
+    );
+    projectSlot.lifecycle.unmount();
+
+    const taskSlot = renderSlot(
+      app.navPanels[0]!,
+      { subPath: "task/TSK-4" },
+      {
+        rpc: seededRpc({
+          getTaskByKey: () => ({ task }),
+          listTasks: () => ({ tasks: [task] }),
+          listLabels: () => ({ labels: [] }),
+          listAttachments: () => ({ attachments: [] }),
+          listTaskThreads: () => ({ taskThreads: [] }),
+          listComments: () => ({ comments: [] }),
+        }),
+      },
+    );
+    await waitFor(() =>
+      expect(taskSlot.inspection.navPanelRouteLabel).toBe(
+        "TSK-4 · Fix reconnect handling",
+      ),
+    );
+    // Collections have no loaded name: the resolver's own label stands.
+    taskSlot.lifecycle.unmount();
+    const allSlot = renderSlot(
+      app.navPanels[0]!,
+      { subPath: "all" },
+      { rpc: seededRpc() },
+    );
+    await allSlot.findByText("Tasks Plugin");
+    expect(allSlot.inspection.navPanelRouteLabel).toBeNull();
+  });
+
+  it("does not publish the previous task's title while the next task loads", async () => {
+    const taskFour = {
+      ...pagerTask("TSK-4", "todo", 1),
+      title: "Fix reconnect handling",
+      description: "",
+      labelIds: [],
+    };
+    const taskFive = {
+      ...pagerTask("TSK-5", "todo", 2),
+      title: "Ship the pager",
+      description: "",
+      labelIds: [],
+    };
+    let releaseFive: (() => void) | null = null;
+    const rpc = seededRpc({
+      getTaskByKey: ({ taskKey }: { taskKey: string }) =>
+        taskKey === "TSK-4"
+          ? { task: taskFour }
+          : new Promise((resolve) => {
+              releaseFive = () => resolve({ task: taskFive });
+            }),
+      listTasks: () => ({ tasks: [taskFour, taskFive] }),
+      listLabels: () => ({ labels: [] }),
+      listAttachments: () => ({ attachments: [] }),
+      listTaskThreads: () => ({ taskThreads: [] }),
+      listComments: () => ({ comments: [] }),
+    });
+    const Panel = app.navPanels[0]!.component;
+    const slot = renderSlot(
+      app.navPanels[0]!,
+      { subPath: "task/TSK-4" },
+      { rpc },
+    );
+    await waitFor(() =>
+      expect(slot.inspection.navPanelRouteLabel).toBe(
+        "TSK-4 · Fix reconnect handling",
+      ),
+    );
+    // Step to the sibling in place: the query still holds TSK-4's record while
+    // TSK-5 is in flight, so nothing is published for the new route until it
+    // lands (the resolver's "TSK-5" placeholder shows meanwhile).
+    slot.lifecycle.rerender(<Panel subPath="task/TSK-5" />);
+    await waitFor(() => expect(slot.inspection.navPanelRouteLabel).toBeNull());
+    expect(releaseFive).not.toBeNull();
+    act(() => releaseFive!());
+    await waitFor(() =>
+      expect(slot.inspection.navPanelRouteLabel).toBe("TSK-5 · Ship the pager"),
+    );
   });
 
   it("offers New task only where a task can be created", () => {
@@ -816,6 +948,63 @@ describe("tasks app shell", () => {
       path: "tasks",
       options: { subPath: "all" },
     });
+  });
+
+  it("hides the title-bar List/Board switch while the main pane cannot fit the board", async () => {
+    // jsdom has no layout: stub ResizeObserver so the test drives the shell's
+    // measurement, and answer clientWidth per box. The header row spans the
+    // whole panel (600px) while the main pane behind the expanded sidebar is
+    // narrower than BOARD_MIN_WIDTH (380px), the one regime where a
+    // container rule on the header would disagree with the shell.
+    const widths = { main: 380, other: 600 };
+    let measure: (() => void) | null = null;
+    const RealResizeObserver = window.ResizeObserver;
+    window.ResizeObserver = class {
+      constructor(callback: () => void) {
+        measure = callback;
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {
+        measure = null;
+      }
+    } as unknown as typeof ResizeObserver;
+    const clientWidth = Object.getOwnPropertyDescriptor(
+      Element.prototype,
+      "clientWidth",
+    )!;
+    Object.defineProperty(Element.prototype, "clientWidth", {
+      configurable: true,
+      get(this: Element) {
+        return this.tagName === "MAIN" ? widths.main : widths.other;
+      },
+    });
+    try {
+      const slot = renderSlot(
+        app.navPanels[0]!,
+        { subPath: `${PROJECT_ID}?view=board` },
+        { rpc: seededRpc() },
+      );
+      const header = mountHeader(`${PROJECT_ID}?view=board`);
+      // Measured before the first paint: never offered, and the shell renders
+      // the list for the same URL (its empty state, no board columns).
+      await slot.findByText("No tasks yet");
+      expect(header.within.queryByRole("button", { name: "Board" })).toBeNull();
+      expect(slot.queryByText("In Review")).toBeNull();
+      // The pane grows (sidebar collapsed or window widened): the switch and
+      // the board come back together.
+      widths.main = 800;
+      act(() => measure?.());
+      await waitFor(() =>
+        expect(
+          header.within.getByRole("button", { name: "Board" }),
+        ).toBeDefined(),
+      );
+      await slot.findByText("In Review");
+    } finally {
+      Object.defineProperty(Element.prototype, "clientWidth", clientWidth);
+      window.ResizeObserver = RealResizeObserver;
+    }
   });
 
   it("routes 'manage' to the manage panel via the sidebar footer", async () => {

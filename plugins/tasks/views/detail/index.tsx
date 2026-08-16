@@ -9,6 +9,7 @@ import {
   useTasksQuery,
   useTasksRpc,
 } from "../../shell/data.js";
+import { NavPanelRouteLabel } from "../../shell/route-label.js";
 import { useTasksNavigation } from "../../shell/routes.js";
 import { TasksEditor } from "../../editor/tasks-editor.js";
 import { TaskActivity } from "../activity/index.js";
@@ -31,6 +32,12 @@ import { Skeleton } from "@bb/shared-ui/skeleton";
 export interface DetailViewProps {
   /** Task key like TSK-4 (not the ULID). */
   taskKey: string;
+  /**
+   * True when this view is the Tasks nav panel's route content: it then
+   * publishes the loaded task as the title bar's final breadcrumb. Embedded
+   * uses (thread panel action) render no title bar and leave this unset.
+   */
+  publishesRouteLabel?: boolean;
 }
 
 const DESCRIPTION_SAVE_DELAY_MS = 800;
@@ -505,29 +512,63 @@ function TaskDetail({ task }: { task: Task }) {
   );
 }
 
-export function DetailView({ taskKey }: DetailViewProps) {
+export function DetailView({
+  taskKey,
+  publishesRouteLabel = false,
+}: DetailViewProps) {
   const query = useTasksQuery(
     async (rpc) => (await rpc.call("getTaskByKey", { taskKey })).task,
     ["tasks:changed"],
     [taskKey],
   );
+  const task = query.data ?? null;
+  // Publish in every branch so a stale title never outlives its task: while
+  // loading, missing, or errored the placeholder from the resolver shows. The
+  // query keeps the previous task's data while a new key loads (the shell
+  // reuses this view across task routes), so only the task actually on the
+  // route may publish; a sibling stepped to via the pager shows its key until
+  // its own record arrives.
+  const routeTask =
+    task !== null && task.key.toUpperCase() === taskKey.toUpperCase()
+      ? task
+      : null;
+  const routeLabel = publishesRouteLabel ? (
+    <NavPanelRouteLabel
+      label={
+        routeTask === null ? undefined : `${routeTask.key} · ${routeTask.title}`
+      }
+    />
+  ) : null;
 
   if (query.data === undefined) {
-    return query.error ? (
-      <div className="flex h-full items-center justify-center p-6 text-sm text-destructive">
-        {query.error}
-      </div>
-    ) : (
-      <DetailSkeleton />
+    return (
+      <>
+        {routeLabel}
+        {query.error ? (
+          <div className="flex h-full items-center justify-center p-6 text-sm text-destructive">
+            {query.error}
+          </div>
+        ) : (
+          <DetailSkeleton />
+        )}
+      </>
     );
   }
   if (query.data === null) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
-        <Icon name="FileQuestion" className="size-5" />
-        Task {taskKey} was not found.
-      </div>
+      <>
+        {routeLabel}
+        <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
+          <Icon name="FileQuestion" className="size-5" />
+          Task {taskKey} was not found.
+        </div>
+      </>
     );
   }
-  return <TaskDetail task={query.data} />;
+  return (
+    <>
+      {routeLabel}
+      <TaskDetail task={query.data} />
+    </>
+  );
 }

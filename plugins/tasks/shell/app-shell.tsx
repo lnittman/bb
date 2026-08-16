@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { PluginNavPanelProps } from "@get-bb/plugin-sdk/app";
 import {
   useActiveTasks,
@@ -17,7 +23,6 @@ import {
   loadSidebarCollapsed,
   storeSidebarCollapsed,
 } from "./sidebar-preference.js";
-import { TasksTopbar } from "./topbar.js";
 import {
   bindTasksChromeCommands,
   publishTasksChromeState,
@@ -33,15 +38,16 @@ import {
 import { Button } from "@bb/shared-ui/button";
 import { Icon } from "@bb/shared-ui/icon";
 import { TasksRefreshProvider, useTasksRefresh } from "./refresh.js";
+import { NavPanelRouteLabel } from "./route-label.js";
 
 /** Below this container width (panel splits, not the window) the sidebar
     auto-collapses. */
 const SIDEBAR_AUTO_COLLAPSE_WIDTH = 720;
 
-/** Below this container width the board is unusable (columns get crushed), so
-    project routes render the list and the topbar hides the List/Board toggle.
-    Matches the rows' two-line breakpoint (@md, 448px) so the whole surface
-    flips to its phone layout at one width. */
+/** Below this main-pane width the board is unusable (columns get crushed), so
+    project routes render the list and the title bar hides the List/Board
+    switch (published as `boardUsable`). Matches the rows' two-line breakpoint
+    (@md, 448px) so the whole surface flips to its phone layout at one width. */
 const BOARD_MIN_WIDTH = 448;
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -172,7 +178,7 @@ function RouteOutlet({
     case "manage":
       return <ManagePanel />;
     case "task":
-      return <DetailView taskKey={route.taskKey} />;
+      return <DetailView taskKey={route.taskKey} publishesRouteLabel />;
     case "project":
       return route.view === "board" && boardUsable ? (
         <BoardView projectId={route.projectId} />
@@ -200,7 +206,10 @@ function TasksAppShellContent({ subPath }: PluginNavPanelProps) {
   const [narrow, setNarrow] = useState(false);
   const [boardUsable, setBoardUsable] = useState(true);
   const [narrowOverride, setNarrowOverride] = useState<boolean | null>(null);
-  useEffect(() => {
+  // Layout phase: the first measurement lands before the first paint, so a
+  // narrow panel never shows the sidebar expanded (or offers the board) for
+  // one frame before collapsing.
+  useLayoutEffect(() => {
     const root = rootRef.current;
     const main = mainRef.current;
     if (!root || !main || typeof ResizeObserver === "undefined") return;
@@ -208,10 +217,12 @@ function TasksAppShellContent({ subPath }: PluginNavPanelProps) {
       const width = root.clientWidth;
       // Width 0 means hidden or not yet laid out — keep the wide default.
       setNarrow(width > 0 && width < SIDEBAR_AUTO_COLLAPSE_WIDTH);
-      // Board usability must track the same box the topbar's @md container
-      // rule measures — the main pane, after the desktop sidebar's width —
-      // or a wide sidebar could hide the toggle while the board still
-      // renders.
+      // Board usability measures the main pane, after the desktop sidebar's
+      // width. The List/Board switch lives in the host title bar, which spans
+      // the whole panel, so the switch follows this measurement through the
+      // chrome store rather than a container rule of its own: with the
+      // sidebar open in a narrow panel the header can be wide enough while
+      // the pane behind it is not.
       const mainWidth = main.clientWidth;
       setBoardUsable(!(mainWidth > 0 && mainWidth < BOARD_MIN_WIDTH));
     };
@@ -233,28 +244,6 @@ function TasksAppShellContent({ subPath }: PluginNavPanelProps) {
     setSidebarCollapsed(next);
     storeSidebarCollapsed(next);
   };
-
-  // The title-bar controls (panel-header.tsx) render in the host's header,
-  // outside this tree: publish what they draw and bind what they dispatch.
-  // Handlers go through a ref so the binding never holds a stale closure.
-  const { refresh, isRefreshing } = useTasksRefresh();
-  const chromeCommandsRef = useRef({ toggleSidebar, refresh });
-  chromeCommandsRef.current = { toggleSidebar, refresh };
-  useEffect(
-    () =>
-      bindTasksChromeCommands({
-        toggleSidebar: () => chromeCommandsRef.current.toggleSidebar(),
-        refresh: () => chromeCommandsRef.current.refresh(),
-        newTask: () => setNewTaskOpen(true),
-      }),
-    [],
-  );
-  useEffect(() => {
-    publishTasksChromeState({
-      sidebarCollapsed: effectiveSidebarCollapsed,
-      isRefreshing,
-    });
-  }, [effectiveSidebarCollapsed, isRefreshing]);
 
   const folders = useFolders();
   const projects = useProjects();
@@ -306,6 +295,63 @@ function TasksAppShellContent({ subPath }: PluginNavPanelProps) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  // The title-bar controls (panel-header.tsx) render in the host's header,
+  // outside this tree: publish what they draw and bind what they dispatch.
+  // Handlers go through a ref so the binding never holds a stale closure.
+  const { refresh, isRefreshing } = useTasksRefresh();
+  const chromeCommandsRef = useRef({ toggleSidebar, refresh, backFromTask });
+  chromeCommandsRef.current = { toggleSidebar, refresh, backFromTask };
+  useEffect(
+    () =>
+      bindTasksChromeCommands({
+        toggleSidebar: () => chromeCommandsRef.current.toggleSidebar(),
+        refresh: () => chromeCommandsRef.current.refresh(),
+        newTask: () => setNewTaskOpen(true),
+        back: () => chromeCommandsRef.current.backFromTask(),
+      }),
+    [],
+  );
+  // Pager scope on task routes: the list/board browsed before (projectId null
+  // = All tasks); on a deep link, the task's own project (its key prefix
+  // resolves the project) once projects are known.
+  const taskProject =
+    route.kind === "task"
+      ? ((projects.data ?? []).find(
+          (candidate) => candidate.prefix === route.taskKey.split("-", 1)[0],
+        ) ?? null)
+      : null;
+  const pager =
+    route.kind !== "task"
+      ? null
+      : lastBrowseRouteRef.current !== null
+        ? {
+            projectId:
+              lastBrowseRouteRef.current.kind === "project"
+                ? lastBrowseRouteRef.current.projectId
+                : null,
+          }
+        : projects.data === undefined
+          ? null
+          : { projectId: taskProject?.id ?? null };
+  // Layout phase as well: the title-bar controls read this store, and a
+  // measurement that changes it must reach them in the same commit rather
+  // than one paint later.
+  useLayoutEffect(() => {
+    publishTasksChromeState({
+      sidebarCollapsed: effectiveSidebarCollapsed,
+      isRefreshing,
+      pager,
+      boardUsable,
+    });
+  }, [boardUsable, effectiveSidebarCollapsed, isRefreshing, pager]);
+  // The title bar shows the project's name in place of the route placeholder.
+  const routeProject =
+    route.kind === "project"
+      ? ((projects.data ?? []).find(
+          (candidate) => candidate.id === route.projectId,
+        ) ?? null)
+      : null;
+
   // In narrow containers the sidebar can't share the row (208px of a 320px
   // viewport would crush the list), so it opens as an overlay drawer instead.
   // Navigating from the drawer closes it — the destination is what the user
@@ -344,22 +390,9 @@ function TasksAppShellContent({ subPath }: PluginNavPanelProps) {
         )
       ) : null}
       <main ref={mainRef} className="@container flex min-w-0 flex-1 flex-col">
-        <TasksTopbar
-          route={route}
-          projects={projects.data}
-          pagerScope={
-            lastBrowseRouteRef.current === null
-              ? null
-              : {
-                  projectId:
-                    lastBrowseRouteRef.current.kind === "project"
-                      ? lastBrowseRouteRef.current.projectId
-                      : null,
-                }
-          }
-          onNavigate={navigation.go}
-          onBack={backFromTask}
-        />
+        {route.kind === "project" ? (
+          <NavPanelRouteLabel label={routeProject?.name} />
+        ) : null}
         <div className="min-h-0 flex-1 overflow-auto">
           {noProjects && route.kind !== "task" && route.kind !== "manage" ? (
             <NoProjectsEmptyState

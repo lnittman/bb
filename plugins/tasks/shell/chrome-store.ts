@@ -18,6 +18,20 @@ export interface TasksChromeState {
   /** True while a manual or reconnect refresh still has fetches in flight. */
   isRefreshing: boolean;
   /**
+   * On a task route, the browse scope the pager steps through: the list or
+   * board the user came from (`projectId` null = All tasks), or the task's own
+   * project on a deep link. null while unknown, in which case no pager shows.
+   */
+  pager: { projectId: string | null } | null;
+  /**
+   * False while the shell's main pane (the panel minus its own sidebar) is too
+   * narrow for the board, in which case project routes render the list
+   * whatever the URL says. The title bar hides the List/Board switch to
+   * match, so it never offers a view the shell will refuse. The shell measures
+   * this; until it binds, the header falls back to its own container rule.
+   */
+  boardUsable: boolean;
+  /**
    * True while a shell has its commands bound. The header renders in its own
    * boundary, so it can outlive a crashed or unmounted body; while nothing
    * owns the commands the controls disable instead of silently doing nothing.
@@ -29,12 +43,16 @@ export interface TasksChromeCommands {
   toggleSidebar: () => void;
   refresh: () => void;
   newTask: () => void;
+  /** Leave a task for the list or board browsed before it (Esc does the same). */
+  back: () => void;
 }
 
 const listeners = new Set<() => void>();
 let state: TasksChromeState = {
   sidebarCollapsed: loadSidebarCollapsed(),
   isRefreshing: false,
+  pager: null,
+  boardUsable: true,
   bound: false,
 };
 let commands: TasksChromeCommands | null = null;
@@ -48,7 +66,10 @@ export function publishTasksChromeState(
 ): void {
   if (
     next.sidebarCollapsed === state.sidebarCollapsed &&
-    next.isRefreshing === state.isRefreshing
+    next.isRefreshing === state.isRefreshing &&
+    next.pager?.projectId === state.pager?.projectId &&
+    (next.pager === null) === (state.pager === null) &&
+    next.boardUsable === state.boardUsable
   ) {
     return;
   }
@@ -100,6 +121,8 @@ export function resetTasksChromeStoreForTest(): void {
   state = {
     sidebarCollapsed: loadSidebarCollapsed(),
     isRefreshing: false,
+    pager: null,
+    boardUsable: true,
     bound: false,
   };
   commands = null;
