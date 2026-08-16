@@ -26,13 +26,14 @@ export const REFRESH_TASKS_LABEL = "Refresh tasks";
  */
 export function TasksPanelHeader({ subPath }: PluginNavPanelProps) {
   const route = parseTasksRoute(subPath);
-  const { sidebarCollapsed, isRefreshing } = useTasksChromeState();
+  const { sidebarCollapsed, isRefreshing, bound } = useTasksChromeState();
   const canCreateTask = route.kind !== "task" && route.kind !== "manage";
+  const sidebarLabel = sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar";
   return (
-    <div className="flex shrink-0 items-center gap-1">
-      {/* Refresh sits immediately left of the primary New task action.
-          Fixed geometry while in flight so the title bar does not shift. */}
-      <TooltipProvider delayDuration={300}>
+    <TooltipProvider delayDuration={300}>
+      <div className="flex shrink-0 items-center gap-1">
+        {/* Refresh sits immediately left of the primary New task action.
+            Fixed geometry while in flight so the title bar does not shift. */}
         <Tooltip disableHoverableContent>
           <TooltipTrigger asChild>
             <Button
@@ -42,7 +43,7 @@ export function TasksPanelHeader({ subPath }: PluginNavPanelProps) {
               className="size-7 shrink-0 text-muted-foreground hover:text-foreground active:bg-state-active active:text-foreground max-md:pointer-coarse:size-9"
               aria-label={REFRESH_TASKS_LABEL}
               aria-busy={isRefreshing}
-              disabled={isRefreshing}
+              disabled={!bound || isRefreshing}
               onClick={() => {
                 if (!isRefreshing) dispatchTasksChromeCommand("refresh");
               }}
@@ -55,30 +56,40 @@ export function TasksPanelHeader({ subPath }: PluginNavPanelProps) {
           </TooltipTrigger>
           <TooltipContent side="bottom">{REFRESH_TASKS_LABEL}</TooltipContent>
         </Tooltip>
-      </TooltipProvider>
-      {canCreateTask ? (
-        <Button
-          size="sm"
-          className="h-7 gap-1.5 max-md:pointer-coarse:h-9"
-          aria-label="New task"
-          onClick={() => dispatchTasksChromeCommand("newTask")}
-        >
-          <Icon name="Plus" className="size-3.5" />
-          {/* Icon-only on compact viewports, where the title bar shares its
-              width with the app's own controls. */}
-          <span className="hidden md:inline">New task</span>
-        </Button>
-      ) : null}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-7 max-md:pointer-coarse:size-9"
-        aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        aria-expanded={!sidebarCollapsed}
-        onClick={() => dispatchTasksChromeCommand("toggleSidebar")}
-      >
-        <Icon name="PanelRight" className="size-4" />
-      </Button>
-    </div>
+        {canCreateTask ? (
+          <Button
+            type="button"
+            size="sm"
+            className="h-7 gap-1.5 max-md:pointer-coarse:h-9"
+            aria-label="New task"
+            disabled={!bound}
+            onClick={() => dispatchTasksChromeCommand("newTask")}
+          >
+            <Icon name="Plus" className="size-3.5" />
+            {/* The label needs real width: size against the host header row
+                (a named container), not the viewport — a regular-viewport
+                split pane can be narrower than a compact window. */}
+            <span className="hidden @lg/page-header:inline">New task</span>
+          </Button>
+        ) : null}
+        <Tooltip disableHoverableContent>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-7 max-md:pointer-coarse:size-9"
+              aria-label={sidebarLabel}
+              aria-expanded={!sidebarCollapsed}
+              disabled={!bound}
+              onClick={() => dispatchTasksChromeCommand("toggleSidebar")}
+            >
+              <Icon name="PanelRight" className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{sidebarLabel}</TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
   );
 }

@@ -445,6 +445,30 @@ describe("tasks app shell", () => {
     expect(screen.getByRole("textbox", { name: "Task title" })).toBeDefined();
   });
 
+  it("disables the title-bar controls while no shell owns them", async () => {
+    const slot = renderSlot(
+      app.navPanels[0]!,
+      { subPath: "all" },
+      { rpc: seededRpc() },
+    );
+    const header = mountHeader("all");
+    await slot.findByText("Tasks Plugin");
+    const refresh = header.within.getByRole("button", {
+      name: "Refresh tasks",
+    }) as HTMLButtonElement;
+    expect(refresh.disabled).toBe(false);
+    // The header renders in its own boundary and can outlive the body.
+    slot.lifecycle.unmount();
+    await waitFor(() => expect(refresh.disabled).toBe(true));
+    expect(
+      (
+        header.within.getByRole("button", {
+          name: /(Collapse|Expand) sidebar/,
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+  });
+
   it("offers New task only where a task can be created", () => {
     // Title-bar controls are pure functions of the route (task/manage have
     // their own creation paths) and of the store; no shell needed to decide.
@@ -494,12 +518,25 @@ describe("tasks app shell", () => {
         }),
       },
     );
-    const slotHeader = mountHeader("all");
+    const header = mountHeader("all");
     await slot.findByText("Order probe");
 
-    const refresh = screen.getByRole("button", { name: "Refresh tasks" });
-    const newTask = screen.getByRole("button", { name: /New task/i });
-    const sidebar = screen.getByRole("button", { name: "Collapse sidebar" });
+    const refresh = header.within.getByRole("button", {
+      name: "Refresh tasks",
+    });
+    const newTask = header.within.getByRole("button", { name: /New task/i });
+    const sidebar = header.within.getByRole("button", {
+      name: "Collapse sidebar",
+    });
+    // The controls live in the host's title bar only: the panel body carries
+    // none of them, so a regression that re-grew the second row would fail here.
+    // (Slot queries are document-wide; scope to the panel's own container.)
+    const body = within(slot.container);
+    expect(body.queryByRole("button", { name: "Refresh tasks" })).toBeNull();
+    expect(body.queryByRole("button", { name: /New task/i })).toBeNull();
+    expect(
+      body.queryByRole("button", { name: /(Collapse|Expand) sidebar/ }),
+    ).toBeNull();
 
     // Icon-only: no visible "Refresh" text; accessible name remains.
     expect(refresh.textContent?.trim() ?? "").not.toMatch(/Refresh/i);

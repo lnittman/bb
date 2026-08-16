@@ -7,8 +7,6 @@ import { Button } from "@bb/shared-ui/button";
 import { Icon } from "@bb/shared-ui/icon";
 import { cn } from "@bb/shared-ui/lib/utils";
 
-/** Accessible name + tooltip for the header refresh control. */
-
 export interface PagerPosition {
   /** 1-based position of the task within its sibling list. */
   index: number;

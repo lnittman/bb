@@ -106,6 +106,11 @@ export function AppPageHeader({
           // chrome-row height so native title-bar controls stay aligned.
           CHROME_ROW_CLASS,
           "relative z-10 gap-1 md:gap-2",
+          // Named container so plugin `headerContent` and the center can size
+          // against the actual header width — a regular-viewport split pane
+          // can be narrower than a compact window, so viewport breakpoints
+          // are not enough for anything that renders in this row.
+          "@container/page-header",
           // In macOS desktop chrome, keep header content on the shared native
           // traffic-light axis so the title bar lines up with the lights, the
           // pinned collapse trigger, and the sidebar arrows. No-op in the web

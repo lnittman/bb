@@ -22,7 +22,6 @@ import {
   bindTasksChromeCommands,
   publishTasksChromeState,
 } from "./chrome-store.js";
-import { useTasksRefresh } from "./refresh.js";
 import { ListView } from "../views/list/index.js";
 import { BoardView } from "../views/board/index.js";
 import { DetailView } from "../views/detail/index.js";
@@ -33,7 +32,7 @@ import {
 } from "../views/manage/index.js";
 import { Button } from "@bb/shared-ui/button";
 import { Icon } from "@bb/shared-ui/icon";
-import { TasksRefreshProvider } from "./refresh.js";
+import { TasksRefreshProvider, useTasksRefresh } from "./refresh.js";
 
 /** Below this container width (panel splits, not the window) the sidebar
     auto-collapses. */
