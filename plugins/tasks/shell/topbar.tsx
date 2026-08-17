@@ -250,6 +250,14 @@ export function TasksTopbar({
     }
   })();
 
+  // In phone-width containers a browse route's row would carry only the view
+  // or project name (the pager and Back exist on task routes; the List/Board
+  // switch is already gone below @md because the board is unusable). A row of
+  // chrome for one word is not worth the height there: the host title bar
+  // names the page and the Tasks sidebar carries the browse context, so hide
+  // the bar and give the rows the room. Task routes keep it at every width;
+  // Back and the sibling pager have no other home on a phone.
+  const hiddenOnPhone = route.kind !== "task";
   return (
     // On compact viewports the host renders no pane header above this bar, so
     // the host's fixed sidebar toggle (pinned at the window's top-left, see the
@@ -259,7 +267,12 @@ export function TasksTopbar({
     // this bar's controls sit on one axis. The reserve keys off the viewport
     // (`max-md:`), not the container, because the toggle is viewport-fixed and
     // wide windows always place a host pane header above this bar instead.
-    <header className="flex h-11 shrink-0 items-center gap-2.5 border-b border-border-hairline bg-background px-3.5 text-sm max-md:h-12 max-md:pl-12 max-md:pointer-coarse:pl-14">
+    <header
+      className={cn(
+        "h-11 shrink-0 items-center gap-2.5 border-b border-border-hairline bg-background px-3.5 text-sm max-md:h-12 max-md:pl-12 max-md:pointer-coarse:pl-14",
+        hiddenOnPhone ? "hidden @md:flex" : "flex",
+      )}
+    >
       <div className="min-w-0 flex-1 overflow-hidden">{breadcrumb}</div>
       {route.kind === "task" &&
       (pagerScope !== null || projects !== undefined) ? (

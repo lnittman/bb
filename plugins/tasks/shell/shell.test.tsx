@@ -797,6 +797,37 @@ describe("tasks app shell", () => {
     await slot.findByText("Projects group tasks under a shared key prefix.");
   });
 
+  it("hides the browse-route bar in phone-width containers but keeps it on tasks", async () => {
+    // In a phone-width panel a browse route's bar carries only the view name
+    // (host title bar + sidebar already say where you are), so it hides and
+    // gives the rows the room. Task routes keep it: Back and the pager have
+    // no other home on a phone. jsdom applies no CSS, so assert the
+    // container-variant classes that encode the rule.
+    const browse = renderSlot(
+      app.navPanels[0]!,
+      { subPath: "all" },
+      { rpc: seededRpc() },
+    );
+    // "All tasks" also names the sidebar row; take the bar's copy.
+    const browseBar = (await browse.findAllByText("All tasks"))
+      .map((node) => node.closest("header"))
+      .find((node) => node !== null);
+    expect(browseBar?.className).toMatch(/hidden @md:flex/);
+    browse.lifecycle.unmount();
+    cleanup();
+
+    const task = renderSlot(
+      app.navPanels[0]!,
+      { subPath: "task/TSK-4" },
+      { rpc: seededRpc() },
+    );
+    const taskBar = (
+      await task.findByRole("button", { name: "Back (Esc)" })
+    ).closest("header");
+    expect(taskBar?.className).not.toMatch(/hidden/);
+    expect(taskBar?.className).toMatch(/flex/);
+  });
+
   it("renders sidebar data and routes project/board/task subPaths", async () => {
     const boardSlot = renderSlot(
       app.navPanels[0]!,
