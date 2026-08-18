@@ -1996,7 +1996,7 @@ html.js .mock[data-construct]:not(.constructing):not(.constructed) {
 }
 
 
-/* ── Statement (Band 4) ─────────────────────────────────────────── */
+/* ── Statement ──────────────────────────────────────────────────── */
 
 .statement {
   border-top: 1px solid var(--border-soft);
