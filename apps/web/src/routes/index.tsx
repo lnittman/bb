@@ -6,6 +6,7 @@ import {
   ArrowRight01Icon,
   AttachmentIcon,
   BubbleChatAddIcon,
+  CheckListIcon,
   CheckmarkCircle02Icon,
   Clock01Icon,
   FolderGitTwoIcon,
@@ -20,11 +21,13 @@ import {
   PauseIcon,
   PlayIcon,
   PlusMinusSquare01Icon,
+  Search01Icon,
   SentIcon,
   Settings01Icon,
   SidebarLeftIcon,
   SidebarRightIcon,
   Tick02Icon,
+  ToolboxIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { createFileRoute } from "@tanstack/react-router";
@@ -425,6 +428,15 @@ const NewThreadIcon = ({ className }: IconProps) => (
 );
 const ClockIcon = ({ className }: IconProps) => (
   <HugeiconsIcon icon={Clock01Icon} className={className} />
+);
+const SearchGlyph = ({ className }: IconProps) => (
+  <HugeiconsIcon icon={Search01Icon} className={className} />
+);
+const ToolboxGlyph = ({ className }: IconProps) => (
+  <HugeiconsIcon icon={ToolboxIcon} className={className} />
+);
+const ChecklistGlyph = ({ className }: IconProps) => (
+  <HugeiconsIcon icon={CheckListIcon} className={className} />
 );
 const GearIcon = ({ className }: IconProps) => (
   <HugeiconsIcon icon={Settings01Icon} className={className} />
@@ -1043,10 +1055,44 @@ function DiffPanel({
   );
 }
 
+/* ────────────────────────────────────────────────
+ * HERO STORYBOARD
+ *
+ * Read top-to-bottom. Times are ms after the mock scrolls into view.
+ *
+ *      0ms   window frame draws (useConstructMock adds .constructing)
+ *  ~200ms   title bar, sidebar rows, feed, composer cascade in
+ *  1800ms   construct class swaps to .constructed
+ *  2400ms   on wide screens the Changes pane slides in, completing
+ *            the three-pane set piece; the active thread keeps
+ *            streaming work so the hero never rests on a dead frame
+ * ──────────────────────────────────────────────── */
+const HERO_TIMING = {
+  diffJoins: 2400, // ms until the Changes pane slides into the entrance
+};
+/** The set piece opens all three panes only where they fit. */
+const HERO_DIFF_MIN_WIDTH = "(min-width: 1100px)";
+
 function HeroAppMock() {
   const [activeId, setActiveId] = useState(HERO_THREADS[0].id);
   const [view, setView] = useState<"thread" | "new">("thread");
   const [diffOpen, setDiffOpen] = useState(false);
+  // The pane joins after mount (never in prerendered HTML), so hydration
+  // matches and the entrance reads as one sequence instead of a flash.
+  useEffect(() => {
+    if (!window.matchMedia(HERO_DIFF_MIN_WIDTH).matches) {
+      return;
+    }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setDiffOpen(true);
+      return;
+    }
+    const timer = window.setTimeout(
+      () => setDiffOpen(true),
+      HERO_TIMING.diffJoins,
+    );
+    return () => window.clearTimeout(timer);
+  }, []);
   // Subagents a running thread spawns, keyed by parent id. They persist once
   // spawned and render as nested child rows in the sidebar.
   const [spawned, setSpawned] = useState<Record<string, MockThread[]>>({});
@@ -1075,7 +1121,7 @@ function HeroAppMock() {
   }, []);
 
   return (
-    <section className="mockup-wrap">
+    <section className="mockup-wrap hero-stage">
       <div
         className="mock"
         data-construct
@@ -1125,18 +1171,36 @@ function HeroAppMock() {
         </div>
         <div className="mock-body">
           <aside className="side">
-            <button
-              type="button"
-              className={view === "new" ? "side-act active-act" : "side-act"}
-              aria-pressed={view === "new"}
-              onClick={() => setView("new")}
-            >
-              <NewThreadIcon className="sa-ic" />
-              New thread
-            </button>
+            <div className="side-row-new">
+              <button
+                type="button"
+                className={view === "new" ? "side-act active-act" : "side-act"}
+                aria-pressed={view === "new"}
+                onClick={() => setView("new")}
+              >
+                <NewThreadIcon className="sa-ic" />
+                New thread
+              </button>
+              <span className="side-search" aria-hidden>
+                <SearchGlyph className="sa-ic" />
+              </span>
+            </div>
+            {/* Plugin rows, exactly as today's sidebar orders them:
+                Extensions, then each installed plugin's nav panel. */}
+            <div className="side-act">
+              <ToolboxGlyph className="sa-ic" />
+              Extensions
+            </div>
             <div className="side-act">
               <ClockIcon className="sa-ic" />
               Automations
+            </div>
+            <div className="side-act">
+              <ChecklistGlyph className="sa-ic" />
+              Tasks
+              <span className="side-chip" aria-hidden>
+                3
+              </span>
             </div>
             <div className="side-label">Pinned</div>
             <button
@@ -1151,7 +1215,7 @@ function HeroAppMock() {
             >
               <span className="trow-title">Chief</span>
             </button>
-            <div className="side-label">All Threads</div>
+            <div className="side-label">bb</div>
             <ul className="threads">
               {HERO_THREADS.map((candidate, index) => {
                 const isActive = view === "thread" && candidate.id === activeId;
@@ -1779,8 +1843,8 @@ function LandingPage() {
         )}
         <h1>The IDE that builds itself</h1>
         <p className="sub">
-          bb can control, customize, and automate itself, laying the groundwork
-          for your own software factory.
+          Mission control for every coding agent, in an IDE they can control,
+          customize, and rebuild themselves.
         </p>
 
         <InstallOptions placement="hero" />

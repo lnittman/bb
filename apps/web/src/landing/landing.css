@@ -578,6 +578,22 @@ code,
   margin: 14px 0 8px;
 }
 
+/* The hero is a set piece: above the sidebar-collapse breakpoint the mock
+   breaks out of the 980px text column and takes the stage at up to 1340px,
+   the width the three-pane composition (sidebar, thread, Changes) needs to
+   breathe. The text column above stays narrow; only the product widens. */
+@media (min-width: 1100px) {
+  .hero-stage {
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(1340px, calc(100vw - 64px));
+  }
+  .hero-stage .mock-body {
+    height: 560px;
+  }
+}
+
 /* No divider directly beneath the interactive demo. */
 .mockup-wrap + .band {
   border-top: none;
@@ -1037,6 +1053,37 @@ html.js .mock[data-construct]:not(.constructing):not(.constructed) {
   border-right: 1px solid var(--border-soft);
   padding: 8px 8px 10px;
   overflow: hidden;
+}
+
+/* New thread + the search affordance share the first row, like the app. */
+.side-row-new {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.side-row-new .side-act {
+  flex: 1;
+  min-width: 0;
+}
+
+.side-search {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  color: var(--subtle);
+  flex-shrink: 0;
+}
+
+/* Plugin-row count chip (the Tasks row), matching the app's muted counter. */
+.side-chip {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--subtle);
 }
 
 .side-act {
@@ -1635,6 +1682,26 @@ html.js .mock[data-construct]:not(.constructing):not(.constructed) {
   border-left: 1px solid var(--border-soft);
   background: var(--surface);
   overflow: hidden;
+  /* The pane is the entrance's last beat: it slides in from its own width
+     so the thread column compresses smoothly rather than popping. */
+  animation: diff-join 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes diff-join {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+  to {
+    width: 320px;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .diff-panel {
+    animation: none;
+  }
 }
 
 .diff-head {
