@@ -36,7 +36,6 @@ import type { CSSProperties, ReactNode } from "react";
 
 import changelogMd from "../../../../CHANGELOG.md?raw";
 import { initAnalytics, trackLandingEvent } from "../landing/analytics";
-import bbIcon from "../assets/bb-icon.png";
 import blackstoneLogo from "../assets/company-logos/blackstone.png";
 import datadogLogo from "../assets/company-logos/datadog.svg";
 import figmaLogo from "../assets/company-logos/figma.svg";
@@ -1322,461 +1321,88 @@ function Band({
   );
 }
 
-/* ── Looping visual cycle ─────────────────────────────────────────── */
+/* ── Band visuals: real product captures ──────────────────────────── */
 
-/** Drives a looping visual: hold the current item, fade it out, then swap to the
- *  next and replay its entrance. Returns a monotonic `cycle` (use as the remount
- *  key; mod by item count for content) and whether it is currently fading out, so
- *  the outgoing content can ease away before the next appears. Inert under reduced
- *  motion — the first item just stays shown. */
-function useCycle(holdMs: number, fadeMs: number) {
-  const [cycle, setCycle] = useState(0);
-  const [leaving, setLeaving] = useState(false);
+/** How much of a demo window must be on screen before its capture plays. */
+const DEMO_PLAY_VISIBILITY = 0.35;
+
+/** A real screen recording of the app, framed in desktop window chrome. The
+ *  clip is silent, loops, and only plays while it is actually on screen; under
+ *  reduced motion it never starts and the poster frame carries the content. */
+function DemoWindow({
+  src,
+  poster,
+  label,
+  caption,
+}: {
+  src: string;
+  poster: string;
+  label: string;
+  caption: string;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       return;
     }
-    let holdTimer = 0;
-    let fadeTimer = 0;
-    const schedule = () => {
-      holdTimer = window.setTimeout(() => {
-        setLeaving(true);
-        fadeTimer = window.setTimeout(() => {
-          setCycle((c) => c + 1);
-          setLeaving(false);
-          schedule();
-        }, fadeMs);
-      }, holdMs);
-    };
-    schedule();
-    return () => {
-      window.clearTimeout(holdTimer);
-      window.clearTimeout(fadeTimer);
-    };
-  }, [holdMs, fadeMs]);
-  return { cycle, leaving };
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          void video.play().catch(() => undefined);
+        } else {
+          video.pause();
+        }
+      },
+      { threshold: DEMO_PLAY_VISIBILITY },
+    );
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <figure className="demo-window">
+      <div className="demo-bar" aria-hidden>
+        <span className="mock-dots">
+          <i />
+          <i />
+          <i />
+        </span>
+      </div>
+      <video
+        ref={videoRef}
+        src={src}
+        poster={poster}
+        muted
+        loop
+        playsInline
+        preload="none"
+        aria-label={label}
+      />
+      <figcaption className="demo-caption">{caption}</figcaption>
+    </figure>
+  );
 }
 
-/* ── Band visual: text the bot, bb spawns the thread ──────────────── */
-
-// A Telegram-style chat with the bb bot. The user texts a request; the bot acks
-// and a bb thread card appears, its status going spawning → running. The chat
-// shell and wallpaper stay put; only the messages cycle — they fade in, hold,
-// then fade out together before the conversation replays. CSS-only transitions.
-function AgentChat() {
-  const { cycle, leaving } = useCycle(6000, 600);
+/** The spawn capture pairs the window with its cause: the real CLI invocation,
+ *  floated over the frame like the terminal it came from. */
+function SpawnStage() {
   return (
-    <div
-      className="tg"
-      aria-label="Texting the Crunch bot, which spawns a bb thread"
-    >
-      <div className="tg-bar">
-        <ChevronLeft className="tg-back" />
-        <span className="tg-contact">
-          <span className="tg-name">Sawyer&rsquo;s Hermes</span>
-          <span className="tg-sub">bot</span>
-        </span>
-        <span className="tg-av" aria-hidden>
-          <img src={hermesAvatar} alt="" />
-        </span>
-      </div>
-      <div className="tg-feed">
-        <div className={leaving ? "tg-msgs leaving" : "tg-msgs"} key={cycle}>
-          <div className="tg-msg tg-out" style={{ animationDelay: "0.3s" }}>
-            <span className="tg-bubble">
-              spawn a thread to fix the failing CI on main
-              <span className="tg-time">9:41</span>
-            </span>
-          </div>
-          <div className="tg-msg tg-in" style={{ animationDelay: "1.4s" }}>
-            <span className="tg-bubble">
-              On it. Spawning a worker thread.
-              <span className="tg-cmd mono">bb spawn "fix CI on main"</span>
-            </span>
-          </div>
-          <div className="tg-msg tg-in" style={{ animationDelay: "2.4s" }}>
-            <div className="tg-thread">
-              <div className="tg-thread-top">
-                <img src={bbIcon} alt="" className="tg-thread-mark" />
-                <span className="tg-thread-eyebrow">Worker thread</span>
-                <span className="tg-stat" aria-hidden>
-                  <span
-                    className="tg-stat-spawn"
-                    style={{ animationDelay: "3.5s" }}
-                  >
-                    <Spinner className="tg-spin" />
-                    spawning
-                  </span>
-                  <span
-                    className="tg-stat-run"
-                    style={{ animationDelay: "3.5s" }}
-                  >
-                    <span className="tg-rdot" />
-                    running
-                  </span>
-                </span>
-              </div>
-              <div className="tg-thread-title">Fix CI on main</div>
-              <div className="tg-thread-branch mono">bb/fix-ci-on-main</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="tg-input">
-        <Paperclip className="tg-attach" />
-        <span className="tg-field">Message</span>
-        <span className="tg-send" aria-hidden>
-          <PaperPlane className="tg-send-ic" />
-        </span>
-      </div>
+    <div className="demo-stage">
+      <DemoWindow
+        src="/landing/demo-spawn.mp4"
+        poster="/landing/demo-spawn-poster.webp"
+        label="Screen recording of bb while a thread spawned from the CLI appears in the sidebar and starts running"
+        caption="Recorded live — the sidebar, as a spawned thread arrives."
+      />
+      <p className="demo-term" aria-hidden>
+        <span className="demo-term-ps">$</span> bb thread spawn --prompt{" "}
+        <span className="demo-term-str">&quot;List the spawn flags&quot;</span>
+      </p>
     </div>
   );
 }
 
-/* ── Band visual: bb builds itself a plugin ───────────────────────── */
-
-type CustomizeMessage = {
-  role: "user" | "agent" | "tool";
-  text: string;
-};
-
-type CustomizeTask = {
-  key: string;
-  title: string;
-  status: "in_progress" | "todo" | "backlog";
-  priority: "urgent" | "high" | "medium" | "low";
-};
-
-type CustomizeScenario = {
-  title: string;
-  prompt: string;
-  promptWidth: string;
-  branch: string;
-  messages: CustomizeMessage[];
-  /** The panel the agent just built, revealed once the thread lands. */
-  panel: {
-    name: string;
-    tasks: CustomizeTask[];
-  };
-};
-
-const CUSTOMIZE_SCENARIO: CustomizeScenario = {
-  title: "Build a tasks plugin",
-  prompt: "Add a task management system",
-  // Measured width of the prompt at the composer's 13.5px Inter, plus a few px
-  // of slack for the metric-adjusted fallback face. Too small clips the tail.
-  promptWidth: "210px",
-  branch: "bb/tasks-plugin",
-  messages: [
-    { role: "user", text: "Add a task management system" },
-    {
-      role: "agent",
-      text: "I'll build it as a bb plugin and mount it in your sidebar.",
-    },
-    { role: "tool", text: "wrote plugin: tasks" },
-    { role: "tool", text: "registered panel + bb tasks CLI" },
-    { role: "agent", text: "Done. Tasks is live, and your agents can use it." },
-  ],
-  panel: {
-    name: "Tasks",
-    tasks: [
-      {
-        key: "BB-1",
-        title: "Ship task delegation",
-        status: "in_progress",
-        priority: "high",
-      },
-      {
-        key: "BB-2",
-        title: "Wire up the tasks CLI",
-        status: "todo",
-        priority: "medium",
-      },
-      {
-        key: "BB-3",
-        title: "Add label filters",
-        status: "todo",
-        priority: "low",
-      },
-      {
-        key: "BB-4",
-        title: "Nightly changelog draft",
-        status: "in_progress",
-        priority: "medium",
-      },
-      {
-        key: "BB-5",
-        title: "Triage flaky integration tests",
-        status: "backlog",
-        priority: "high",
-      },
-      {
-        key: "BB-6",
-        title: "Port the settings panel",
-        status: "backlog",
-        priority: "low",
-      },
-      {
-        key: "BB-7",
-        title: "Document the plugin API",
-        status: "backlog",
-        priority: "medium",
-      },
-    ],
-  },
-};
-
-// A phone-sized bb thread preview: the prompt types into the composer, sends,
-// the build transcript streams into the feed, and the panel the agent just
-// wrote slides up over the thread — bb extending itself, on screen.
-function CustomizeBuild() {
-  const { cycle, leaving } = useCycle(10600, 500);
-  const run = CUSTOMIZE_SCENARIO;
-  const promptStyle = {
-    "--customize-prompt-width": run.promptWidth,
-  } as CSSProperties;
-  return (
-    <div className="mockup-wrap mockup-wrap-customize">
-      <div
-        className="mock mock-customize-mobile"
-        aria-label="Mobile bb preview: a prompt asks for a task management system, and the agent builds it as a plugin"
-      >
-        <div className="mock-bar">
-          <div className="bar-left">
-            <span className="bar-menu" aria-hidden>
-              <PanelIcon className="ri bar-ic" />
-            </span>
-          </div>
-          <div className="bar-main">
-            <span className="bar-title">{run.title}</span>
-          </div>
-        </div>
-
-        <div
-          className={
-            leaving
-              ? "mock-body customize-body leaving"
-              : "mock-body customize-body"
-          }
-          key={cycle}
-        >
-          <div className="main">
-            <div className="feed feed-live customize-feed">
-              {run.messages.map((message, i) => {
-                const style = { animationDelay: `${3.2 + i * 0.68}s` };
-                if (message.role === "user") {
-                  return (
-                    <div
-                      className="msg-user customize-msg"
-                      key={`${message.role}-${message.text}`}
-                      style={style}
-                    >
-                      {message.text}
-                    </div>
-                  );
-                }
-                if (message.role === "tool") {
-                  return (
-                    <div
-                      className="msg-step customize-msg customize-tool"
-                      key={`${message.role}-${message.text}`}
-                      style={style}
-                    >
-                      <ChevronRight className="step-chev" />
-                      {message.text}
-                    </div>
-                  );
-                }
-                return (
-                  <div
-                    className="msg-say customize-msg"
-                    key={`${message.role}-${message.text}`}
-                    style={style}
-                  >
-                    {message.text}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="composer customize-composer">
-              <div className="composer-box customize-composer-box">
-                <div className="composer-top">
-                  <span className="composer-input customize-typeahead">
-                    <span className="customize-type-text" style={promptStyle}>
-                      {run.prompt}
-                    </span>
-                    <span className="customize-caret" aria-hidden />
-                  </span>
-                  <Maximize2 className="cb-expand" />
-                </div>
-                <div className="composer-row">
-                  <span className="model">
-                    <OpenAiIcon className="model-ic" />
-                    Codex
-                    <ChevronDown className="chev-sm" />
-                  </span>
-                  <span className="composer-actions" aria-hidden>
-                    <Paperclip className="composer-clip" />
-                    <span className="send-btn customize-send">
-                      <SendIcon className="send-ic" />
-                    </span>
-                  </span>
-                </div>
-              </div>
-              <div className="context-row customize-context">
-                <span className="ctx">
-                  <GitBranchIcon className="ctx-ic" />
-                  <span className="ctx-branch">{run.branch}</span>
-                </span>
-                <Spinner className="ctx-spin" />
-              </div>
-            </div>
-          </div>
-
-          {/* The panel the agent just wrote, sliding up over the thread it was
-              built in. Purely decorative — the transcript above already states
-              the outcome for assistive tech. */}
-          <div className="plugin-panel" aria-hidden>
-            <div className="plugin-panel-bar">
-              <span className="plugin-panel-name">{run.panel.name}</span>
-              <span className="plugin-panel-badge">Plugin</span>
-            </div>
-            <div className="plugin-panel-rows">
-              {run.panel.tasks.map((task, i) => (
-                <div
-                  className="plugin-task"
-                  key={task.key}
-                  style={{ animationDelay: `${8.3 + i * 0.14}s` }}
-                >
-                  <span
-                    className={`plugin-task-status is-${task.status}`}
-                    aria-hidden
-                  />
-                  <span className="plugin-task-key">{task.key}</span>
-                  <span className="plugin-task-title">{task.title}</span>
-                  <span className={`plugin-task-prio is-${task.priority}`}>
-                    {task.priority}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Band visual: one agent spawns and manages a thread per provider ── */
-
-// A bb sidebar mock: a parent Claude thread with three worker threads nested
-// beneath it on a connector rail, one per provider. Each worker's status flips
-// running → done; the parent manages until they all land, then ships. Mirrors
-// the run-receipt pill and reveal timing — the list replays each cycle.
-function SpawnRow({
-  icon,
-  name,
-  task,
-  status,
-  at,
-  doneAt,
-  parent,
-}: {
-  icon: ReactNode;
-  name: string;
-  task: string;
-  status: string;
-  at: number;
-  doneAt: number;
-  parent?: boolean;
-}) {
-  return (
-    <div
-      className={parent ? "sb-thread sb-parent" : "sb-thread"}
-      style={{ animationDelay: `${at}s` }}
-    >
-      <span className="sb-prov" aria-hidden>
-        {icon}
-      </span>
-      <span className="sb-body">
-        <span className="sb-name">{name}</span>
-        <span className="sb-task">{task}</span>
-      </span>
-      <span className="sb-stat" aria-hidden>
-        <span className="sb-run" style={{ animationDelay: `${doneAt}s` }}>
-          <span className="sb-dot" />
-          {status}
-        </span>
-        <span className="sb-done" style={{ animationDelay: `${doneAt}s` }}>
-          <CheckIcon className="sb-check" />
-          done
-        </span>
-      </span>
-    </div>
-  );
-}
-
-function SpawnSidebar() {
-  const { cycle, leaving } = useCycle(5600, 500);
-  return (
-    <div
-      className="spawnbar"
-      aria-label="bb spawns and manages a worker thread for each provider"
-    >
-      <div className="sb-head">
-        <img src={bbIcon} alt="" className="sb-mark" />
-        <span className="sb-title">Threads</span>
-        <span className="sb-active">5 active</span>
-      </div>
-      <div className={leaving ? "sb-list leaving" : "sb-list"} key={cycle}>
-        <SpawnRow
-          parent
-          icon={<ClaudeIcon className="sb-ic" />}
-          name="Claude Code"
-          task="Ship the release"
-          status="managing"
-          at={0.1}
-          doneAt={4}
-        />
-        <div className="sb-kids">
-          <SpawnRow
-            icon={<OpenAiIcon className="sb-ic" />}
-            name="Codex"
-            task="Port module to TS"
-            status="running"
-            at={0.6}
-            doneAt={2.3}
-          />
-          <SpawnRow
-            icon={<CursorIcon className="sb-ic" />}
-            name="Cursor"
-            task="Refactor the auth flow"
-            status="running"
-            at={1}
-            doneAt={3}
-          />
-          <SpawnRow
-            icon={<PiIcon className="sb-ic" />}
-            name="Pi"
-            task="Write release notes"
-            status="running"
-            at={1.4}
-            doneAt={3.7}
-          />
-          <SpawnRow
-            icon={<OpencodeIcon className="sb-ic" />}
-            name="OpenCode"
-            task="Add integration tests"
-            status="running"
-            at={1.8}
-            doneAt={3.4}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ── Page ─────────────────────────────────────────────────────────── */
 
@@ -1895,7 +1521,18 @@ function LandingPage() {
         </div>
       </section>
 
-      <Band title="Fully customizable." flip visual={<CustomizeBuild />}>
+      <Band
+        title="Fully customizable."
+        flip
+        visual={
+          <DemoWindow
+            src="/landing/demo-tasks.mp4"
+            poster="/landing/demo-tasks-poster.webp"
+            label="Screen recording of the Tasks plugin in bb: the sidebar panel, a project list, and its board view"
+            caption="Recorded live — the Tasks plugin: a panel, a CLI, and a skill."
+          />
+        }
+      >
         <p>
           Almost anything in bb can be changed in a single prompt. Ask for a
           task tracker and one appears: a panel in your sidebar, a{" "}
@@ -1910,7 +1547,7 @@ function LandingPage() {
         <p>Nothing is stopping you from building your ideal workbench.</p>
       </Band>
 
-      <Band title="Anything can kick off work." visual={<AgentChat />}>
+      <Band title="Anything can kick off work." visual={<SpawnStage />}>
         <p>
           The same CLI your agents use is open to any program you write: a shell
           script, a cron job, or your own Hermes Agent or OpenClaw bot in
@@ -1923,7 +1560,18 @@ function LandingPage() {
         </p>
       </Band>
 
-      <Band title="The gang's all here" flip visual={<SpawnSidebar />}>
+      <Band
+        title="The gang's all here"
+        flip
+        visual={
+          <DemoWindow
+            src="/landing/demo-gang.mp4"
+            poster="/landing/demo-gang-poster.webp"
+            label="Screen recording of bb running Codex and Claude Code threads across three projects at once"
+            caption="Recorded live — three agents, three repos, one sidebar."
+          />
+        }
+      >
         <p>
           Claude Code, Codex, Cursor, Pi, OpenCode, Grok, omp, and Hermes all
           live in bb. Give a task to whichever fits, and have one agent spawn
