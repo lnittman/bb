@@ -2004,6 +2004,30 @@ html.js .mock[data-construct]:not(.constructing):not(.constructed) {
   text-align: center;
 }
 
+/* Repo stats: checked-in numbers (scripts/refresh-github-stats.mjs), so the
+   claim is specific without a network fetch at build or runtime. */
+.repo-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  list-style: none;
+  margin-top: 22px;
+  font-size: 14px;
+  color: var(--dim);
+}
+
+.repo-stats li + li::before {
+  content: "\00B7";
+  margin: 0 14px;
+  color: var(--subtle);
+}
+
+.repo-stats strong {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
 .statement .sec-title {
   margin-bottom: 0;
 }
@@ -2263,6 +2287,10 @@ html.js .mock[data-construct]:not(.constructing):not(.constructed) {
      above it instead of centered multi-line text on a narrow screen. */
   .statement {
     text-align: left;
+  }
+
+  .repo-stats {
+    justify-content: flex-start;
   }
 
   .statement .cta-row {

@@ -10,7 +10,8 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --config vitest.config.ts",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "stats:refresh": "node scripts/refresh-github-stats.mjs"
   },
   "dependencies": {
     "@bb/connect-db": "workspace:*",

@@ -36,6 +36,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 import changelogMd from "../../../../CHANGELOG.md?raw";
 import { initAnalytics, trackLandingEvent } from "../landing/analytics";
+import GITHUB_STATS from "../landing/github-stats.json";
 import blackstoneLogo from "../assets/company-logos/blackstone.png";
 import datadogLogo from "../assets/company-logos/datadog.svg";
 import figmaLogo from "../assets/company-logos/figma.svg";
@@ -1594,6 +1595,18 @@ function LandingPage() {
           organization. It still runs local-first on your machines, on the
           provider subscriptions you already pay for.
         </p>
+        <ul className="repo-stats" aria-label="GitHub repository stats">
+          <li>
+            <strong>{GITHUB_STATS.stars.toLocaleString("en-US")}</strong> stars
+            on GitHub
+          </li>
+          <li>
+            <strong>{GITHUB_STATS.contributors}</strong> contributors
+          </li>
+          <li>
+            <strong>MIT</strong> licensed
+          </li>
+        </ul>
         <div className="cta-row">
           <GitHubLink placement="local" className="btn btn-ghost">
             View the source →
