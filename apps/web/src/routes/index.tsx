@@ -953,7 +953,7 @@ function Composer({ thread }: { thread?: MockThread }) {
       <div className="context-row">
         <span className="ctx">
           <FolderIcon className="ctx-ic" />
-          <span>{isNew ? "paper-ultra-slop" : "bb"}</span>
+          <span>{isNew ? "storefront" : "bb"}</span>
           <ChevronDown className="ctx-chev" />
         </span>
         <span className="ctx">
