@@ -2243,18 +2243,6 @@ code,
   }
 }
 
-/* ── Showroom: one dominant real surface ─────────────────────────── */
-
-.showroom-still {
-  display: block;
-  width: 100%;
-  height: auto;
-  border: 1px solid var(--border);
-  border-radius: var(--r-card);
-  background: var(--bg);
-  box-shadow: var(--shadow-window);
-}
-
 /* ── Living bento: claims carried by real product fragments ────────
  *
  * BENTO STORYBOARD
@@ -2631,6 +2619,20 @@ code,
 }
 
 /* ── Closer: one ending with the subscribe inline ────────────────── */
+
+.closer-mark {
+  display: block;
+  margin: 0 auto 26px;
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  padding: 14px;
+  background: var(--bg);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
+    0 14px 34px -18px color-mix(in oklab, var(--ink-strong) 26%, transparent);
+  object-fit: contain;
+}
 
 .closer-subscribe {
   margin-top: 34px;

@@ -56,6 +56,7 @@ import pendoLogo from "../assets/company-logos/pendo.svg";
 import renderLogo from "../assets/company-logos/render.svg";
 import shortcutLogo from "../assets/company-logos/shortcut.svg";
 import simileLogo from "../assets/company-logos/simile.svg";
+import bbIconLarge from "../assets/bb-icon.png";
 import hermesAvatar from "../assets/hermes-avatar.jpg";
 import vscodeIcon from "../assets/vscode.png";
 import { RELEASE_META, parseChangelog } from "../landing/changelog";
@@ -1753,17 +1754,29 @@ function StatNumber({ value }: { value: string }) {
     // Already on screen (deep link, short page): keep the real value.
     if (el.getBoundingClientRect().top < window.innerHeight) return;
     setText("0");
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          setText(value);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "0px 0px -20% 0px" },
-    );
+    let done = false;
+    const reveal = () => {
+      if (done) return;
+      done = true;
+      setText(value);
+      observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry?.isIntersecting) reveal();
+    });
+    // Fast programmatic scrolls can leapfrog the observer between frames;
+    // a passive scroll check guarantees the roll still lands.
+    const onScroll = () => {
+      const r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight && r.bottom > 0) reveal();
+    };
     observer.observe(el);
-    return () => observer.disconnect();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
+    };
   }, [value]);
   return (
     <strong ref={ref}>
@@ -1928,13 +1941,10 @@ function LandingPage() {
           </div>
         </div>
         <div className="room stage">
-          <img
-            className="showroom-still"
-            src="/landing/extensions-page.webp"
-            alt="bb's Extensions page: browse plugins, install official ones, or create a plugin from a prompt"
-            width={1280}
-            height={800}
-            loading="lazy"
+          <DemoWindow
+            src="/landing/demo-install.mp4"
+            poster="/landing/demo-install-poster.webp"
+            label="Screen recording of bb's Extensions page: browsing plugins, installing the GitHub plugin, and landing on its installed page"
           />
         </div>
       </section>
@@ -2021,6 +2031,13 @@ function LandingPage() {
 
       <div className="slate band-close">
       <section className="closer">
+        <img
+          src={bbIconLarge}
+          alt=""
+          className="closer-mark"
+          width={72}
+          height={72}
+        />
         <h2 className="sec-title">Put your agents to work.</h2>
         <p>Free, open source, and local-first. Install in under a minute.</p>
         <InstallOptions placement="closer" />
