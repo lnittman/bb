@@ -167,22 +167,43 @@ code,
 /* ── Nav ────────────────────────────────────────────────────────── */
 
 .nav {
+  /* Sticky treats left/right as stick thresholds, not offsets, so the
+     rail-width breakout is done with symmetric negative margins instead of
+     the translate trick the (non-sticky) stages use. */
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  margin-inline: calc(
+    (100% - min(var(--rail), 100vw - 2 * var(--gutter))) / 2
+  );
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 22px 0;
-  animation: hdr-down 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+  padding: 18px 0;
+  animation: hdr-down 0.55s var(--ease-out) both;
+}
+
+/* Past the top of the page the nav gains a translucent ground so content
+   scrolls under it legibly. The ground bleeds slightly past the rail so the
+   hairline doesn't stop at the text column. */
+.nav[data-scrolled]::before {
+  content: "";
+  position: absolute;
+  inset: 0 calc((100% - 100vw) / 2);
+  z-index: -1;
+  background: color-mix(in oklab, var(--canvas) 86%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
 }
 
 /* The header drops in first, then the hero copy rises in below it. */
 @keyframes hdr-down {
   from {
     opacity: 0;
-    transform: translateY(-12px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 
@@ -406,28 +427,35 @@ code,
   height: 480px;
   z-index: -1;
   background: radial-gradient(
-    640px 300px at 50% 12%,
-    color-mix(in oklab, var(--ink) 4.5%, transparent),
-    transparent 70%
+    720px 340px at 50% 12%,
+    color-mix(in oklab, var(--ink-strong) 6%, transparent),
+    transparent 72%
   );
 }
 
-/* Dot-grid texture, masked so it fades out toward the hero edges. */
+/* Structural 48px drafting grid behind the hero, masked so it fades before
+   the theater. Hairlines, not dots: the page's material is a workbench. */
 .hero::after {
   content: "";
   position: absolute;
-  inset: -60px 0 30%;
+  inset: -60px 0 12%;
   z-index: -1;
-  background-image: radial-gradient(
-    circle,
-    color-mix(in oklab, var(--ink) 16%, transparent) 1px,
-    transparent 1px
-  );
-  background-size: 24px 24px;
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in oklab, var(--ink-strong) 5%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--ink-strong) 5%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 48px 48px;
   mask-image: radial-gradient(
-    540px 280px at 50% 18%,
-    rgb(0 0 0 / 70%),
-    transparent 75%
+    720px 420px at 50% 22%,
+    rgb(0 0 0 / 85%),
+    transparent 78%
   );
 }
 
@@ -500,34 +528,38 @@ code,
   animation-delay: 0.57s;
 }
 
+/* Release rail: a full-width line in the page frame under the nav, not a
+   floating pill. The hairlines bleed to the viewport edge; the text sits on
+   the editorial rail. */
+.release-rail {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+
 .updates-callout {
-  width: fit-content;
-  max-width: min(100%, 680px);
-  margin: -32px auto 56px;
-  padding: 6px 12px 6px 7px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--bg) 82%, transparent);
+  width: min(var(--rail), calc(100vw - 2 * var(--gutter)));
+  margin-inline: auto;
+  padding: 9px 0;
   color: var(--dim);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   font-size: 13px;
   line-height: 1.35;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    transform 0.15s ease;
+  transition: color var(--duration-hover) var(--ease-standard);
 }
 
 .updates-callout:hover {
-  background: var(--state-hover);
-  border-color: color-mix(in oklab, var(--ink) 22%, var(--bg));
-  transform: translateY(-1px);
+  color: var(--ink);
 }
 
 .updates-label {
-  padding: 3px 7px;
+  padding: 2px 7px;
   border-radius: 999px;
   background: var(--ink);
   color: var(--bg);
@@ -566,22 +598,32 @@ code,
 }
 
 .hero h1 {
-  font-size: clamp(36px, 6vw, 58px);
-  line-height: 1.08;
-  font-weight: 700;
-  letter-spacing: -0.035em;
-  max-width: 780px;
+  font-size: clamp(52px, 6.4vw, 92px);
+  line-height: 0.98;
+  font-weight: 640;
+  letter-spacing: -0.052em;
+  max-width: 12ch;
   margin: 0 auto;
-  color: oklch(0.21 0 0);
+  color: var(--ink-strong);
   text-wrap: balance;
 }
 
 .hero .sub {
-  margin: 22px auto 0;
+  margin: 26px auto 0;
   color: var(--dim);
-  max-width: 600px;
-  font-size: 17.5px;
+  max-width: 54ch;
+  font-size: clamp(17px, 1.45vw, 20px);
+  line-height: 1.55;
   text-wrap: balance;
+}
+
+/* The economics in one quiet line under the install decision — bb's sharpest
+   wedge, no longer buried at the bottom of the page. */
+.hero-economics {
+  margin: 20px auto 0;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  color: var(--subtle);
 }
 
 .fine {
@@ -640,15 +682,98 @@ code,
    breaks out of the 980px text column and takes the stage at up to 1340px,
    the width the three-pane composition (sidebar, thread, Changes) needs to
    breathe. The text column above stays narrow; only the product widens. */
+/* The theater: above the sidebar-collapse breakpoint the interactive demo
+   sits in a recessed room at product-stage width — a ground with its own
+   faint drafting grid, the window seated low inside it as the page's one
+   elevated hero object. */
 @media (min-width: 1100px) {
   .hero-stage {
     position: relative;
     left: 50%;
     transform: translateX(-50%);
-    width: min(1340px, calc(100vw - 64px));
+    width: min(var(--stage), calc(100vw - 32px));
+    padding: 52px 44px 20px;
+    border-radius: var(--r-room);
+    background: radial-gradient(
+      120% 130% at 50% -10%,
+      var(--surface-2),
+      var(--surface-1) 70%
+    );
+    overflow: hidden;
   }
+
+  .hero-stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(
+        to right,
+        color-mix(in oklab, var(--ink-strong) 3.5%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--ink-strong) 3.5%, transparent) 1px,
+        transparent 1px
+      );
+    background-size: 48px 48px;
+    mask-image: linear-gradient(
+      to bottom,
+      rgb(0 0 0 / 90%),
+      rgb(0 0 0 / 35%) 55%,
+      transparent 92%
+    );
+  }
+
+  .hero-stage .mock {
+    position: relative;
+    border-radius: var(--r-card);
+    box-shadow: var(--shadow-window);
+  }
+
   .hero-stage .mock-body {
     height: 560px;
+  }
+}
+
+/* "Interactive demo" affordance: a quiet caption pinned to the theater's top
+   right; the dot breathes so the label reads live, and rests solid under
+   reduced motion. */
+.stage-label {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  letter-spacing: 0.015em;
+  color: var(--subtle);
+}
+
+.stage-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+  animation: stage-dot-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes stage-dot-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (max-width: 1099px) {
+  .stage-label {
+    display: none;
   }
 }
 

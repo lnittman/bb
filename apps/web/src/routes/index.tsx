@@ -732,7 +732,7 @@ function ThreadStatus({ status }: { status: Status }) {
 // Cadence + rolling-window size for a running thread's live feed. The window is
 // generously larger than what fits, so the oldest rows are dropped well above
 // the (clipped) top edge and never cause a visible jump.
-const STREAM_INTERVAL_MS = 1600;
+const STREAM_INTERVAL_MS = 2200;
 const STREAM_WINDOW = 16;
 
 type FeedItem = { id: string; step: Step; live: boolean };
@@ -1022,7 +1022,7 @@ function DiffPanel({
  *            streaming work so the hero never rests on a dead frame
  * ──────────────────────────────────────────────── */
 const HERO_TIMING = {
-  diffJoins: 2400, // ms until the Changes pane slides into the entrance
+  diffJoins: 1100, // ms until the Changes pane slides into the entrance
 };
 /** The set piece opens all three panes only where they fit. */
 const HERO_DIFF_MIN_WIDTH = "(min-width: 1100px)";
@@ -1076,6 +1076,10 @@ function HeroAppMock() {
 
   return (
     <section className="mockup-wrap hero-stage">
+      <span className="stage-label" aria-hidden>
+        <i className="stage-dot" />
+        Interactive demo
+      </span>
       <div
         className="mock"
         data-construct
@@ -1409,10 +1413,8 @@ function LandingPage() {
     <div className="wrap">
       <SiteNav />
 
-      <header className="hero">
-        {PRODUCT_HUNT_LAUNCH_ACTIVE ? (
-          <ProductHuntCallout placement="hero" />
-        ) : (
+      {!PRODUCT_HUNT_LAUNCH_ACTIVE && (
+        <div className="release-rail">
           <a className="updates-callout" href={LATEST_RELEASE_URL}>
             <span className="updates-label">New</span>
             <span className="updates-title">
@@ -1420,14 +1422,26 @@ function LandingPage() {
             </span>
             <ChevronRight className="updates-arrow" />
           </a>
-        )}
+        </div>
+      )}
+
+      <header className="hero">
+        {PRODUCT_HUNT_LAUNCH_ACTIVE ? (
+          <ProductHuntCallout placement="hero" />
+        ) : null}
         <h1>The IDE that builds itself</h1>
         <p className="sub">
-          Mission control for every coding agent, in an IDE they can control,
-          customize, and rebuild themselves.
+          Claude Code, Codex, Cursor, and Pi — every agent in one place, each
+          in its own thread. Mission control for coding agents, in an IDE they
+          can rebuild.
         </p>
 
         <InstallOptions placement="hero" />
+
+        <p className="hero-economics">
+          Free · MIT · local-first · runs on the subscriptions you already pay
+          for
+        </p>
 
         <div className="providers">
           <span className="label">Works with</span>
