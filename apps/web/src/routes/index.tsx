@@ -37,6 +37,7 @@ import changelogMd from "../../../../CHANGELOG.md?raw";
 import { initAnalytics, trackLandingEvent } from "../landing/analytics";
 import GITHUB_STATS from "../landing/github-stats.json";
 import CONTRIBUTOR_LOGINS from "../assets/contributors/index.json";
+import PR_FEED from "../landing/pr-feed.json";
 
 // Baked 64px contributor avatars (see scripts/refresh-github-stats.mjs's
 // sibling flow) — build-time faces, no runtime GitHub calls.
@@ -1353,41 +1354,34 @@ function DemoWindow({
 
 /* ── Page ─────────────────────────────────────────────────────────── */
 
-/** One full-bleed avatar film strip: square cells in a continuous row,
- *  ghost cells interleaved for texture (zed's open-source grammar). The
- *  pattern is deterministic so prerender and hydration agree. */
-function OpenSourceStrip({ half }: { half: "first" | "second" }) {
-  const mid = Math.ceil(CONTRIBUTOR_LOGINS.length / 2);
-  const logins =
-    half === "first"
-      ? CONTRIBUTOR_LOGINS.slice(0, mid)
-      : CONTRIBUTOR_LOGINS.slice(mid);
-  const cells: ReactNode[] = [];
-  // ghost padding on both ends so the strip runs past the viewport edges
-  for (let i = 0; i < 8; i++) {
-    cells.push(<li key={`lead${i}`} className="os-ghost" aria-hidden />);
-  }
-  logins.forEach((login, i) => {
-    // a ghost cell every third slot, offset per half so the rows stagger
-    if (i % 3 === (half === "first" ? 1 : 2)) {
-      cells.push(<li key={`g${i}`} className="os-ghost" aria-hidden />);
-    }
-    const url = CONTRIBUTOR_AVATARS[`../assets/contributors/${login}.webp`];
-    if (url) {
-      cells.push(
-        <li key={login}>
-          <img src={url} alt={login} width={36} height={36} loading="lazy" />
-        </li>,
-      );
-    }
-  });
-  for (let i = 0; i < 8; i++) {
-    cells.push(<li key={`tail${i}`} className="os-ghost" aria-hidden />);
-  }
+/** The merged-PR feed: real recent merges (baked at authoring time),
+ *  looping in a slow vertical marquee. Two copies of the list scroll as one
+ *  track; reduced motion rests on the static list. */
+function PRFeed() {
   return (
-    <ul className="os-strip" aria-label="bb contributors">
-      {cells}
-    </ul>
+    <div className="pr-feed rail" aria-label="Recently merged pull requests">
+      <div className="pr-feed-track" aria-hidden={undefined}>
+        {[0, 1].map((copy) => (
+          <ul key={copy} aria-hidden={copy === 1 || undefined}>
+            {PR_FEED.map((pr, i) => {
+              const url =
+                CONTRIBUTOR_AVATARS[`../assets/contributors/${pr.login}.webp`];
+              return (
+                <li key={`${copy}-${i}`}>
+                  {url ? (
+                    <img src={url} alt="" width={22} height={22} />
+                  ) : null}
+                  <span className="pr-title">{pr.title}</span>
+                  <span className="pr-meta">
+                    {pr.login} · {pr.date}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -1669,8 +1663,7 @@ function LandingPage() {
             </p>
           </div>
         </div>
-        <OpenSourceStrip half="first" />
-        <ul className="stat-band rail">
+        <ul className="stat-cards rail">
           <li>
             <StatNumber value={GITHUB_STATS.stars.toLocaleString("en-US")} />
             <span>Stars</span>
@@ -1688,7 +1681,7 @@ function LandingPage() {
             <span>PRs merged last month</span>
           </li>
         </ul>
-        <OpenSourceStrip half="second" />
+        <PRFeed />
         <div className="open-cta">
           <GitHubLink placement="local" className="btn btn-ghost">
             View the source →

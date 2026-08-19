@@ -2194,76 +2194,103 @@ code,
 }
 
 
-.os-strip {
-  list-style: none;
-  position: relative;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100vw;
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  padding: 4px 0;
-  overflow: hidden;
-  mask-image: linear-gradient(
-    to right,
-    transparent,
-    black 12%,
-    black 88%,
-    transparent
-  );
-}
-
-.os-strip li {
-  flex: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.os-strip img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  filter: grayscale(0.25);
-}
-
-.os-ghost {
-  border: 1px solid var(--line);
-}
-
-.stat-band {
+/* Four slate stat cards — the bento material carrying the numbers. */
+.stat-cards {
   list-style: none;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-block: 36px;
+  gap: clamp(14px, 1.6vw, 22px);
   text-align: center;
 }
 
-.stat-band li {
+.stat-cards li {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  padding: 10px 12px;
+  justify-content: center;
+  gap: 8px;
+  padding: 34px 16px 30px;
+  border-radius: 20px;
+  background: color-mix(in oklab, var(--ink-strong) 6%, var(--canvas));
 }
 
-.stat-band li + li {
-  border-left: 1px solid var(--line);
-}
-
-.stat-band strong {
-  font-size: clamp(24px, 2.4vw, 34px);
+.stat-cards strong {
+  font-size: clamp(30px, 3vw, 44px);
   line-height: 1;
   font-weight: 620;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   font-variant-numeric: tabular-nums;
   color: var(--ink-strong);
 }
 
-.stat-band li > span {
-  font-size: 12.5px;
+.stat-cards li > span {
+  font-size: 13px;
   color: var(--dim);
+}
+
+/* The merged-PR feed: a slate card whose list scrolls in a slow vertical
+   marquee (two copies, one translate loop). Rest = the static list. */
+.pr-feed {
+  margin-top: clamp(14px, 1.6vw, 22px);
+  border-radius: 20px;
+  background: color-mix(in oklab, var(--ink-strong) 6%, var(--canvas));
+  padding: 10px 26px;
+  height: 264px;
+  overflow: hidden;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 32px,
+    black calc(100% - 32px),
+    transparent
+  );
+}
+
+.pr-feed-track {
+  animation: pr-scroll 46s linear infinite;
+}
+
+.pr-feed:hover .pr-feed-track {
+  animation-play-state: paused;
+}
+
+@keyframes pr-scroll {
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+.pr-feed ul {
+  list-style: none;
+}
+
+.pr-feed li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+}
+
+.pr-feed img {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+
+.pr-title {
+  font-size: 13.5px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pr-meta {
+  flex: none;
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--subtle);
+  font-variant-numeric: tabular-nums;
 }
 
 .open-cta {
@@ -2686,6 +2713,10 @@ code,
   .bento li {
     transform: none;
     transition: none;
+  }
+
+  .pr-feed-track {
+    animation: none;
   }
 
   .uline path {

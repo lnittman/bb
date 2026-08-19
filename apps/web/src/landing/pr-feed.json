@@ -1,0 +1,92 @@
+[
+  {
+    "title": "Add find-in-page to the embedded desktop browser",
+    "login": "SawyerHood",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Keep script-policy npm config out of plugin install children",
+    "login": "ebg1223",
+    "date": "Aug 19"
+  },
+  {
+    "title": "fix(tasks): support ultra reasoning in presets",
+    "login": "Uttar",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Route agent source pills through sender projects",
+    "login": "brsbl",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Stop four @bb/app suites leaking state into whatever runs next",
+    "login": "ymichael",
+    "date": "Aug 18"
+  },
+  {
+    "title": "Run the ACP bb-bridge MCP server from the bridge module, not the bootstrap",
+    "login": "SawyerHood",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Scope plugin utilities with :where() instead of @scope",
+    "login": "ebg1223",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Keep queued mention menus inside the editor workspace",
+    "login": "brsbl",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Fix GitHub sync service abort race",
+    "login": "ymichael",
+    "date": "Aug 18"
+  },
+  {
+    "title": "Reuse one plugin storage.database() handle per plugin load",
+    "login": "SawyerHood",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Read the thread TOC breakpoint off the ResizeObserver entry",
+    "login": "ebg1223",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Return boolean from every plugin SDK openPanel",
+    "login": "ymichael",
+    "date": "Aug 18"
+  },
+  {
+    "title": "Phone interactions: long-press menu, touch listeners, sidebar across routes, composer retention (E1, E6, E7, E10, D3, J3, J4, I6, B28)",
+    "login": "SawyerHood",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Make plugin SDK declaration bundles deterministic",
+    "login": "ymichael",
+    "date": "Aug 18"
+  },
+  {
+    "title": "Fetch diff-card context on demand; virtualize and cap the file preview (G2, G3)",
+    "login": "SawyerHood",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Split streaming markdown into settled prefix + live tail; gate mermaid; row containment (C1, C3, C4)",
+    "login": "SawyerHood",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Remove re-render amplifiers across slots, contexts, banners and the prompt area (C6-C13, D2, D4, E9, E11, E12, H8)",
+    "login": "SawyerHood",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Defer plugin frontend boot past first route paint with bounded, ordered loads (A3, B23)",
+    "login": "SawyerHood",
+    "date": "Aug 19"
+  }
+]
