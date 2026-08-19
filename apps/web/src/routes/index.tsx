@@ -229,7 +229,7 @@ function InstallOptions({ placement }: { placement: CtaPlacement }) {
   return (
     <div className="install-options">
       <div className="install-actions">
-        <span className="install-choice">
+        <span className="install-choice install-choice--mac">
           <DownloadLink
             placement={placement}
             className="btn btn-primary btn-install"
@@ -239,7 +239,7 @@ function InstallOptions({ placement }: { placement: CtaPlacement }) {
           </DownloadLink>
           <span className="install-note">One-click, no terminal</span>
         </span>
-        <span className="install-choice">
+        <span className="install-choice install-choice--cli">
           <RunCommandButton placement={placement} />
           <span className="install-note">
             Windows (via WSL), Linux &amp; remote machines

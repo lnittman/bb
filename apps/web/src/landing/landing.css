@@ -3880,11 +3880,30 @@ code,
     justify-content: flex-start;
   }
 
-  /* Stack the two CTAs full-width so neither wraps awkwardly. */
+  /* Stack the two CTAs full-width so neither wraps awkwardly, and lead with
+     the command: a macOS download cannot be completed on the phone the
+     reader is holding, but the command can be copied, sent, or run against
+     a remote machine. */
   .install-actions {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .install-choice--cli {
+    order: -1;
+  }
+
+  /* Order alone is weak hierarchy: the command takes the stronger ring so
+     it reads as the phone's primary path. */
+  .install-choice--cli .cmd-btn {
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink-strong) 26%, transparent);
+  }
+
+  .install-choice--mac .btn-install {
+    background: var(--bg);
+    color: var(--ink-strong);
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink-strong) 12%, transparent);
   }
 
   .btn-install {
