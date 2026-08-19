@@ -1574,6 +1574,15 @@ function SubagentsDemo() {
       <div className="sub-row sub-quiet">
         <span className="sub-title">Trace order checkout flow</span>
       </div>
+      <div className="sub-row sub-quiet">
+        <span className="sub-title">Summarize checkout cart integration</span>
+      </div>
+      <div className="sub-row sub-quiet">
+        <span className="sub-title">Audit promo test coverage gaps</span>
+      </div>
+      <div className="sub-row sub-quiet">
+        <span className="sub-title">Explain promo code checkout impact</span>
+      </div>
     </div>
   );
 }
@@ -1615,12 +1624,20 @@ function AskDemo() {
         Should the promo engine support stacking codes, or one per cart?
       </p>
       {answered ? (
-        <div className="ask-answered">
-          <DemoCheck />
-          <span>
-            Answered — <strong>Single code per cart</strong>
-          </span>
-        </div>
+        <>
+          <div className="ask-answered">
+            <DemoCheck />
+            <span>
+              Answered — <strong>Single code per cart</strong>
+            </span>
+          </div>
+          <p className="ask-after">
+            Enforcing one code per cart. The newest code replaces the one
+            already applied, and the stacking branch comes out of the engine.
+          </p>
+          <p className="ask-step">Edited applyPromo.ts</p>
+          <p className="ask-step">Added 4 tests</p>
+        </>
       ) : (
         <>
           <ul>
@@ -1671,13 +1688,20 @@ const BOARD_RESET = 6000;
 const BOARD_COLUMNS = [
   {
     name: "Backlog",
-    cards: [{ id: "SF-6", title: "Cut the 1.4 release notes" }],
+    cards: [
+      { id: "SF-6", title: "Cut the 1.4 release notes" },
+      { id: "SF-9", title: "Retire the legacy cart cookie" },
+      { id: "SF-11", title: "Audit checkout analytics" },
+      { id: "SF-14", title: "Drop the unused address form" },
+    ],
   },
   {
     name: "Todo",
     cards: [
       { id: "SF-3", title: "Add Apple Pay to checkout" },
       { id: "SF-4", title: "Write docs for the promo engine" },
+      { id: "SF-7", title: "Handle expired promo codes" },
+      { id: "SF-12", title: "Cover the empty-cart path" },
     ],
   },
   {
@@ -1685,6 +1709,8 @@ const BOARD_COLUMNS = [
     cards: [
       { id: "SF-1", title: "Ship promo-code analytics" },
       { id: "SF-2", title: "Port pricing to TypeScript" },
+      { id: "SF-8", title: "Split the order confirmation" },
+      { id: "SF-13", title: "Trace the checkout funnel" },
     ],
   },
 ] as const;
@@ -1748,10 +1774,17 @@ const REVIEW_RESET = 7000;
 const REVIEW_LINES = [
   { sign: " ", text: "export function applyPromo(cart, code) {" },
   { sign: "-", text: "  const percent = PERCENT_CODES[code] ?? 0;" },
-  { sign: "+", text: "  const percent = Object.hasOwn(PERCENT_CODES, code)" },
-  { sign: "+", text: "    ? PERCENT_CODES[code]" },
-  { sign: "+", text: "    : 0;" },
+  { sign: "+", text: "  const percent = Object.hasOwn(" },
+  { sign: "+", text: "    PERCENT_CODES, code," },
+  { sign: "+", text: "  ) ? PERCENT_CODES[code] : 0;" },
   { sign: " ", text: "  const subtotal = cart.items.reduce(sum, 0);" },
+  { sign: " ", text: "  return round(subtotal * (1 - percent));" },
+  { sign: " ", text: "}" },
+  { sign: " ", text: "" },
+  { sign: "+", text: "it(\"ignores an unknown code\", () => {" },
+  { sign: "+", text: "  expect(applyPromo(cart, \"constructor\"))" },
+  { sign: "+", text: "    .toBeCloseTo(subtotal);" },
+  { sign: "+", text: "});" },
 ] as const;
 
 function ReviewDemo() {
@@ -1765,6 +1798,13 @@ function ReviewDemo() {
         <span className="review-count">
           <em className="review-add">+3</em>
           <em className="review-del">-1</em>
+        </span>
+      </div>
+      <div className={stage >= 2 || settled ? "review-foot in" : "review-foot"}>
+        <GitBranchIcon className="review-ic" />
+        <span>Uncommitted · 1 file</span>
+        <span className={stage >= 3 || settled ? "review-commit armed" : "review-commit"}>
+          Commit
         </span>
       </div>
       <div className="review-hunk">
@@ -1781,13 +1821,6 @@ function ReviewDemo() {
             {l.text}
           </p>
         ))}
-      </div>
-      <div className={stage >= 2 || settled ? "review-foot in" : "review-foot"}>
-        <GitBranchIcon className="review-ic" />
-        <span>Uncommitted · 1 file</span>
-        <span className={stage >= 3 || settled ? "review-commit armed" : "review-commit"}>
-          Commit
-        </span>
       </div>
     </div>
   );

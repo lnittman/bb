@@ -2214,7 +2214,7 @@ code,
 .board-cols {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 9px;
+  gap: 8px;
   align-items: start;
 }
 
@@ -2240,7 +2240,7 @@ code,
 }
 
 .board-card {
-  padding: 8px 9px;
+  padding: 7px 8px;
   border-radius: 8px;
   background: var(--bg);
   box-shadow:
@@ -2316,7 +2316,7 @@ code,
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding-top: 10px;
+  padding-top: 11px;
   font-family: var(--font-mono);
   font-size: 11.5px;
   line-height: 1.75;
@@ -2362,9 +2362,9 @@ code,
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 12px;
-  padding-top: 11px;
-  border-top: 1px solid var(--border-soft);
+  margin-top: 10px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--border-soft);
   font-size: 11.5px;
   color: var(--dim);
   opacity: 1;
@@ -3222,6 +3222,26 @@ code,
   padding: 22px 24px;
 }
 
+/* Dia's device: the demo CONTENT dissolves at the bottom of the frame
+   while the frame itself stays a crisp object. The content runs past the
+   edge, so the fade reads as "there is more of this", never as a
+   half-empty box. The mask lives on the content, never on the window. */
+.bento-component > * {
+  mask-image: linear-gradient(
+    to bottom,
+    black calc(100% - 64px),
+    transparent calc(100% - 6px)
+  );
+}
+
+/* Tall demos overflow their frame by design. */
+.board-demo,
+.review-demo,
+.sub-demo,
+.ask-demo {
+  overflow: hidden;
+}
+
 .sub-demo {
   display: flex;
   flex-direction: column;
@@ -3334,6 +3354,24 @@ code,
 .ask-opt.selected .ask-radio {
   border-color: var(--ink-strong);
   box-shadow: inset 0 0 0 3.5px var(--bg), inset 0 0 0 8px var(--ink-strong);
+}
+
+.ask-after {
+  margin-top: 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.ask-step {
+  margin-top: 9px;
+  font-size: 12px;
+  color: var(--subtle);
+}
+
+.ask-step::before {
+  content: "› ";
+  opacity: 0.6;
 }
 
 .ask-foot {
