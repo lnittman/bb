@@ -1,92 +1,128 @@
 [
   {
-    "title": "Add find-in-page to the embedded desktop browser",
+    "title": "Use the active project for Command+N thread creation",
+    "login": "ryanbbrown",
+    "number": 1629,
+    "url": "https://github.com/get-bb/bb/pull/1629",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Revert \"Surface incompatible, failed, and missing plugins instead of unloading them silently (#1948)\"",
     "login": "SawyerHood",
+    "number": 1950,
+    "url": "https://github.com/get-bb/bb/pull/1950",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Retry Connect tunnel after rejected WebSocket upgrades",
+    "login": "hemaaanth",
+    "number": 1784,
+    "url": "https://github.com/get-bb/bb/pull/1784",
     "date": "Aug 19"
   },
   {
     "title": "Keep script-policy npm config out of plugin install children",
     "login": "ebg1223",
+    "number": 1913,
+    "url": "https://github.com/get-bb/bb/pull/1913",
     "date": "Aug 19"
   },
   {
     "title": "fix(tasks): support ultra reasoning in presets",
     "login": "Uttar",
+    "number": 1923,
+    "url": "https://github.com/get-bb/bb/pull/1923",
     "date": "Aug 19"
   },
   {
     "title": "Route agent source pills through sender projects",
     "login": "brsbl",
+    "number": 1862,
+    "url": "https://github.com/get-bb/bb/pull/1862",
     "date": "Aug 19"
   },
   {
-    "title": "Stop four @bb/app suites leaking state into whatever runs next",
-    "login": "ymichael",
-    "date": "Aug 18"
-  },
-  {
-    "title": "Run the ACP bb-bridge MCP server from the bridge module, not the bootstrap",
+    "title": "Surface incompatible, failed, and missing plugins instead of unloading them silently",
     "login": "SawyerHood",
+    "number": 1948,
+    "url": "https://github.com/get-bb/bb/pull/1948",
     "date": "Aug 19"
   },
   {
     "title": "Scope plugin utilities with :where() instead of @scope",
     "login": "ebg1223",
+    "number": 1910,
+    "url": "https://github.com/get-bb/bb/pull/1910",
     "date": "Aug 19"
   },
   {
     "title": "Keep queued mention menus inside the editor workspace",
     "login": "brsbl",
+    "number": 1866,
+    "url": "https://github.com/get-bb/bb/pull/1866",
     "date": "Aug 19"
   },
   {
-    "title": "Fix GitHub sync service abort race",
-    "login": "ymichael",
-    "date": "Aug 18"
-  },
-  {
-    "title": "Reuse one plugin storage.database() handle per plugin load",
+    "title": "Skip superseded workflow snapshots and out-of-window turn rows in timeline pages",
     "login": "SawyerHood",
+    "number": 1872,
+    "url": "https://github.com/get-bb/bb/pull/1872",
     "date": "Aug 19"
   },
   {
     "title": "Read the thread TOC breakpoint off the ResizeObserver entry",
     "login": "ebg1223",
+    "number": 1912,
+    "url": "https://github.com/get-bb/bb/pull/1912",
     "date": "Aug 19"
   },
   {
-    "title": "Return boolean from every plugin SDK openPanel",
-    "login": "ymichael",
-    "date": "Aug 18"
+    "title": "Stop committing generated modules; turbo generates them",
+    "login": "SawyerHood",
+    "number": 1943,
+    "url": "https://github.com/get-bb/bb/pull/1943",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Send MCP progress during ACP dynamic tool calls so AskUserQuestion does not time out",
+    "login": "SawyerHood",
+    "number": 1945,
+    "url": "https://github.com/get-bb/bb/pull/1945",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Add find-in-page to the embedded desktop browser",
+    "login": "SawyerHood",
+    "number": 1938,
+    "url": "https://github.com/get-bb/bb/pull/1938",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Run the ACP bb-bridge MCP server from the bridge module, not the bootstrap",
+    "login": "SawyerHood",
+    "number": 1932,
+    "url": "https://github.com/get-bb/bb/pull/1932",
+    "date": "Aug 19"
+  },
+  {
+    "title": "Reuse one plugin storage.database() handle per plugin load",
+    "login": "SawyerHood",
+    "number": 1929,
+    "url": "https://github.com/get-bb/bb/pull/1929",
+    "date": "Aug 19"
   },
   {
     "title": "Phone interactions: long-press menu, touch listeners, sidebar across routes, composer retention (E1, E6, E7, E10, D3, J3, J4, I6, B28)",
     "login": "SawyerHood",
+    "number": 1900,
+    "url": "https://github.com/get-bb/bb/pull/1900",
     "date": "Aug 19"
-  },
-  {
-    "title": "Make plugin SDK declaration bundles deterministic",
-    "login": "ymichael",
-    "date": "Aug 18"
   },
   {
     "title": "Fetch diff-card context on demand; virtualize and cap the file preview (G2, G3)",
     "login": "SawyerHood",
-    "date": "Aug 19"
-  },
-  {
-    "title": "Split streaming markdown into settled prefix + live tail; gate mermaid; row containment (C1, C3, C4)",
-    "login": "SawyerHood",
-    "date": "Aug 19"
-  },
-  {
-    "title": "Remove re-render amplifiers across slots, contexts, banners and the prompt area (C6-C13, D2, D4, E9, E11, E12, H8)",
-    "login": "SawyerHood",
-    "date": "Aug 19"
-  },
-  {
-    "title": "Defer plugin frontend boot past first route paint with bounded, ordered loads (A3, B23)",
-    "login": "SawyerHood",
+    "number": 1901,
+    "url": "https://github.com/get-bb/bb/pull/1901",
     "date": "Aug 19"
   }
 ]

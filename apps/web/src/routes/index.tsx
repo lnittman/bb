@@ -1568,6 +1568,9 @@ function SubagentsDemo() {
         <span className="sub-title">Identify missing promo edge cases</span>
         {stage >= 2 ? <DemoCheck /> : <DemoSpinner />}
       </div>
+      <span className={stage >= 2 ? "sub-report in" : "sub-report"}>
+        ↳ reported back to its parent
+      </span>
       <div className="sub-row sub-quiet">
         <span className="sub-title">Trace order checkout flow</span>
       </div>
@@ -1582,12 +1585,14 @@ function SubagentsDemo() {
  *  1100ms   highlight lands on "Single code per cart"
  *  2100ms   radio fills — selected
  *  2900ms   Submit arms (primary)
- *  rest     selected + armed — also the reduced-motion state
+ *  3800ms   submit presses; the card answers
+ *  rest     answered — also the reduced-motion state
  * ──────────────────────────────────────────────── */
 const ASK_TIMING = {
   highlight: 1100,
   select: 2100,
   arm: 2900,
+  answer: 3800,
 };
 
 const ASK_OPTIONS = [
@@ -1601,39 +1606,52 @@ function AskDemo() {
     ASK_TIMING.highlight,
     ASK_TIMING.select,
     ASK_TIMING.arm,
+    ASK_TIMING.answer,
   ]);
+  const answered = stage >= 4;
   return (
     <div className="ask-demo" ref={ref} aria-hidden>
       <p className="ask-q">
         Should the promo engine support stacking codes, or one per cart?
       </p>
-      <ul>
-        {ASK_OPTIONS.map((opt, i) => {
-          const active = i === 0 && stage >= 1;
-          const selected = i === 0 && stage >= 2;
-          return (
-            <li
-              key={opt}
-              className={
-                selected
-                  ? "ask-opt selected"
-                  : active
-                    ? "ask-opt active"
-                    : "ask-opt"
-              }
-            >
-              <i className="ask-radio" />
-              {opt}
-            </li>
-          );
-        })}
-      </ul>
-      <div className="ask-foot">
-        <span>Cancel</span>
-        <span className={stage >= 3 ? "ask-submit armed" : "ask-submit"}>
-          Submit answer
-        </span>
-      </div>
+      {answered ? (
+        <div className="ask-answered">
+          <DemoCheck />
+          <span>
+            Answered — <strong>Single code per cart</strong>
+          </span>
+        </div>
+      ) : (
+        <>
+          <ul>
+            {ASK_OPTIONS.map((opt, i) => {
+              const active = i === 0 && stage >= 1;
+              const selected = i === 0 && stage >= 2;
+              return (
+                <li
+                  key={opt}
+                  className={
+                    selected
+                      ? "ask-opt selected"
+                      : active
+                        ? "ask-opt active"
+                        : "ask-opt"
+                  }
+                >
+                  <i className="ask-radio" />
+                  {opt}
+                </li>
+              );
+            })}
+          </ul>
+          <div className="ask-foot">
+            <span>Cancel</span>
+            <span className={stage >= 3 ? "ask-submit armed" : "ask-submit"}>
+              Submit answer
+            </span>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1721,13 +1739,20 @@ function PRFeed() {
                 CONTRIBUTOR_AVATARS[`../assets/contributors/${pr.login}.webp`];
               return (
                 <li key={`${copy}-${i}`}>
-                  {url ? (
-                    <img src={url} alt="" width={22} height={22} />
-                  ) : null}
-                  <span className="pr-title">{pr.title}</span>
-                  <span className="pr-meta">
-                    {pr.login} · {pr.date}
-                  </span>
+                  <a
+                    href={pr.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    tabIndex={copy === 1 ? -1 : undefined}
+                  >
+                    {url ? (
+                      <img src={url} alt="" width={22} height={22} />
+                    ) : null}
+                    <span className="pr-title">{pr.title}</span>
+                    <span className="pr-meta">
+                      #{pr.number} · {pr.date}
+                    </span>
+                  </a>
                 </li>
               );
             })}
@@ -1921,11 +1946,6 @@ function LandingPage() {
             </div>
           </li>
         </ul>
-        <p className="bento-more rail">
-          Also wired in: a worktree per thread · any model, per thread ·
-          permission modes · automations with retries and backoff · the bb CLI
-          and SDK · remote machines · local-first SQLite
-        </p>
       </section>
 
       <section className="act slate">
