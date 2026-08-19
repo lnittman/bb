@@ -401,47 +401,6 @@ code,
   position: relative;
 }
 
-/* Faint neutral wash behind the hero. Kept within the hero box (no negative
-   horizontal inset) so the centered gradient never adds a horizontal scroll. */
-.hero::before {
-  content: "";
-  position: absolute;
-  inset: -140px 0 auto;
-  height: 480px;
-  z-index: -1;
-  background: radial-gradient(
-    720px 340px at 50% 12%,
-    color-mix(in oklab, var(--ink-strong) 6%, transparent),
-    transparent 72%
-  );
-}
-
-/* Structural 48px drafting grid behind the hero, masked so it fades before
-   the theater. Hairlines, not dots: the page's material is a workbench. */
-.hero::after {
-  content: "";
-  position: absolute;
-  inset: -60px 0 12%;
-  z-index: -1;
-  background-image:
-    linear-gradient(
-      to right,
-      color-mix(in oklab, var(--ink-strong) 5%, transparent) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      to bottom,
-      color-mix(in oklab, var(--ink-strong) 5%, transparent) 1px,
-      transparent 1px
-    );
-  background-size: 48px 48px;
-  mask-image: radial-gradient(
-    720px 420px at 50% 22%,
-    rgb(0 0 0 / 85%),
-    transparent 78%
-  );
-}
-
 /* Hand-drawn accent underline that draws in under the key word. */
 .uline {
   position: relative;
@@ -581,10 +540,10 @@ code,
 }
 
 .hero h1 {
-  font-size: clamp(52px, 6.4vw, 92px);
-  line-height: 0.98;
+  font-size: clamp(46px, 5vw, 72px);
+  line-height: 1;
   font-weight: 640;
-  letter-spacing: -0.052em;
+  letter-spacing: -0.045em;
   max-width: 12ch;
   margin: 0 auto;
   color: var(--ink-strong);
@@ -677,36 +636,8 @@ code,
     width: min(var(--stage), calc(100vw - 32px));
     padding: 52px 44px 20px;
     border-radius: var(--r-room);
-    background: radial-gradient(
-      120% 130% at 50% -10%,
-      var(--surface-2),
-      var(--surface-1) 70%
-    );
+    background: var(--surface-1);
     overflow: hidden;
-  }
-
-  .hero-stage::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(
-        to right,
-        color-mix(in oklab, var(--ink-strong) 3.5%, transparent) 1px,
-        transparent 1px
-      ),
-      linear-gradient(
-        to bottom,
-        color-mix(in oklab, var(--ink-strong) 3.5%, transparent) 1px,
-        transparent 1px
-      );
-    background-size: 48px 48px;
-    mask-image: linear-gradient(
-      to bottom,
-      rgb(0 0 0 / 90%),
-      rgb(0 0 0 / 35%) 55%,
-      transparent 92%
-    );
   }
 
   .hero-stage .mock {
@@ -2019,6 +1950,189 @@ code,
   min-width: 0;
 }
 
+/* ── Acts: full-width proof sections ─────────────────────────────── */
+
+/* An act = split header on the editorial rail (display H2 left, lead right)
+   over one room at product-stage width. Density and composition change per
+   act; the header grammar stays constant. */
+.act {
+  position: relative;
+  margin-top: calc(var(--act) * 0.6);
+  padding-top: calc(var(--act) * 0.55);
+}
+
+/* Zed's section grammar in bb's register: each act opens on a full-bleed
+   hairline, not a texture or a tonal band. */
+.act::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  border-top: 1px solid var(--line);
+}
+
+.act-head {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 48px;
+  align-items: start;
+  margin-bottom: 40px;
+}
+
+.act-head h2 {
+  font-size: clamp(34px, 4vw, 54px);
+  line-height: 1.04;
+  font-weight: 600;
+  letter-spacing: -0.038em;
+  color: var(--ink-strong);
+  text-wrap: balance;
+  max-width: 13ch;
+}
+
+.act-lead p {
+  color: var(--dim);
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: 54ch;
+}
+
+.act-lead p + p {
+  margin-top: 14px;
+}
+
+.act-claim {
+  font-weight: 550;
+  color: var(--ink-strong);
+}
+
+.act-lead .providers {
+  justify-content: flex-start;
+  margin-top: 20px;
+}
+
+/* A room: the recessed ground a capture sits on. */
+.room {
+  border-radius: var(--r-room);
+  background: var(--surface-1);
+  padding: clamp(24px, 4vw, 56px);
+}
+
+/* Causal room: the command plane on the left causes the capture on the
+   right. Terminal is real command text, not artwork. */
+.causal {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  gap: clamp(20px, 2.5vw, 32px);
+  align-items: stretch;
+}
+
+.term-plane {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  padding: clamp(20px, 2.4vw, 34px);
+  border-radius: var(--r-card);
+  background: color-mix(in oklch, var(--ink-strong) 96%, var(--canvas));
+  color: color-mix(in oklch, var(--canvas) 92%, var(--ink-strong));
+  box-shadow: var(--shadow-window);
+}
+
+.term-line {
+  font-family: var(--font-mono);
+  font-size: clamp(13px, 1.15vw, 15.5px);
+  line-height: 1.7;
+  overflow-wrap: break-word;
+}
+
+.term-ps {
+  opacity: 0.55;
+  margin-right: 6px;
+}
+
+.term-str {
+  opacity: 0.78;
+}
+
+.term-caret {
+  display: inline-block;
+  width: 8px;
+  height: 1.05em;
+  margin-left: 7px;
+  vertical-align: text-bottom;
+  background: color-mix(in oklab, var(--canvas) 85%, transparent);
+  animation: caret-blink 1.1s steps(1) infinite;
+}
+
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.term-note {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.01em;
+  opacity: 0.45;
+}
+
+.causal-pane {
+  min-width: 0;
+}
+
+/* Authored crop: the spawn story lives in the sidebar, so the pane zooms
+   into the capture's left region instead of showing a mostly-empty desktop.
+   The 2x source keeps the enlarged UI crisp. */
+.causal-pane .demo-window {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 8 / 7;
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  background: var(--bg);
+  box-shadow: var(--shadow-window);
+}
+
+.causal-pane .demo-window video {
+  width: 235%;
+  max-width: none;
+  aspect-ratio: 1280 / 800;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.causal-pane .demo-caption {
+  position: absolute;
+  bottom: 0;
+  inset-inline: 0;
+  padding: 26px 14px 10px;
+  background: linear-gradient(
+    to top,
+    color-mix(in oklab, var(--bg) 92%, transparent),
+    transparent
+  );
+}
+
+@media (max-width: 900px) {
+  .act-head {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    margin-bottom: 26px;
+  }
+
+  .causal {
+    grid-template-columns: 1fr;
+  }
+
+  .term-plane {
+    padding: 18px 20px;
+  }
+}
+
 /* ── Band visuals: real captures in window chrome ────────────────── */
 
 .demo-window {
@@ -2050,42 +2164,6 @@ code,
   line-height: 1.45;
   color: var(--subtle);
 }
-
-/* The spawn demo shows cause and effect: the real CLI invocation floats over
-   the window that recorded its result. */
-.demo-stage {
-  position: relative;
-  width: 100%;
-}
-
-.demo-term {
-  position: absolute;
-  top: -13px;
-  right: 16px;
-  display: inline-block;
-  max-width: calc(100% - 32px);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 7px 12px;
-  border-radius: 7px;
-  background: color-mix(in oklch, var(--ink) 96%, var(--bg));
-  color: color-mix(in oklch, var(--bg) 92%, var(--ink));
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  letter-spacing: -0.01em;
-  box-shadow: 0 10px 24px -12px color-mix(in oklab, var(--ink) 45%, transparent);
-}
-
-.demo-term-ps {
-  opacity: 0.55;
-  margin-right: 2px;
-}
-
-.demo-term-str {
-  opacity: 0.75;
-}
-
 
 /* ── Statement ──────────────────────────────────────────────────── */
 

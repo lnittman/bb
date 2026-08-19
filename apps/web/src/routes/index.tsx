@@ -1334,24 +1334,6 @@ function DemoWindow({
   );
 }
 
-/** The spawn capture pairs the window with its cause: the real CLI invocation,
- *  floated over the frame like the terminal it came from. */
-function SpawnStage() {
-  return (
-    <div className="demo-stage">
-      <DemoWindow
-        src="/landing/demo-spawn.mp4"
-        poster="/landing/demo-spawn-poster.webp"
-        label="Screen recording of bb while a thread spawned from the CLI appears in the sidebar and starts running"
-        caption="Recorded live — the sidebar, as a spawned thread arrives."
-      />
-      <p className="demo-term" aria-hidden>
-        <span className="demo-term-ps">$</span> bb thread spawn --prompt{" "}
-        <span className="demo-term-str">&quot;List the spawn flags&quot;</span>
-      </p>
-    </div>
-  );
-}
 
 
 /* ── Page ─────────────────────────────────────────────────────────── */
@@ -1432,44 +1414,69 @@ function LandingPage() {
         <p>Nothing is stopping you from building your ideal workbench.</p>
       </Band>
 
-      <Band title="Anything can kick off work." visual={<SpawnStage />}>
-        <p>
-          The same CLI your agents use is open to any program you write: a shell
-          script, a cron job, or your own Hermes Agent or OpenClaw bot in
-          Telegram, Signal, or Slack. Each can spawn a thread that&rsquo;s
-          waiting in your sidebar when you are.
-        </p>
-        <p>
-          It runs on your machine, and is waiting for you when you&rsquo;re
-          back.
-        </p>
-      </Band>
-
-      <Band
-        title="The gang's all here"
-        flip
-        visual={
-          <DemoWindow
-            src="/landing/demo-gang.mp4"
-            poster="/landing/demo-gang-poster.webp"
-            label="Screen recording of bb running Codex and Claude Code threads across three projects at once"
-            caption="Recorded live — three agents, three repos, one sidebar."
-          />
-        }
-      >
-        <p>
-          Claude Code, Codex, Cursor, Pi, OpenCode, Grok, omp, and Hermes all
-          live in bb. Give a task to whichever fits, and have one agent spawn
-          and manage another, each in its own thread.
-        </p>
-        <p>
-          Each runs on your own subscription: the provider plan you already pay
-          for, billed by them, not bb.
-        </p>
-        <div className="providers">
-          <ProviderChips />
+      <section className="act">
+        <div className="act-head rail">
+          <h2>The gang&rsquo;s all here</h2>
+          <div className="act-lead">
+            <p>
+              Claude Code, Codex, Cursor, Pi, OpenCode, Grok, omp, and Hermes
+              all live in bb. Give a task to whichever fits, and have one agent
+              spawn and manage another, each in its own thread.
+            </p>
+            <p className="act-claim">
+              Each agent runs on the subscription you already pay for — billed
+              by them, not bb.
+            </p>
+            <div className="providers">
+              <ProviderChips />
+            </div>
+          </div>
         </div>
-      </Band>
+        <div className="room stage">
+          <DemoWindow
+            src="/landing/demo-panorama.mp4"
+            poster="/landing/demo-panorama-poster.webp"
+            label="Screen recording of bb running several agent threads at once: a worktree edit with its diff open, a child thread nested under its parent, and other agents working in the sidebar"
+            caption="Recorded live — a worktree edit under review, a child thread reporting back, two more agents at work."
+          />
+        </div>
+      </section>
+
+      <section className="act">
+        <div className="act-head rail">
+          <h2>Anything can kick off work.</h2>
+          <div className="act-lead">
+            <p>
+              The same CLI your agents use is open to any program you write: a
+              shell script, a cron job, or your own Hermes Agent or OpenClaw
+              bot in Telegram, Signal, or Slack. Each of them can put an agent
+              to work while you&rsquo;re away.
+            </p>
+            <p>
+              It runs on your machine, and it&rsquo;s waiting in your sidebar
+              when you are.
+            </p>
+          </div>
+        </div>
+        <div className="room stage causal">
+          <div className="term-plane" aria-hidden>
+            <p className="term-line">
+              <span className="term-ps">$</span> bb thread spawn --prompt{" "}
+              <span className="term-str">&quot;List the spawn flags&quot;</span>
+              <span className="term-caret" />
+            </p>
+            <p className="term-note">any shell, cron job, or bot</p>
+          </div>
+          <div className="causal-pane">
+            <DemoWindow
+              src="/landing/demo-spawn.mp4"
+              poster="/landing/demo-spawn-poster.webp"
+              label="Screen recording of the bb sidebar as a thread spawned from the CLI arrives and starts running"
+              caption="Recorded live — the sidebar, as the spawned thread arrives."
+            />
+          </div>
+        </div>
+      </section>
 
       <section className="statement">
         <h2 className="sec-title">Fork it. Make it your own.</h2>
