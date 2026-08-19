@@ -1091,10 +1091,6 @@ function HeroAppMock() {
 
   return (
     <section className="mockup-wrap hero-stage">
-      <span className="stage-label" aria-hidden>
-        <i className="stage-dot" />
-        Interactive demo
-      </span>
       <div
         className="mock"
         data-construct

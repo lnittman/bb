@@ -677,46 +677,6 @@ code,
   }
 }
 
-/* "Interactive demo" affordance: a quiet caption pinned to the theater's top
-   right; the dot breathes so the label reads live, and rests solid under
-   reduced motion. */
-.stage-label {
-  position: absolute;
-  top: 20px;
-  right: 24px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 12px;
-  letter-spacing: 0.015em;
-  color: var(--subtle);
-}
-
-.stage-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--ok);
-  animation: stage-dot-breathe 2.4s ease-in-out infinite;
-}
-
-@keyframes stage-dot-breathe {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
-}
-
-@media (max-width: 1099px) {
-  .stage-label {
-    display: none;
-  }
-}
-
 /* Builder proof: one calm, static line. Marks rest at reduced presence and
    sharpen on hover; below tablet the row scrolls horizontally under eased
    edge masks instead of wrapping into a wall. */
