@@ -186,6 +186,16 @@ code,
   background: var(--bg);
 }
 
+/* The theater band: interactive mock + builder rail as one slate section. */
+.band-theater {
+  padding-bottom: calc(var(--act) * 0.35);
+}
+
+/* The close band: the final CTA and the footer share one slate ground. */
+.band-close .footer {
+  border-top: 1px solid var(--border-soft);
+}
+
 /* ── Nav ────────────────────────────────────────────────────────── */
 
 .nav {
@@ -706,8 +716,8 @@ code,
    sharpen on hover; below tablet the row scrolls horizontally under eased
    edge masks instead of wrapping into a wall. */
 .company-proof {
-  margin-top: 40px;
-  padding: 26px 0 8px;
+  margin-top: 44px;
+  padding: 0 0 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1968,7 +1978,7 @@ code,
    act; the header grammar stays constant. */
 .act {
   position: relative;
-  padding-block: calc(var(--act) * 0.55);
+  padding-block: calc(var(--act) * 0.6);
 }
 
 .act-head {
@@ -2081,16 +2091,10 @@ code,
   min-width: 0;
 }
 
-/* ── Showroom: the Extensions page + the plugin it built ─────────── */
-
-.showroom {
-  display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-  gap: clamp(20px, 2.5vw, 32px);
-  align-items: start;
-}
+/* ── Showroom: one dominant real surface ─────────────────────────── */
 
 .showroom-still {
+  display: block;
   width: 100%;
   height: auto;
   border: 1px solid var(--border);
@@ -2099,103 +2103,221 @@ code,
   box-shadow: var(--shadow-window);
 }
 
-.showroom-side {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
+/* ── Living bento: claims carried by real product fragments ──────── */
 
-.showroom-note {
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: var(--dim);
-  max-width: 40ch;
-}
-
-/* ── Capability grid: a ruled table of load-bearing facts ────────── */
-
-.cap-grid {
+.bento {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(14px, 1.6vw, 22px);
+}
+
+/* ── BENTO STORYBOARD ──
+ *   0ms   grid enters view (-18% rootMargin)
+ *   0-640 cards settle up 12px, staggered 70ms left-to-right
+ * Transform only; nothing is ever hidden. */
+.bento li {
+  transform: translateY(12px);
+  grid-column: span 3;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 18px 0;
   border: 1px solid var(--border-soft);
   border-radius: var(--r-card);
-  overflow: hidden;
   background: var(--bg);
+  overflow: hidden;
+  transition:
+    transform var(--duration-enter) var(--ease-out),
+    border-color var(--duration-state) var(--ease-standard);
 }
 
-.cap-grid li {
-  padding: 20px 20px 22px;
-  border-right: 1px solid var(--border-soft);
-  border-bottom: 1px solid var(--border-soft);
+.bento-in li {
+  transform: none;
 }
 
-.cap-grid li:nth-child(5n) {
-  border-right: none;
+.bento-in li:nth-child(2) {
+  transition-delay: 70ms;
 }
 
-.cap-grid li:nth-child(n + 6) {
-  border-bottom: none;
+.bento-in li:nth-child(3) {
+  transition-delay: 140ms;
 }
 
-.cap-grid h3 {
-  font-size: 14px;
+.bento-in li:nth-child(4) {
+  transition-delay: 210ms;
+}
+
+.bento-in li:nth-child(5) {
+  transition-delay: 280ms;
+}
+
+.bento-in li:nth-child(6) {
+  transition-delay: 350ms;
+}
+
+.bento-in li:hover {
+  transform: translateY(-2px);
+  transition-delay: 0ms;
+}
+
+.bento li:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+}
+
+.bento .bento-lg {
+  grid-column: span 6;
+}
+
+.bento h3 {
+  font-size: 14.5px;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--ink-strong);
 }
 
-.cap-grid p {
-  margin-top: 6px;
+.bento p {
+  margin-top: 4px;
   font-size: 13px;
   line-height: 1.5;
   color: var(--dim);
 }
 
-/* ── Care mosaic: real pixels, close up ──────────────────────────── */
-
-.mosaic {
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(18px, 2.2vw, 28px);
+/* The fragment fills the card's lower half, cropped confidently. */
+.bento-media {
+  margin: 14px -18px 0;
+  border-top: 1px solid var(--border-soft);
+  height: 190px;
+  overflow: hidden;
+  background: var(--surface-1);
 }
 
-.mosaic li {
-  display: flex;
-  flex-direction: column;
+.bento-lg .bento-media {
+  height: 300px;
 }
 
-.mosaic img {
+.bento-media img,
+.bento-media video {
   width: 100%;
-  height: 220px;
+  height: 100%;
   object-fit: cover;
   object-position: top left;
-  border: 1px solid var(--border);
-  border-radius: var(--r-card);
-  background: var(--bg);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-.mosaic h3 {
-  margin-top: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ink-strong);
+.bento-media .demo-window {
+  height: 100%;
 }
 
-.mosaic p {
-  margin-top: 3px;
+.bento-more {
+  margin-top: 20px;
+  text-align: center;
   font-size: 13px;
-  color: var(--dim);
+  color: var(--subtle);
 }
 
-/* ── Stats: faces, then numbers ──────────────────────────────────── */
+/* ── Open-source beat: faces, numbers, and the fork statement ────── */
 
-.stats-act .rail {
+.open-rail {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 30px;
+}
+
+.avatar-strip {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding-left: 10px;
+}
+
+.avatar-strip li {
+  margin-left: -10px;
+}
+
+.avatar-strip img {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--canvas);
+}
+
+.avatar-more {
+  margin-left: 10px;
+  font-size: 12.5px;
+  color: var(--subtle);
+}
+
+.stat-row {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  gap: clamp(40px, 6vw, 88px);
+  text-align: center;
+}
+
+.stat-row li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat-row strong {
+  font-size: clamp(40px, 4.4vw, 62px);
+  line-height: 1;
+  font-weight: 620;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-strong);
+}
+
+.stat-row span {
+  font-size: 13.5px;
+  color: var(--dim);
+}
+
+.open-copy {
+  text-align: center;
+  max-width: 620px;
+}
+
+.open-copy p {
+  margin-top: 16px;
+  color: var(--dim);
+  line-height: 1.6;
+}
+
+/* ── Closer: one ending with the subscribe inline ────────────────── */
+
+.closer-subscribe {
+  margin-top: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.closer-subscribe span {
+  font-size: 13px;
+  color: var(--subtle);
+}
+
+@media (max-width: 960px) {
+  .bento li,
+  .bento .bento-lg {
+    grid-column: span 12;
+  }
+
+  .stat-row {
+    flex-wrap: wrap;
+    gap: 28px 40px;
+  }
 }
 
 .avatar-strip {
@@ -2246,39 +2368,8 @@ code,
   color: var(--dim);
 }
 
-@media (max-width: 960px) {
-  .showroom {
-    grid-template-columns: 1fr;
-  }
-
-  .cap-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .cap-grid li:nth-child(5n) {
-    border-right: 1px solid var(--border-soft);
-  }
-
-  .cap-grid li:nth-child(2n) {
-    border-right: none;
-  }
-
-  .cap-grid li:nth-child(n + 6) {
-    border-bottom: 1px solid var(--border-soft);
-  }
-
-  .cap-grid li:nth-child(n + 9) {
-    border-bottom: none;
-  }
-
-  .mosaic {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* Authored crop: the spawn story lives in the sidebar, so the pane zooms
-   into the capture's left region instead of showing a mostly-empty desktop.
-   The 2x source keeps the enlarged UI crisp. */
+   into the capture's left region. The 2x source keeps it crisp. */
 .causal-pane .demo-window {
   position: relative;
   overflow: hidden;
@@ -2340,7 +2431,7 @@ code,
 /* ── Statement ──────────────────────────────────────────────────── */
 
 .statement {
-  padding: 84px 0;
+  padding: calc(var(--act) * 0.6) 0;
   text-align: center;
 }
 
@@ -2660,6 +2751,11 @@ code,
   .nav,
   .hero > * {
     animation: none;
+  }
+
+  .bento li {
+    transform: none;
+    transition: none;
   }
 
   .uline path {

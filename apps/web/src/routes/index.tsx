@@ -584,7 +584,7 @@ const CHIEF_STREAM: Step[] = [
   { kind: "step", text: "Spawned 1 worker" },
   {
     kind: "say",
-    text: "Dispatched the changelog follow-up. Nothing else needs you.",
+    text: "Dispatched the review-panel follow-up. Nothing else needs you.",
   },
 ];
 
@@ -621,26 +621,34 @@ const HERO_THREADS: MockThread[] = [
     ],
   },
   {
-    id: "changelog",
-    title: "Nightly changelog",
+    id: "review-panel",
+    title: "Add a review queue panel",
     status: "done",
-    branch: "bb/nightly-changelog",
-    pr: 418,
-    change: { files: 1, add: 96, del: 4 },
+    branch: "bb/review-queue-plugin",
+    change: { files: 5, add: 214, del: 0 },
     transcript: [
-      { kind: "step", text: "Explored 14 commits" },
+      {
+        kind: "user",
+        text: "Add a review-queue panel: every thread waiting on me, one list.",
+      },
+      { kind: "step", text: "Scaffolded the plugin" },
       {
         kind: "say",
-        text: "14 user-facing commits since yesterday. Grouped them by area.",
+        text: "Built the panel: threads that are waiting on you, oldest first.",
       },
-      { kind: "step", text: "Edited 1 file" },
+      { kind: "step", text: "Registered the CLI" },
       {
         kind: "say",
         text: (
           <>
-            Wrote <code>CHANGELOG.md</code> and opened PR #418.
+            <code>bb review</code> lists the queue from any shell. Wrote the
+            skill so every agent knows to use it.
           </>
         ),
+      },
+      {
+        kind: "say",
+        text: "The panel is live in your sidebar — bb building bb.",
       },
     ],
   },
@@ -1081,7 +1089,7 @@ function HeroAppMock() {
   }, []);
 
   return (
-    <section className="mockup-wrap hero-stage slate">
+    <section className="mockup-wrap hero-stage">
       <span className="stage-label" aria-hidden>
         <i className="stage-dot" />
         Interactive demo
@@ -1348,9 +1356,34 @@ function DemoWindow({
 
 /* ── Page ─────────────────────────────────────────────────────────── */
 
+/** Transform-only entrance for the bento: cards settle up as the grid enters
+ *  the viewport. Opacity never changes, so every render context shows full
+ *  content — motion is pure enhancement. */
+function useBentoSettle() {
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    const bento = document.querySelector(".bento");
+    if (!bento) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          bento.classList.add("bento-in");
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px -18% 0px" },
+    );
+    observer.observe(bento);
+    return () => observer.disconnect();
+  }, []);
+}
+
 function LandingPage() {
   useConstructMock();
   useFitMock();
+  useBentoSettle();
   return (
     <div className="wrap">
       <SiteNav />
@@ -1387,31 +1420,27 @@ function LandingPage() {
         </div>
       </header>
 
-      <HeroAppMock />
+      <div className="slate band-theater">
+        <HeroAppMock />
+        <section className="company-proof" aria-labelledby="company-proof-title">
+          <h2 id="company-proof-title">Used by builders at</h2>
+          <CompanyProofLogos />
+        </section>
+      </div>
 
-      <section className="company-proof" aria-labelledby="company-proof-title">
-        <h2 id="company-proof-title">Used by builders at</h2>
-        <CompanyProofLogos />
-      </section>
-
-      <section className="act slate">
+      <section className="act">
         <div className="act-head rail">
           <h2>Ask for a feature. Watch it appear.</h2>
           <div className="act-lead">
             <p>
-              Almost anything in bb can be changed in a single prompt. Ask for
-              a task tracker and one appears: a panel in your sidebar, a{" "}
-              <code>bb tasks</code> command, and a skill that teaches every
-              agent to use it.
-            </p>
-            <p>
-              The Extensions page ships with bb — browse plugins others built,
-              or describe your own. The GitHub integration, agent memory,
-              scheduled jobs, and even remote access are all plugins.
+              Almost anything in bb can be changed in a single prompt — ask for
+              a task tracker and one appears as a panel, a{" "}
+              <code>bb tasks</code> command, and a skill. The Extensions page
+              ships with bb: browse plugins others built, or describe your own.
             </p>
           </div>
         </div>
-        <div className="room stage showroom">
+        <div className="room stage">
           <img
             className="showroom-still"
             src="/landing/extensions-page.webp"
@@ -1420,82 +1449,102 @@ function LandingPage() {
             height={800}
             loading="lazy"
           />
-          <div className="showroom-side">
-            <DemoWindow
-              src="/landing/demo-tasks.mp4"
-              poster="/landing/demo-tasks-poster.webp"
-              label="Screen recording of the Tasks plugin bb built from one prompt: the task list, a project, and its board view"
-            />
-            <p className="showroom-note">
-              The Tasks plugin above was built from one prompt — the panel,
-              the CLI, and the skill.
-            </p>
-          </div>
         </div>
       </section>
 
-      <section className="act">
+      <section className="act slate">
         <div className="act-head rail">
           <h2>The boring parts are load-bearing.</h2>
           <div className="act-lead">
             <p>
               Trust in an agent workbench is a function of the unglamorous
-              parts. Everything a real working day needs is already wired in.
+              parts — and they&rsquo;re all real pixels below.
             </p>
           </div>
         </div>
-        <ul className="cap-grid rail">
-          <li>
-            <h3>A worktree per thread</h3>
-            <p>Agents work on isolated checkouts, never your working tree.</p>
+        <ul className="bento rail">
+          <li className="bento-lg">
+            <h3>Built from one prompt</h3>
+            <p>The Tasks plugin — its panel, CLI, and skill — as it appeared.</p>
+            <div className="bento-media">
+              <DemoWindow
+                src="/landing/demo-tasks.mp4"
+                poster="/landing/demo-tasks-poster.webp"
+                label="Screen recording of the Tasks plugin bb built from one prompt"
+              />
+            </div>
           </li>
-          <li>
+          <li className="bento-lg">
             <h3>Review from the thread</h3>
-            <p>Working-tree diffs, commits, and PRs without leaving the conversation.</p>
+            <p>Working-tree diffs, commits, and PRs beside the conversation.</p>
+            <div className="bento-media">
+              <img
+                src="/landing/care-diff.webp"
+                alt="The diff panel showing a README change"
+                loading="lazy"
+              />
+            </div>
           </li>
           <li>
             <h3>Subagents</h3>
-            <p>Threads spawn child threads, manage them, and report back.</p>
+            <p>Threads spawn child threads and report back.</p>
+            <div className="bento-media">
+              <img
+                src="/landing/care-subagent.webp"
+                alt="A child thread nested under its parent in the sidebar"
+                loading="lazy"
+              />
+            </div>
+          </li>
+          <li>
+            <h3>A worktree per thread</h3>
+            <p>Isolated checkouts — never your working tree.</p>
+            <div className="bento-media">
+              <img
+                src="/landing/care-review.webp"
+                alt="The working-tree bar showing uncommitted changes"
+                loading="lazy"
+              />
+            </div>
           </li>
           <li>
             <h3>Asks, not guesses</h3>
-            <p>Agents pause with a real question when they need your call.</p>
-          </li>
-          <li>
-            <h3>Permission modes</h3>
-            <p>Read-only to full access, chosen per thread.</p>
+            <p>Agents pause with a real question when they need you.</p>
+            <div className="bento-media">
+              <img
+                src="/landing/care-ask.webp"
+                alt="An agent asking a multiple-choice question in the thread"
+                loading="lazy"
+              />
+            </div>
           </li>
           <li>
             <h3>Any model, per thread</h3>
             <p>Pick the provider and model each task deserves.</p>
-          </li>
-          <li>
-            <h3>Automations</h3>
-            <p>Scheduled agents and scripts, with retries and backoff.</p>
-          </li>
-          <li>
-            <h3>CLI and SDK</h3>
-            <p>Every feature is scriptable from the shell or TypeScript.</p>
-          </li>
-          <li>
-            <h3>Remote machines</h3>
-            <p>Enroll other hosts and run work where the code lives.</p>
-          </li>
-          <li>
-            <h3>Local-first</h3>
-            <p>Your threads and data live on your machine, in SQLite.</p>
+            <div className="bento-media">
+              <img
+                src="/landing/care-models.webp"
+                alt="The per-thread model picker open in the composer"
+                loading="lazy"
+              />
+            </div>
           </li>
         </ul>
+        <p className="bento-more rail">
+          Also wired in: permission modes per thread · automations with retries
+          and backoff · the bb CLI and SDK · remote machines · local-first
+          SQLite
+        </p>
       </section>
 
-      <section className="act slate">
+      <section className="act">
         <div className="act-head rail">
           <h2>The gang&rsquo;s all here</h2>
           <div className="act-lead">
             <p>
-              Claude Code, Codex, Cursor, Pi, OpenCode, Grok, omp, and Hermes
-              all live in bb. Give a task to whichever fits, and have one agent
-              spawn and manage another, each in its own thread.
+              Claude Code, Codex, Cursor, Pi, OpenCode, Grok, omp, and Hermes —
+              give a task to whichever fits, each in its own thread, spawning
+              and managing each other.
             </p>
             <p className="act-claim">
               Each agent runs on the subscription you already pay for — billed
@@ -1515,19 +1564,15 @@ function LandingPage() {
         </div>
       </section>
 
-      <section className="act">
+      <section className="act slate">
         <div className="act-head rail">
           <h2>Anything can kick off work.</h2>
           <div className="act-lead">
             <p>
-              The same CLI your agents use is open to any program you write: a
-              shell script, a cron job, or your own Hermes Agent or OpenClaw
-              bot in Telegram, Signal, or Slack. Each of them can put an agent
-              to work while you&rsquo;re away.
-            </p>
-            <p>
-              It runs on your machine, and it&rsquo;s waiting in your sidebar
-              when you are.
+              The CLI your agents use is open to any program you write — a
+              shell script, a cron job, a bot in Telegram or Slack. Each can
+              put an agent to work while you&rsquo;re away, and it&rsquo;s
+              waiting in your sidebar when you are.
             </p>
           </div>
         </div>
@@ -1550,61 +1595,10 @@ function LandingPage() {
         </div>
       </section>
 
-      <section className="act slate">
-        <div className="act-head rail">
-          <h2>Care in the details.</h2>
-          <div className="act-lead">
-            <p>
-              The small surfaces are the product: how an agent reports its
-              work, how a diff reads, how a child thread nests under the work
-              that spawned it. All real pixels from the recordings above.
-            </p>
-          </div>
-        </div>
-        <ul className="mosaic rail">
-          <li>
-            <img
-              src="/landing/care-report.webp"
-              alt="A thread header and the agent's summary of its README edit"
-              loading="lazy"
-            />
-            <h3>Work, reported</h3>
-            <p>Every thread ends in a summary you can act on.</p>
-          </li>
-          <li>
-            <img
-              src="/landing/care-diff.webp"
-              alt="The diff panel showing a README change with additions and a removal"
-              loading="lazy"
-            />
-            <h3>Diffs where you talk</h3>
-            <p>The change is always one pane away from the conversation.</p>
-          </li>
-          <li>
-            <img
-              src="/landing/care-subagent.webp"
-              alt="A child thread nested under its parent thread in the sidebar"
-              loading="lazy"
-            />
-            <h3>Children under parents</h3>
-            <p>Spawned work stays attached to the thread that asked for it.</p>
-          </li>
-          <li>
-            <img
-              src="/landing/care-review.webp"
-              alt="The working-tree bar showing uncommitted changes above the follow-up composer"
-              loading="lazy"
-            />
-            <h3>The working tree, in view</h3>
-            <p>Uncommitted state rides with the thread until you commit it.</p>
-          </li>
-        </ul>
-      </section>
-
-      <section className="act stats-act">
-        <div className="rail">
+      <section className="act open-act">
+        <div className="rail open-rail">
           <ul className="avatar-strip" aria-label="bb contributors">
-            {CONTRIBUTOR_LOGINS.map((login) => {
+            {CONTRIBUTOR_LOGINS.slice(0, 16).map((login) => {
               const url =
                 CONTRIBUTOR_AVATARS[`../assets/contributors/${login}.webp`];
               return url ? (
@@ -1613,6 +1607,9 @@ function LandingPage() {
                 </li>
               ) : null;
             })}
+            <li className="avatar-more">
+              +{Math.max(0, GITHUB_STATS.contributors - 16)} more
+            </li>
           </ul>
           <ul className="stat-row">
             <li>
@@ -1628,42 +1625,36 @@ function LandingPage() {
               <span>licensed, end to end</span>
             </li>
           </ul>
+          <div className="open-copy">
+            <h2 className="sec-title">Fork it. Make it your own.</h2>
+            <p>
+              bb is MIT-licensed end to end. Fork the repo, customize the
+              agents, tools, and UI, and deploy your own build across your
+              whole organization — still local-first, on the subscriptions you
+              already pay for.
+            </p>
+            <div className="cta-row">
+              <GitHubLink placement="local" className="btn btn-ghost">
+                View the source →
+              </GitHubLink>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="statement slate">
-        <h2 className="sec-title">Fork it. Make it your own.</h2>
-        <p>
-          bb is MIT-licensed end to end. Fork the repo, customize the agents,
-          tools, and UI, and deploy your own build across your whole
-          organization. It still runs local-first on your machines, on the
-          provider subscriptions you already pay for.
-        </p>
-        <div className="cta-row">
-          <GitHubLink placement="local" className="btn btn-ghost">
-            View the source →
-          </GitHubLink>
-        </div>
-      </section>
-
+      <div className="slate band-close">
       <section className="closer">
         <h2 className="sec-title">Put your agents to work.</h2>
         <p>Free, open source, and local-first. Install in under a minute.</p>
         <InstallOptions placement="closer" />
-        <div className="cta-row cta-row-secondary">
-          <GitHubLink placement="closer" className="btn btn-ghost">
-            View on GitHub
-          </GitHubLink>
+        <div className="closer-subscribe">
+          <span>Product updates and what we&rsquo;re building next — no spam.</span>
+          <EmailSignup placement="footer" />
         </div>
       </section>
 
-      <section className="subscribe slate">
-        <h2 className="subscribe-title">Stay in the loop.</h2>
-        <p>Product updates and what we&rsquo;re building next. No spam.</p>
-        <EmailSignup placement="footer" />
-      </section>
-
       <SiteFooter />
+      </div>
     </div>
   );
 }
