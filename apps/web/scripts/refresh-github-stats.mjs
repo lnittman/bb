@@ -48,11 +48,22 @@ const merged = await (
   )
 ).json();
 
+// Of those, the ones an agent wrote: the repo requires agent-created PRs to
+// carry an "AGENT GENERATED: by <model>" line, so the tag is countable.
+const agentMerged = await (
+  await api(
+    `/search/issues?q=${encodeURIComponent(
+      `repo:${REPO} is:pr is:merged merged:>${since} "AGENT GENERATED"`,
+    )}`,
+  )
+).json();
+
 const stats = {
   stars: repo.stargazers_count,
   forks: repo.forks_count,
   contributors: Number(lastPage),
   mergedLastMonth: merged.total_count,
+  agentMergedLastMonth: agentMerged.total_count,
   fetchedAt: new Date().toISOString().slice(0, 10),
 };
 writeFileSync(OUT, `${JSON.stringify(stats, null, 2)}\n`);

@@ -36,7 +36,6 @@ import type { CSSProperties, ReactNode } from "react";
 import changelogMd from "../../../../CHANGELOG.md?raw";
 import { initAnalytics, trackLandingEvent } from "../landing/analytics";
 import GITHUB_STATS from "../landing/github-stats.json";
-import CONTRIBUTOR_LOGINS from "../assets/contributors/index.json";
 import PR_FEED from "../landing/pr-feed.json";
 
 // Baked 64px contributor avatars (see scripts/refresh-github-stats.mjs's
@@ -651,7 +650,7 @@ const HERO_THREADS: MockThread[] = [
       },
       {
         kind: "say",
-        text: "The panel is live in your sidebar — bb building bb.",
+        text: "The panel is live in your sidebar. bb building bb.",
       },
     ],
   },
@@ -1438,7 +1437,7 @@ function TasksPanelMock() {
 
 function ExtensionsPanelMock() {
   const plugins = [
-    ["Tasks", "A panel, a CLI, and a skill — built from one prompt."],
+    ["Tasks", "Built from one prompt: a panel, a CLI, and a skill."],
     ["GitHub", "Issues and pull requests, in threads."],
     ["Agent memory", "What your agents learn, kept."],
     ["Remote access", "Reach bb from your phone."],
@@ -1855,7 +1854,11 @@ function PRFeed() {
                   >
                     {url ? (
                       <img src={url} alt="" width={22} height={22} />
-                    ) : null}
+                    ) : (
+                      <span className="pr-avatar-fallback" aria-hidden>
+                        {pr.login.slice(0, 1)}
+                      </span>
+                    )}
                     <span className="pr-title">{pr.title}</span>
                     <span className="pr-meta">
                       #{pr.number} · {pr.date}
@@ -1971,9 +1974,9 @@ function LandingPage() {
         )}
         <h1>The IDE that builds itself</h1>
         <p className="sub">
-          Claude Code, Codex, Cursor, and Pi — every agent in one place, each
-          in its own thread. Mission control for coding agents, in an IDE they
-          can rebuild.
+          Mission control for coding agents. Claude Code, Codex, Cursor, and
+          Pi run in one place, each in its own thread, in an IDE they can
+          rebuild.
         </p>
 
         <InstallOptions placement="hero" />
@@ -2002,8 +2005,8 @@ function LandingPage() {
           <h2>More than a chat window.</h2>
           <div className="act-lead">
             <p>
-              bb carries the work around the conversation — building,
-              reviewing, delegating, deciding.
+              bb carries the work around the conversation: building,
+              reviewing, delegating, and deciding.
             </p>
           </div>
         </div>
@@ -2011,7 +2014,7 @@ function LandingPage() {
           <li>
             <h3>Built from one prompt</h3>
             <p>
-              The Tasks plugin an agent built — a panel, a CLI, and a skill.
+              An agent built the Tasks plugin: a panel, a CLI, and a skill.
             </p>
             <div className="bento-window bento-zoom">
               <DemoWindow
@@ -2024,7 +2027,8 @@ function LandingPage() {
           <li>
             <h3>Review from the thread</h3>
             <p>
-              Working-tree diffs, commits, and PRs beside the conversation.
+              Working-tree diffs, commits, and PRs sit beside the
+              conversation.
             </p>
             <div className="bento-window">
               <img
@@ -2060,10 +2064,13 @@ function LandingPage() {
           <h2>Ask for a feature. Watch it appear.</h2>
           <div className="act-lead">
             <p>
-              Almost anything in bb can be changed in a single prompt — ask for
-              a task tracker and one appears as a panel, a{" "}
-              <code>bb tasks</code> command, and a skill. The Extensions page
-              ships with bb: browse plugins others built, or describe your own.
+              Almost anything in bb can be changed in a single prompt. Ask for a
+              task tracker and one appears as a panel, a <code>bb tasks</code>{" "}
+              command, and a skill.
+            </p>
+            <p className="act-claim">
+              The Extensions page ships with bb: browse plugins others built, or
+              describe your own.
             </p>
           </div>
         </div>
@@ -2081,13 +2088,13 @@ function LandingPage() {
           <h2>The gang&rsquo;s all here</h2>
           <div className="act-lead">
             <p>
-              Claude Code, Codex, Cursor, Pi, OpenCode, Grok, omp, and Hermes —
-              give a task to whichever fits, each in its own thread, spawning
-              and managing each other.
+              Claude Code, Codex, Cursor, Pi, OpenCode, Grok, omp, and Hermes
+              each work in their own thread. Hand the task to whichever fits.
+              They spawn and manage each other.
             </p>
             <p className="act-claim">
-              Each agent runs on the subscription you already pay for — billed
-              by them, not bb.
+              No new subscription. Each agent runs on the one you already pay
+              for, billed by the provider, not bb.
             </p>
             <div className="providers">
               <ProviderChips />
@@ -2108,7 +2115,7 @@ function LandingPage() {
           <h2>Anything can kick off work.</h2>
           <div className="act-lead">
             <p>
-              The CLI your agents use is open to any program you write — a
+              The CLI your agents use is open to any program you write: a
               shell script, a cron job, a bot in Telegram or Slack. Each can
               put an agent to work while you&rsquo;re away, and it&rsquo;s
               waiting in your sidebar when you are.
@@ -2125,8 +2132,8 @@ function LandingPage() {
           <h2>Open source, end to end.</h2>
           <div className="act-lead">
             <p>
-              bb is MIT-licensed and built in the open — fork it, customize
-              the agents, tools, and UI, and ship your own build.
+              bb is MIT-licensed and built in the open. Fork it, customize the
+              agents, tools, and UI, and ship your own build.
             </p>
           </div>
         </div>
@@ -2148,6 +2155,13 @@ function LandingPage() {
             <span>PRs merged last month</span>
           </li>
         </ul>
+        <p className="pr-feed-head rail">
+          <strong>
+            {GITHUB_STATS.agentMergedLastMonth} of those{" "}
+            {GITHUB_STATS.mergedLastMonth} were written by agents running in bb.
+          </strong>{" "}
+          Every one carries its agent&rsquo;s signature in the pull request.
+        </p>
         <PRFeed />
         <div className="open-cta">
           <GitHubLink placement="local" className="btn btn-ghost">
@@ -2169,7 +2183,7 @@ function LandingPage() {
         <p>Free, open source, and local-first. Install in under a minute.</p>
         <InstallOptions placement="closer" />
         <div className="closer-subscribe">
-          <span>Product updates and what we&rsquo;re building next — no spam.</span>
+          <span>Product updates and what we&rsquo;re building next. No spam.</span>
           <EmailSignup placement="footer" />
         </div>
       </section>

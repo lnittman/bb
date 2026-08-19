@@ -250,45 +250,88 @@ code,
 
 /* ── Buttons ────────────────────────────────────────────────────── */
 
-.btn {
-  display: inline-block;
-  padding: 10px 20px;
-  border-radius: calc(var(--radius) - 2px);
-  font-size: 14.5px;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition:
-    background 0.15s ease,
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
+/* ── Touch targets ───────────────────────────────────────────────
+   On coarse pointers the real page controls (nav, footer, release
+   rail, inline links) extend to a 44px target with negative margins,
+   so the hit area grows without changing the visual rhythm. The app
+   mock is exempt: it is a miniature of the product, and inflating its
+   rows would break the recreation. */
+@media (pointer: coarse), (max-width: 768px) {
+  .nav-links a:not(.btn),
+  .footer a,
+  .updates-callout {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-block: -11px;
+  }
+
+  .btn {
+    min-height: 46px;
+  }
+
+  .company-proof-company {
+    min-height: 44px;
+  }
 }
 
-.btn:hover {
-  transform: translateY(-1px);
+/* ── Button primitives ───────────────────────────────────────────
+   Buttons stay put. Hover deepens tone and elevation; press scales
+   down at the press duration. No vertical drift: controls that move
+   under the cursor read as decoration, not affordance. Borders are
+   carried by the shadow ring so a button reads the same on white and
+   on slate. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-radius: var(--r-control);
+  font-size: 14.5px;
+  font-weight: 520;
+  line-height: 1.2;
+  cursor: pointer;
+  border: 0;
+  transition:
+    background var(--duration-hover) var(--ease-standard),
+    box-shadow var(--duration-hover) var(--ease-standard),
+    color var(--duration-hover) var(--ease-standard),
+    transform var(--duration-press) var(--ease-standard);
 }
 
 .btn:active {
-  transform: translateY(0) scale(0.985);
-  transition-duration: var(--duration-press);
+  transform: scale(0.985);
+}
+
+.btn:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ink-strong) 45%, transparent);
+  outline-offset: 2px;
 }
 
 .btn-primary {
   background: var(--ink);
   color: var(--bg);
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--bg) 18%, transparent),
+    0 1px 2px color-mix(in oklab, var(--ink-strong) 22%, transparent);
 }
 
 .btn-primary:hover {
-  background: color-mix(in oklab, var(--ink) 90%, var(--bg));
-  box-shadow: 0 4px 14px color-mix(in oklab, var(--ink) 18%, transparent);
+  background: color-mix(in oklab, var(--ink) 88%, var(--bg));
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, var(--bg) 22%, transparent),
+    0 2px 6px color-mix(in oklab, var(--ink-strong) 26%, transparent);
 }
 
 .btn-ghost {
-  border-color: var(--border);
+  background: var(--bg);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink-strong) 12%, transparent);
 }
 
 .btn-ghost:hover {
-  background: var(--state-hover);
+  background: color-mix(in oklab, var(--ink-strong) 3%, var(--bg));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink-strong) 20%, transparent);
 }
 
 .btn-sm {
@@ -740,8 +783,10 @@ code,
     flex-wrap: nowrap;
     justify-content: flex-start;
     overflow-x: auto;
+    overscroll-behavior-x: contain;
     scrollbar-width: none;
     padding: 4px 28px;
+    scroll-padding-inline: 28px;
     mask-image: linear-gradient(
       to right,
       transparent,
@@ -2316,8 +2361,33 @@ code,
     gap: 18px;
   }
 
+  /* Grid children default to min-content width; without this the nowrap
+     command line blows the track past the viewport. */
+  .spawn-causes,
+  .spawn-window {
+    min-width: 0;
+  }
+
   .spawn-window {
     min-height: 0;
+  }
+
+  /* The command wraps instead of typing at phone widths, so the whole
+     invocation always reads. */
+  .spawn-term {
+    white-space: normal;
+    font-size: 12px;
+  }
+
+  .spawn-cmd,
+  .spawn-cmd.typing {
+    max-width: none;
+    white-space: normal;
+    animation: none;
+  }
+
+  .tg-msg {
+    white-space: normal;
   }
 }
 
@@ -2824,11 +2894,28 @@ code,
 /* The merged-PR feed: a slate card whose list scrolls in a slow vertical
    marquee (two copies, one translate loop). Rest = the static list. */
 .pr-feed {
-  margin-top: clamp(14px, 1.6vw, 22px);
+  margin-top: 18px;
   border-radius: 20px;
   background: color-mix(in oklab, var(--ink-strong) 6%, var(--canvas));
   padding: 10px 26px;
   height: 348px;
+}
+
+/* The H1's receipt: the agent share of last month's merges, in the
+   bold-lead grammar (claim in ink, mechanism muted). */
+.pr-feed-head {
+  margin-top: 26px;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--dim);
+  text-wrap: balance;
+}
+
+.pr-feed-head strong {
+  font-weight: 600;
+  color: var(--ink-strong);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Only the scrolling list fades at its edges — the card itself stays crisp. */
@@ -2874,20 +2961,32 @@ code,
 }
 
 .pr-feed li a:hover {
-  background: color-mix(in oklab, var(--ink-strong) 4%, var(--bg));
+  background: color-mix(in oklab, var(--ink-strong) 5%, var(--canvas));
 }
 
 .pr-feed li a:hover .pr-title {
   color: var(--ink-strong);
 }
 
-.pr-feed img {
+.pr-feed img,
+.pr-avatar-fallback {
   flex: none;
   width: 22px;
   height: 22px;
   border-radius: 50%;
   outline: 1px solid color-mix(in oklab, var(--ink-strong) 10%, transparent);
   outline-offset: -1px;
+}
+
+.pr-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, var(--ink-strong) 10%, var(--canvas));
+  color: var(--subtle);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 .pr-title {
@@ -2949,19 +3048,6 @@ code,
     padding: 24px 12px 22px;
   }
 
-  /* The spawn command wraps instead of typing at phone widths — the
-     full invocation always reads. */
-  .spawn-term {
-    white-space: normal;
-    font-size: 12px;
-  }
-
-  .spawn-cmd,
-  .spawn-cmd.typing {
-    max-width: none;
-    white-space: normal;
-    animation: none;
-  }
 }
 
 @media (max-width: 960px) {

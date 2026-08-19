@@ -43,11 +43,11 @@ declare const __SITE_ORIGIN__: string;
 export const SITE_URL = __SITE_ORIGIN__;
 export const SITE_TITLE = "bb: the IDE that builds itself";
 export const SITE_DESCRIPTION =
-  "bb can control, customize, and automate itself, laying the groundwork for your own software factory. Fully open source and local-first, with Claude Code, Codex, Cursor, Pi, OpenCode, Grok, omp, and Hermes.";
+  "bb can control, customize, and automate itself: your own software factory. Fully open source and local-first, with Claude Code, Codex, Cursor, Pi, OpenCode, Grok, omp, and Hermes.";
 /** Unfurl copy: the hero sub verbatim, without SITE_DESCRIPTION's provider
  *  list because link previews truncate around 200 characters. */
 export const OG_DESCRIPTION =
-  "bb can control, customize, and automate itself, laying the groundwork for your own software factory.";
+  "bb can control, customize, and automate itself: your own software factory.";
 
 /** Open Graph + Twitter tags that make a shared link unfurl with the bb card.
  *  The image URL must be absolute: scrapers fetch tags with no base URL. */
