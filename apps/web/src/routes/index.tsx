@@ -18,8 +18,6 @@ import {
   MessageQuestionIcon,
   Mic02Icon,
   MoreHorizontalIcon,
-  PauseIcon,
-  PlayIcon,
   PlusMinusSquare01Icon,
   Search01Icon,
   SentIcon,
@@ -1366,49 +1364,8 @@ function SpawnStage() {
 /* ── Page ─────────────────────────────────────────────────────────── */
 
 function LandingPage() {
-  const [companyProofPaused, setCompanyProofPaused] = useState(false);
-  const [companyProofInView, setCompanyProofInView] = useState(false);
-  // Start with enough copies to cover a 5K display before hydration: one
-  // copy is ~1300px, and coverage needs (copies - 1) * copyWidth >= viewport.
-  // The measurement below trims the count once JavaScript runs.
-  const [companyProofCopies, setCompanyProofCopies] = useState(5);
-  const companyProofRef = useRef<HTMLElement>(null);
-  const companyProofMarqueeRef = useRef<HTMLDivElement>(null);
   useConstructMock();
   useFitMock();
-
-  useEffect(() => {
-    const companyProof = companyProofRef.current;
-    if (!companyProof) return;
-
-    const observer = new IntersectionObserver(([entry]) => {
-      setCompanyProofInView(entry?.isIntersecting ?? false);
-    });
-    observer.observe(companyProof);
-    return () => observer.disconnect();
-  }, []);
-
-  // The track scrolls left by one logo-list copy per animation cycle, so the
-  // copies after the first must cover the full marquee width or the viewport
-  // runs out of content near the end of each cycle on wide screens.
-  useEffect(() => {
-    const marquee = companyProofMarqueeRef.current;
-    const firstCopy = marquee?.querySelector(".company-proof-logos");
-    if (!marquee || !firstCopy) return;
-
-    const measure = () => {
-      const copyWidth = firstCopy.getBoundingClientRect().width;
-      if (copyWidth === 0) return;
-      setCompanyProofCopies(
-        Math.max(2, Math.ceil(marquee.clientWidth / copyWidth) + 1),
-      );
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(marquee);
-    observer.observe(firstCopy);
-    return () => observer.disconnect();
-  }, []);
   return (
     <div className="wrap">
       <SiteNav />
@@ -1451,42 +1408,9 @@ function LandingPage() {
 
       <HeroAppMock />
 
-      <section
-        ref={companyProofRef}
-        className={`company-proof${companyProofPaused ? " is-paused" : ""}${companyProofInView ? "" : " is-offscreen"}`}
-        aria-labelledby="company-proof-title"
-      >
-        <div className="company-proof-heading">
-          <h2 id="company-proof-title">Used by builders at</h2>
-          <button
-            type="button"
-            className="company-proof-toggle"
-            aria-label={
-              companyProofPaused
-                ? "Resume company logos"
-                : "Pause company logos"
-            }
-            onClick={() => setCompanyProofPaused((paused) => !paused)}
-          >
-            <HugeiconsIcon
-              icon={companyProofPaused ? PlayIcon : PauseIcon}
-              aria-hidden="true"
-            />
-          </button>
-        </div>
-        <div className="company-proof-marquee" ref={companyProofMarqueeRef}>
-          <div
-            className="company-proof-track"
-            style={
-              { "--company-proof-copies": companyProofCopies } as CSSProperties
-            }
-          >
-            <CompanyProofLogos />
-            {Array.from({ length: companyProofCopies - 1 }, (_, i) => (
-              <CompanyProofLogos key={i} duplicate />
-            ))}
-          </div>
-        </div>
+      <section className="company-proof" aria-labelledby="company-proof-title">
+        <h2 id="company-proof-title">Used by builders at</h2>
+        <CompanyProofLogos />
       </section>
 
       <Band
