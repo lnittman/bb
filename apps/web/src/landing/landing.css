@@ -130,6 +130,7 @@ body {
   font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -268,7 +269,8 @@ code,
 }
 
 .btn:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.985);
+  transition-duration: var(--duration-press);
 }
 
 .btn-primary {
@@ -471,6 +473,7 @@ code,
   from {
     opacity: 0;
     transform: translateY(16px);
+    filter: blur(6px);
   }
   to {
     opacity: 1;
@@ -2184,8 +2187,9 @@ code,
 .spawn-window {
   border-radius: 12px;
   background: var(--bg);
-  border: 1px solid var(--border-soft);
-  box-shadow: var(--shadow-window);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
+    var(--shadow-window);
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
@@ -2319,9 +2323,11 @@ code,
   transition: transform var(--duration-panel) var(--ease-room);
 }
 
-.bento > li:hover .bento-window img,
-.bento > li:hover .bento-window video {
-  transform: scale(1.012);
+@media (hover: hover) and (pointer: fine) {
+  .bento > li:hover .bento-window img,
+  .bento > li:hover .bento-window video {
+    transform: scale(1.012);
+  }
 }
 
 .bento-window img,
@@ -2649,6 +2655,8 @@ code,
   width: 22px;
   height: 22px;
   border-radius: 50%;
+  outline: 1px solid color-mix(in oklab, var(--ink-strong) 10%, transparent);
+  outline-offset: -1px;
 }
 
 .pr-title {
@@ -2761,10 +2769,11 @@ code,
 
 .demo-window video,
 .demo-frame {
-  border: 1px solid var(--border);
   border-radius: var(--r-card);
   background: var(--bg);
-  box-shadow: var(--shadow-window);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--ink-strong) 8%, transparent),
+    var(--shadow-window);
 }
 
 .demo-window video {
@@ -2809,6 +2818,8 @@ code,
 }
 
 .closer p {
+  text-wrap: pretty;
+  text-wrap: pretty;
   color: var(--dim);
   margin-top: 12px;
 }
