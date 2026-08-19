@@ -1657,49 +1657,115 @@ function AskDemo() {
 }
 
 /* ────────────────────────────────────────────────
- * SPAWN STORYBOARD (plays once per view entry)
+ * SPAWN STORYBOARD (loops while in view)
  *
- *     0ms   empty prompt, caret blinking; sidebar resting
- *   350ms   the command types itself (CSS steps over the mono line)
- *  2250ms   Enter — the bar acknowledges
- *  2550ms   a new row slides into storefront, working
- *  3250ms   its title morphs in (torph)
- *  5400ms   the agent keeps working; the row settles with an unread dot
- *  rest     command shown, row settled — also the reduced-motion state
+ *      0ms   terminal empty, caret blinking; sidebar resting
+ *    350ms   the CLI command types itself
+ *   2250ms   enter — the bar acknowledges
+ *   2550ms   a thread arrives in storefront, working
+ *   3250ms   its title morphs in
+ *   5400ms   it settles with an unread dot
+ *   7200ms   the source swaps: a Telegram message from Hermes
+ *   8400ms   a second thread arrives, working
+ *   9100ms   its title morphs in
+ *  11200ms   it settles
+ *  14200ms   the loop restarts
+ *  rest      CLI shown, both threads settled — reduced-motion state
  * ──────────────────────────────────────────────── */
-const SPAWN_TIMING = {
-  type: 350,
-  enter: 2250,
-  rowIn: 2550,
-  title: 3250,
-  settle: 5400,
-};
+const SPAWN_LOOP = [350, 2250, 2550, 3250, 5400, 7200, 8400, 9100, 11200];
+const SPAWN_RESTART = 14200;
 
 const SPAWN_COMMAND = 'bb thread spawn --prompt "Trace one order to confirmation"';
 const SPAWN_TITLE = "Trace order checkout flow";
+const SPAWN_TG_TITLE = "Audit promo code coverage";
+
+/** Loops the spawn storyboard while the demo is on screen; rests settled
+ *  (both threads present, CLI shown) offscreen and under reduced motion. */
+function useSpawnLoop() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [stage, setStage] = useState(SPAWN_LOOP.length);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+    let timers: number[] = [];
+    const run = () => {
+      setStage(0);
+      timers = SPAWN_LOOP.map((at, i) =>
+        window.setTimeout(() => setStage(i + 1), at),
+      );
+      timers.push(window.setTimeout(run, SPAWN_RESTART));
+    };
+    const stop = () => {
+      timers.forEach(clearTimeout);
+      timers = [];
+      setStage(SPAWN_LOOP.length);
+    };
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          if (!timers.length) run();
+        } else {
+          stop();
+        }
+      },
+      { rootMargin: "0px 0px -20% 0px" },
+    );
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      timers.forEach(clearTimeout);
+    };
+  }, []);
+  return { ref, stage };
+}
 
 function SpawnDemo() {
-  const { ref, stage } = useViewStage([
-    SPAWN_TIMING.type,
-    SPAWN_TIMING.enter,
-    SPAWN_TIMING.rowIn,
-    SPAWN_TIMING.title,
-    SPAWN_TIMING.settle,
-  ]);
+  const { ref, stage } = useSpawnLoop();
+  const settled = stage >= SPAWN_LOOP.length;
+  const tg = stage >= 6 && !settled;
   return (
     <div className="spawn-demo" ref={ref} aria-hidden>
-      <p className={stage >= 2 ? "spawn-term sent" : "spawn-term"}>
-        <span className="term-ps">$</span>
-        <span className={stage >= 1 ? "spawn-cmd typing" : "spawn-cmd"}>
-          {SPAWN_COMMAND}
-        </span>
-        <span className="term-caret" />
-      </p>
+      <div className="spawn-sources">
+        <p
+          className={
+            tg
+              ? "spawn-term source-out"
+              : stage >= 2
+                ? "spawn-term sent"
+                : "spawn-term"
+          }
+        >
+          <span className="term-ps">$</span>
+          <span
+            className={
+              stage >= 1 && !settled ? "spawn-cmd typing" : "spawn-cmd"
+            }
+          >
+            {SPAWN_COMMAND}
+          </span>
+          <span className="term-caret" />
+        </p>
+        <div className={tg ? "spawn-tg in" : "spawn-tg"}>
+          <img src={hermesAvatar} alt="" width={26} height={26} />
+          <div className="tg-body">
+            <span className="tg-from">
+              Hermes <em>· via Telegram</em>
+            </span>
+            <span className="tg-msg">
+              spawn a thread: audit our promo code coverage
+            </span>
+          </div>
+          <span className="tg-time">now</span>
+        </div>
+      </div>
       <div className="spawn-window">
         <span className="sub-group">storefront</span>
         <div
           className={
-            stage >= 3 ? "sub-row spawn-new in" : "sub-row spawn-new"
+            stage >= 7 || settled ? "sub-row spawn-new in" : "sub-row spawn-new"
           }
         >
           <span className="sub-title">
@@ -1708,10 +1774,26 @@ function SpawnDemo() {
               duration={520}
               ease="cubic-bezier(0.19, 1, 0.22, 1)"
             >
-              {stage >= 4 ? SPAWN_TITLE : "New thread"}
+              {stage >= 8 || settled ? SPAWN_TG_TITLE : "New thread"}
             </TextMorph>
           </span>
-          {stage >= 5 ? <i className="spawn-dot" /> : <DemoSpinner />}
+          {stage >= 9 || settled ? <i className="spawn-dot" /> : <DemoSpinner />}
+        </div>
+        <div
+          className={
+            stage >= 3 || settled ? "sub-row spawn-new in" : "sub-row spawn-new"
+          }
+        >
+          <span className="sub-title">
+            <TextMorph
+              as="span"
+              duration={520}
+              ease="cubic-bezier(0.19, 1, 0.22, 1)"
+            >
+              {stage >= 4 || settled ? SPAWN_TITLE : "New thread"}
+            </TextMorph>
+          </span>
+          {stage >= 5 || settled ? <i className="spawn-dot" /> : <DemoSpinner />}
         </div>
         <div className="sub-row sub-quiet">
           <span className="sub-title">Summarize checkout cart integration</span>
@@ -1731,7 +1813,8 @@ function SpawnDemo() {
 function PRFeed() {
   return (
     <div className="pr-feed rail" aria-label="Recently merged pull requests">
-      <div className="pr-feed-track" aria-hidden={undefined}>
+      <div className="pr-feed-clip">
+        <div className="pr-feed-track" aria-hidden={undefined}>
         {[0, 1].map((copy) => (
           <ul key={copy} aria-hidden={copy === 1 || undefined}>
             {PR_FEED.map((pr, i) => {
@@ -1758,6 +1841,7 @@ function PRFeed() {
             })}
           </ul>
         ))}
+        </div>
       </div>
     </div>
   );
@@ -1890,11 +1974,11 @@ function LandingPage() {
 
       <section className="act">
         <div className="act-head rail">
-          <h2>The boring parts are load-bearing.</h2>
+          <h2>More than a chat window.</h2>
           <div className="act-lead">
             <p>
-              Trust in an agent workbench is a function of the unglamorous
-              parts — and they&rsquo;re all real pixels below.
+              bb carries the work around the conversation — building,
+              reviewing, delegating, deciding.
             </p>
           </div>
         </div>
@@ -1902,8 +1986,7 @@ function LandingPage() {
           <li>
             <h3>Built from one prompt</h3>
             <p>
-              The Tasks plugin — its panel, CLI, and skill — exactly as it
-              appeared.
+              The Tasks plugin an agent built — a panel, a CLI, and a skill.
             </p>
             <div className="bento-window bento-zoom">
               <DemoWindow
@@ -1929,8 +2012,7 @@ function LandingPage() {
           <li>
             <h3>Subagents</h3>
             <p>
-              Threads spawn child threads, manage them, and take the report
-              back.
+              Threads spawn threads, manage them, and take the report back.
             </p>
             <div className="bento-window bento-component">
               <SubagentsDemo />
