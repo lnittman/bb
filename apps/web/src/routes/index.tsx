@@ -1045,7 +1045,9 @@ const HERO_DIFF_MIN_WIDTH = "(min-width: 1100px)";
 
 function HeroAppMock() {
   const [activeId, setActiveId] = useState(HERO_THREADS[0].id);
-  const [view, setView] = useState<"thread" | "new">("thread");
+  const [view, setView] = useState<
+    "thread" | "new" | "extensions" | "automations" | "tasks"
+  >("thread");
   const [diffOpen, setDiffOpen] = useState(false);
   // The pane joins after mount (never in prerendered HTML), so hydration
   // matches and the entrance reads as one sequence instead of a flash.
@@ -1113,6 +1115,16 @@ function HeroAppMock() {
             </span>
           </div>
           <div className="bar-main">
+            {view === "extensions" || view === "automations" ||
+            view === "tasks" ? (
+              <span className="bar-title">
+                {view === "extensions"
+                  ? "Extensions"
+                  : view === "automations"
+                    ? "Automations"
+                    : "Tasks"}
+              </span>
+            ) : null}
             {view === "thread" ? (
               <>
                 <span className="bar-title">{thread.title}</span>
@@ -1157,21 +1169,40 @@ function HeroAppMock() {
             </div>
             {/* Plugin rows, exactly as today's sidebar orders them:
                 Extensions, then each installed plugin's nav panel. */}
-            <div className="side-act">
+            <button
+              type="button"
+              className={
+                view === "extensions" ? "side-act active-act" : "side-act"
+              }
+              aria-pressed={view === "extensions"}
+              onClick={() => setView("extensions")}
+            >
               <ToolboxGlyph className="sa-ic" />
               Extensions
-            </div>
-            <div className="side-act">
+            </button>
+            <button
+              type="button"
+              className={
+                view === "automations" ? "side-act active-act" : "side-act"
+              }
+              aria-pressed={view === "automations"}
+              onClick={() => setView("automations")}
+            >
               <ClockIcon className="sa-ic" />
               Automations
-            </div>
-            <div className="side-act">
+            </button>
+            <button
+              type="button"
+              className={view === "tasks" ? "side-act active-act" : "side-act"}
+              aria-pressed={view === "tasks"}
+              onClick={() => setView("tasks")}
+            >
               <ChecklistGlyph className="sa-ic" />
               Tasks
               <span className="side-chip" aria-hidden>
                 3
               </span>
-            </div>
+            </button>
             <div className="side-label">Pinned</div>
             <button
               type="button"
@@ -1251,9 +1282,19 @@ function HeroAppMock() {
                 <Composer thread={thread} />
               )}
             </div>
-          ) : (
+          ) : view === "new" ? (
             <div className="main main-new">
               <Composer />
+            </div>
+          ) : (
+            <div className="main main-panel">
+              {view === "tasks" ? (
+                <TasksPanelMock />
+              ) : view === "extensions" ? (
+                <ExtensionsPanelMock />
+              ) : (
+                <AutomationsPanelMock />
+              )}
             </div>
           )}
 
@@ -1353,6 +1394,98 @@ function DemoWindow({
 
 
 /* ── Page ─────────────────────────────────────────────────────────── */
+
+/* ── Mock plugin panels: compact, believable states for the sidebar IA.
+   Same storefront fiction as everything else on the page. ── */
+
+const MOCK_TASKS = [
+  { id: "SF-1", title: "Ship the promo-code analytics page", col: "In Progress" },
+  { id: "SF-2", title: "Port the pricing script to TypeScript", col: "In Progress" },
+  { id: "SF-3", title: "Add Apple Pay to the checkout sheet", col: "Todo" },
+  { id: "SF-4", title: "Write docs for the promo engine", col: "Todo" },
+  { id: "SF-5", title: "Triage the flaky checkout test", col: "Todo" },
+  { id: "SF-6", title: "Cut the 1.4 release notes", col: "Backlog" },
+];
+
+function TasksPanelMock() {
+  const cols = ["Backlog", "Todo", "In Progress"];
+  return (
+    <div className="ppanel" aria-hidden>
+      <div className="ppanel-bar">
+        <span className="ppanel-name">storefront 1.4</span>
+        <span className="ppanel-cta">+ New task</span>
+      </div>
+      <div className="tboard">
+        {cols.map((col) => (
+          <div key={col} className="tcol">
+            <span className="tcol-head">
+              {col}
+              <em>{MOCK_TASKS.filter((t) => t.col === col).length}</em>
+            </span>
+            {MOCK_TASKS.filter((t) => t.col === col).map((t) => (
+              <div key={t.id} className="tcard">
+                <span className="tcard-id">{t.id}</span>
+                {t.title}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ExtensionsPanelMock() {
+  const plugins = [
+    ["Tasks", "A panel, a CLI, and a skill — built from one prompt."],
+    ["GitHub", "Issues and pull requests, in threads."],
+    ["Agent memory", "What your agents learn, kept."],
+    ["Remote access", "Reach bb from your phone."],
+  ] as const;
+  return (
+    <div className="ppanel" aria-hidden>
+      <div className="ppanel-bar">
+        <span className="ppanel-name">Installed plugins</span>
+        <span className="ppanel-cta">Create a plugin</span>
+      </div>
+      <div className="plist">
+        {plugins.map(([name, blurb]) => (
+          <div key={name} className="plist-row">
+            <span className="plist-name">{name}</span>
+            <span className="plist-blurb">{blurb}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AutomationsPanelMock() {
+  const autos = [
+    ["Nightly changelog", "Every day · 02:00", "ok"],
+    ["Dependency sweep", "Mondays · 06:00", "ok"],
+    ["Flaky-test triage", "On CI failure", "paused"],
+  ] as const;
+  return (
+    <div className="ppanel" aria-hidden>
+      <div className="ppanel-bar">
+        <span className="ppanel-name">Scheduled</span>
+        <span className="ppanel-cta">+ New automation</span>
+      </div>
+      <div className="plist">
+        {autos.map(([name, cadence, state]) => (
+          <div key={name} className="plist-row">
+            <span className="plist-name">{name}</span>
+            <span className="plist-blurb">{cadence}</span>
+            <span className={state === "ok" ? "auto-ok" : "auto-paused"}>
+              {state === "ok" ? "On" : "Paused"}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /* ────────────────────────────────────────────────
  * SUBAGENTS STORYBOARD (plays once per view entry)
