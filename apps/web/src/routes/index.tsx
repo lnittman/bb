@@ -242,45 +242,13 @@ function InstallOptions({ placement }: { placement: CtaPlacement }) {
   );
 }
 
-/* ── Scroll reveal ────────────────────────────────────────────────── */
-
-/** Fade-up sections as they scroll into view. No-JS and prerender stay fully visible. */
-function useScrollReveal() {
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-    const targets = Array.from(document.querySelectorAll("[data-reveal]"));
-    for (const target of targets) {
-      if (target.getBoundingClientRect().top > window.innerHeight * 0.9) {
-        target.classList.add("reveal-pending");
-      }
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            entry.target.classList.remove("reveal-pending");
-            observer.unobserve(entry.target);
-          }
-        }
-      },
-      { rootMargin: "0px 0px -12% 0px" },
-    );
-    for (const target of targets) {
-      observer.observe(target);
-    }
-    return () => observer.disconnect();
-  }, []);
-}
-
-/** The app mock assembles itself the first time it scrolls into view: window
- *  frame, then title bar, sidebar rows, conversation, and composer in sequence.
- *  The mock is held hidden from first paint by CSS (`html.js` + `:not(.constructing)`)
- *  so it never flashes finished before it builds. Once the entrance finishes the
- *  class is swapped to `.constructed` so later re-renders (switching threads,
- *  opening the diff) don't replay it. Prerender/no-JS/reduced-motion render the
- *  finished mock with no animation. */
+/** The app mock plays its assembly entrance once, shortly after hydration.
+ *  Rendering law: the finished mock is the resting DOM state — prerender, no-JS,
+ *  reduced motion, and any capture taken before or after the entrance all show
+ *  the complete app. The animation only ever adds motion on top; nothing is
+ *  held invisible waiting for a scroll event. After the entrance the class
+ *  swaps to `.constructed` so later re-renders (switching threads, opening the
+ *  diff) don't replay it. */
 function useConstructMock() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -290,31 +258,17 @@ function useConstructMock() {
     if (!mock || mock.classList.contains("constructed")) {
       return;
     }
-    let timer = 0;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            const el = entry.target;
-            el.classList.add("constructing");
-            observer.unobserve(el);
-            timer = window.setTimeout(() => {
-              el.classList.remove("constructing");
-              el.classList.add("constructed");
-            }, 1800);
-          }
-        }
-      },
-      // Threshold 0 (not a ratio) so a mock taller than a small mobile viewport
-      // still triggers; the bottom margin holds it until it is meaningfully in view.
-      { threshold: 0, rootMargin: "0px 0px -20% 0px" },
-    );
-    observer.observe(mock);
+    let settle = 0;
+    const start = window.setTimeout(() => {
+      mock.classList.add("constructing");
+      settle = window.setTimeout(() => {
+        mock.classList.remove("constructing");
+        mock.classList.add("constructed");
+      }, 1800);
+    }, 150);
     return () => {
-      observer.disconnect();
-      if (timer) {
-        window.clearTimeout(timer);
-      }
+      window.clearTimeout(start);
+      window.clearTimeout(settle);
     };
   }, []);
 }
@@ -1310,7 +1264,7 @@ function Band({
   children: ReactNode;
 }) {
   return (
-    <section className={flip ? "band band-flip" : "band"} data-reveal>
+    <section className={flip ? "band band-flip" : "band"}>
       <div className="band-grid">
         <div className="band-copy">
           <h2>{title}</h2>
@@ -1416,7 +1370,6 @@ function LandingPage() {
   const [companyProofCopies, setCompanyProofCopies] = useState(5);
   const companyProofRef = useRef<HTMLElement>(null);
   const companyProofMarqueeRef = useRef<HTMLDivElement>(null);
-  useScrollReveal();
   useConstructMock();
   useFitMock();
 
@@ -1587,7 +1540,7 @@ function LandingPage() {
         </div>
       </Band>
 
-      <section className="statement" data-reveal>
+      <section className="statement">
         <h2 className="sec-title">Fork it. Make it your own.</h2>
         <p>
           bb is MIT-licensed end to end. Fork the repo, customize the agents,
@@ -1614,7 +1567,7 @@ function LandingPage() {
         </div>
       </section>
 
-      <section className="closer" data-reveal>
+      <section className="closer">
         <h2 className="sec-title">Put your agents to work.</h2>
         <p>Free, open source, and local-first. Install in under a minute.</p>
         <InstallOptions placement="closer" />
@@ -1625,7 +1578,7 @@ function LandingPage() {
         </div>
       </section>
 
-      <section className="subscribe" data-reveal>
+      <section className="subscribe">
         <h2 className="subscribe-title">Stay in the loop.</h2>
         <p>Product updates and what we&rsquo;re building next. No spam.</p>
         <EmailSignup placement="footer" />

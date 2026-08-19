@@ -494,19 +494,6 @@ code,
   border-color: color-mix(in oklab, var(--ph) 45%, var(--bg));
 }
 
-/* Scroll reveal: sections start hidden only once JS marks them pending,
-   so prerendered/no-JS pages stay fully visible. */
-[data-reveal] {
-  transition:
-    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-[data-reveal].reveal-pending {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
 .hero h1 {
   font-size: clamp(36px, 6vw, 58px);
   line-height: 1.08;
@@ -812,9 +799,6 @@ code,
 /* When JS is available, hold the whole mock hidden from the first paint until
    it scrolls into view and assembles. No-JS/prerender skip the `js` class, so
    the finished mock stays visible. */
-html.js .mock[data-construct]:not(.constructing):not(.constructed) {
-  opacity: 0;
-}
 
 .mock.constructing {
   animation: c-frame 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -2390,16 +2374,11 @@ html.js .mock[data-construct]:not(.constructing):not(.constructed) {
   .btn,
   .plogo,
   .trow,
-  .side,
-  [data-reveal] {
+  .side {
     transition: none;
   }
 
-  /* The mock construction is JS-gated off here, but keep it inert as a
-     safety net so the finished app always shows. */
-  html.js .mock[data-construct]:not(.constructing):not(.constructed) {
-    opacity: 1;
-  }
+  
 
   .mock.constructing,
   .mock.constructing .mock-bar,
