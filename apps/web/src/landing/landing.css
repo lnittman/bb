@@ -673,7 +673,7 @@ code,
   }
 
   .hero-stage .mock-body {
-    height: 560px;
+    height: 700px;
   }
 }
 
@@ -1074,11 +1074,9 @@ code,
   gap: 2px;
 }
 
-.side-row-new button.side-act {
-  cursor: pointer;
-}
-
-.side-act {
+.side-row-new /* Only the New-thread button shares its row (with the search chip); the
+   plugin rows are their own lines and must not stretch. */
+.side-row-new .side-act {
   flex: 1;
   min-width: 0;
 }
@@ -2645,6 +2643,35 @@ code,
 .closer-subscribe span {
   font-size: 13px;
   color: var(--subtle);
+}
+
+@media (max-width: 700px) {
+  /* Four stat cards become a 2x2; numerals step down to fit. */
+  .stat-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stat-cards strong {
+    font-size: 30px;
+  }
+
+  .stat-cards li {
+    padding: 24px 12px 22px;
+  }
+
+  /* The spawn command wraps instead of typing at phone widths — the
+     full invocation always reads. */
+  .spawn-term {
+    white-space: normal;
+    font-size: 12px;
+  }
+
+  .spawn-cmd,
+  .spawn-cmd.typing {
+    max-width: none;
+    white-space: normal;
+    animation: none;
+  }
 }
 
 @media (max-width: 960px) {
