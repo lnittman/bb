@@ -2171,6 +2171,572 @@ code,
   color: var(--subtle);
 }
 
+/* ── Bento demo: the Tasks board building itself ─────────────────── */
+
+.board-demo,
+.review-demo {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-size: 12px;
+}
+
+.board-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+}
+
+.board-project {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-strong);
+}
+
+.board-new {
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.board-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  align-items: start;
+}
+
+.board-col {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.board-col-head {
+  display: flex;
+  gap: 5px;
+  align-items: baseline;
+  font-size: 10.5px;
+  font-weight: 550;
+  color: var(--dim);
+}
+
+.board-col-head em {
+  font-style: normal;
+  color: var(--subtle);
+}
+
+.board-card {
+  padding: 8px 9px;
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--ink-strong) 8%, transparent),
+    0 1px 2px color-mix(in oklab, var(--ink-strong) 6%, transparent);
+  line-height: 1.35;
+  color: var(--ink);
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.45s var(--ease-out),
+    transform 0.45s var(--ease-out);
+}
+
+.board-demo .board-card:not(.in) {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.board-id {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  color: var(--subtle);
+  margin-bottom: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.board-id svg {
+  width: 11px;
+  height: 11px;
+  color: var(--ok);
+}
+
+/* ── Bento demo: a diff landing, then Commit arming ──────────────── */
+
+.review-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.review-file {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink-strong);
+}
+
+.review-count {
+  display: flex;
+  gap: 7px;
+  font-style: normal;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.review-count em {
+  font-style: normal;
+}
+
+.review-add {
+  color: var(--add, var(--ok));
+}
+
+.review-del {
+  color: var(--del, var(--warn));
+}
+
+.review-hunk {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.75;
+  overflow: hidden;
+}
+
+.review-line {
+  display: flex;
+  gap: 8px;
+  padding-inline: 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  color: var(--dim);
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.4s var(--ease-out),
+    transform 0.4s var(--ease-out);
+}
+
+.review-demo .review-line:not(.in) {
+  opacity: 0;
+  transform: translateX(-6px);
+}
+
+.review-sign {
+  width: 7px;
+  flex: none;
+  opacity: 0.7;
+}
+
+.review-line.is-add {
+  background: color-mix(in oklab, var(--add, var(--ok)) 12%, var(--bg));
+  color: var(--ink);
+}
+
+.review-line.is-del {
+  background: color-mix(in oklab, var(--del, var(--warn)) 12%, var(--bg));
+  color: var(--ink);
+}
+
+.review-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid var(--border-soft);
+  font-size: 11.5px;
+  color: var(--dim);
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.45s var(--ease-out),
+    transform 0.45s var(--ease-out);
+}
+
+.review-demo .review-foot:not(.in) {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.review-ic {
+  width: 13px;
+  height: 13px;
+}
+
+.review-commit {
+  margin-left: auto;
+  padding: 4px 11px;
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--subtle);
+  transition:
+    background var(--duration-state) var(--ease-standard),
+    color var(--duration-state) var(--ease-standard);
+}
+
+.review-commit.armed {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+/* ── Build: one prompt, three surfaces landing ───────────────────── */
+
+.build-demo {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(16px, 2vw, 28px);
+  align-items: stretch;
+}
+
+.build-ask {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border-radius: var(--r-card);
+  background: var(--bg);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
+    var(--shadow-window);
+}
+
+/* The prompt reads like the app's composer, not a terminal. */
+.build-prompt {
+  display: flex;
+  align-items: baseline;
+  min-height: 62px;
+  padding: 13px 15px;
+  border-radius: 11px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border-soft);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink);
+  transition: box-shadow var(--duration-state) var(--ease-standard);
+}
+
+.build-prompt.sent {
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ink-strong) 16%, transparent);
+}
+
+.build-typed {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 30ch;
+}
+
+.build-typed.typing {
+  max-width: 0;
+  animation: build-type 1.5s steps(24, end) forwards;
+}
+
+@keyframes build-type {
+  to {
+    max-width: 30ch;
+  }
+}
+
+.build-caret {
+  display: inline-block;
+  width: 7px;
+  height: 1.05em;
+  margin-left: 6px;
+  vertical-align: text-bottom;
+  background: color-mix(in oklab, var(--ink) 55%, transparent);
+  animation: caret-blink 1.1s steps(1) infinite;
+}
+
+.build-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 2px;
+}
+
+.gang-step.out,
+.gang-say.out {
+  opacity: 0;
+  animation: none;
+}
+
+/* The three surfaces the prompt produced, landing one after another. */
+.build-surfaces {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+}
+
+.build-surface {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 15px 17px;
+  border-radius: var(--r-card);
+  background: var(--bg);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
+    var(--shadow-window);
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.5s var(--ease-out),
+    transform 0.5s var(--ease-out);
+}
+
+.build-demo .build-surface:not(.in) {
+  opacity: 0;
+  transform: translateY(10px) scale(0.985);
+}
+
+.build-ic {
+  flex: none;
+  width: 19px;
+  height: 19px;
+  color: var(--dim);
+}
+
+.build-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.build-name {
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--ink-strong);
+}
+
+.build-detail {
+  font-size: 12.5px;
+  color: var(--subtle);
+}
+
+.build-kind {
+  margin-left: auto;
+  flex: none;
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--dim);
+}
+
+@media (max-width: 900px) {
+  .build-demo {
+    grid-template-columns: 1fr;
+  }
+
+  .build-ask,
+  .build-surfaces {
+    min-width: 0;
+  }
+
+  .build-typed,
+  .build-typed.typing {
+    max-width: none;
+    white-space: normal;
+    animation: none;
+  }
+
+  .build-prompt {
+    min-height: 0;
+  }
+}
+
+/* ── The gang: threads working across projects, one open ─────────── */
+
+.gang-demo {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(16px, 2vw, 26px);
+  align-items: stretch;
+}
+
+.gang-side,
+.gang-thread {
+  border-radius: var(--r-card);
+  background: var(--bg);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
+    var(--shadow-window);
+  padding: 20px 20px 22px;
+  font-size: 14px;
+}
+
+.gang-side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gang-row {
+  gap: 10px;
+}
+
+/* space-between would strand the title in the middle of the row; the title
+   takes the free space so every row reads on one left rail. */
+.gang-row .sub-title,
+.spawn-window .sub-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gang-row.is-open {
+  background: var(--state-hover);
+}
+
+.gang-pv {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--dim);
+}
+
+.gang-wait {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--warn, var(--dim));
+}
+
+.gang-kid {
+  margin-left: 20px;
+  border-left: 2px solid var(--border);
+  border-radius: 0 8px 8px 0;
+  transition:
+    opacity 0.45s var(--ease-out),
+    transform 0.45s var(--ease-out),
+    max-height 0.45s var(--ease-out);
+  max-height: 40px;
+}
+
+.gang-demo .gang-kid:not(.in) {
+  opacity: 0;
+  transform: translateY(-6px);
+  max-height: 0;
+  overflow: hidden;
+}
+
+.gang-gap {
+  margin-top: 14px;
+}
+
+/* The open thread: a compact transcript that accumulates. */
+.gang-thread {
+  display: flex;
+  flex-direction: column;
+}
+
+.gang-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.gang-title {
+  font-weight: 550;
+  color: var(--ink-strong);
+}
+
+.gang-badge {
+  margin-left: auto;
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--dim);
+}
+
+.gang-feed {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 16px;
+  min-height: 190px;
+}
+
+.gang-step,
+.gang-say {
+  animation: gang-in 0.5s var(--ease-out) both;
+}
+
+.gang-step {
+  font-size: 13px;
+  color: var(--subtle);
+}
+
+.gang-step::before {
+  content: "› ";
+  opacity: 0.6;
+}
+
+.gang-say {
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+@keyframes gang-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(4px);
+  }
+}
+
+.gang-tree {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 13px;
+  border-top: 1px solid var(--border-soft);
+  font-size: 12.5px;
+  color: var(--subtle);
+}
+
+.gang-tree-ic {
+  width: 14px;
+  height: 14px;
+}
+
+@media (max-width: 900px) {
+  .gang-demo {
+    grid-template-columns: 1fr;
+  }
+
+  .gang-side,
+  .gang-thread {
+    min-width: 0;
+  }
+
+  .gang-feed {
+    min-height: 0;
+  }
+}
+
 /* ── The spawn machine: three causes firing into one sidebar ─────── */
 
 .causal {
@@ -2638,28 +3204,12 @@ code,
   display: block;
 }
 
-.bento-window .demo-window {
-  height: 100%;
-}
-
-/* The tasks recording zooms into its panel so the plugin is readable at
-   card scale; the 2x source keeps it crisp. */
-.bento-zoom video {
-  width: 148%;
-  height: auto;
-}
-
-/* The ask card shows its full question width and crops the tail. */
-.bento-fit img {
-  height: auto;
-}
-
-/* Built demo components inside bento windows: mock-grammar fragments in
+.bento-window /* Built demo components inside bento windows: mock-grammar fragments in
    the app's own tokens, animated per their storyboards. */
 .bento-component {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 22px 24px;
 }
 
@@ -2894,28 +3444,11 @@ code,
 /* The merged-PR feed: a slate card whose list scrolls in a slow vertical
    marquee (two copies, one translate loop). Rest = the static list. */
 .pr-feed {
-  margin-top: 18px;
+  margin-top: clamp(14px, 1.6vw, 22px);
   border-radius: 20px;
   background: color-mix(in oklab, var(--ink-strong) 6%, var(--canvas));
   padding: 10px 26px;
   height: 348px;
-}
-
-/* The H1's receipt: the agent share of last month's merges, in the
-   bold-lead grammar (claim in ink, mechanism muted). */
-.pr-feed-head {
-  margin-top: 26px;
-  text-align: center;
-  font-size: 15px;
-  line-height: 1.55;
-  color: var(--dim);
-  text-wrap: balance;
-}
-
-.pr-feed-head strong {
-  font-weight: 600;
-  color: var(--ink-strong);
-  font-variant-numeric: tabular-nums;
 }
 
 /* Only the scrolling list fades at its edges — the card itself stays crisp. */
@@ -3072,28 +3605,6 @@ code,
 }
 
 /* ── Band visuals: real captures in window chrome ────────────────── */
-
-.demo-window {
-  width: 100%;
-  margin: 0;
-}
-
-.demo-window video,
-.demo-frame {
-  border-radius: var(--r-card);
-  background: var(--bg);
-  box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--ink-strong) 8%, transparent),
-    var(--shadow-window);
-}
-
-.demo-window video {
-  display: block;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 1280 / 800;
-  background: var(--bg);
-}
 
 /* ── Statement ──────────────────────────────────────────────────── */
 

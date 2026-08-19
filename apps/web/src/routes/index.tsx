@@ -435,6 +435,24 @@ const GitMergeIcon = ({ className }: IconProps) => (
 const Spinner = ({ className }: IconProps) => (
   <HugeiconsIcon icon={Loading03Icon} className={className} />
 );
+// A shell prompt in a window, drawn to match the Hugeicons stroke weight the
+// rest of the mock uses (the free set has no terminal glyph).
+const TerminalGlyph = ({ className }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.7"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="2.5" y="4.5" width="19" height="15" rx="3.2" />
+    <path d="M7.2 10 10 12.4l-2.8 2.4" />
+    <path d="M12.8 15h4.2" />
+  </svg>
+);
 const Maximize2 = ({ className }: IconProps) => (
   <HugeiconsIcon icon={ArrowExpand01Icon} className={className} />
 );
@@ -1343,53 +1361,6 @@ function Band({
 /** How much of a demo window must be on screen before its capture plays. */
 const DEMO_PLAY_VISIBILITY = 0.35;
 
-/** A real screen recording of the app, framed in desktop window chrome. The
- *  clip is silent, loops, and only plays while it is actually on screen; under
- *  reduced motion it never starts and the poster frame carries the content. */
-function DemoWindow({
-  src,
-  poster,
-  label,
-}: {
-  src: string;
-  poster: string;
-  label: string;
-}) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          void video.play().catch(() => undefined);
-        } else {
-          video.pause();
-        }
-      },
-      { threshold: DEMO_PLAY_VISIBILITY },
-    );
-    observer.observe(video);
-    return () => observer.disconnect();
-  }, []);
-  return (
-    <figure className="demo-window">
-      <video
-        ref={videoRef}
-        src={src}
-        poster={poster}
-        muted
-        loop
-        playsInline
-        preload="none"
-        aria-label={label}
-      />
-    </figure>
-  );
-}
 
 
 
@@ -1656,6 +1627,354 @@ function AskDemo() {
 }
 
 /* ────────────────────────────────────────────────
+ * TASKS BOARD STORYBOARD (loops while in view)
+ *
+ *      0ms   the board's columns are empty
+ *    300ms   cards land column by column, 90ms apart
+ *   2600ms   the in-progress card ticks over to done
+ *   6000ms   loop restarts
+ *   rest     full board — also the reduced-motion state
+ * ──────────────────────────────────────────────── */
+const BOARD_BEATS = [300, 2600];
+const BOARD_RESET = 6000;
+
+const BOARD_COLUMNS = [
+  {
+    name: "Backlog",
+    cards: [{ id: "SF-6", title: "Cut the 1.4 release notes" }],
+  },
+  {
+    name: "Todo",
+    cards: [
+      { id: "SF-3", title: "Add Apple Pay to checkout" },
+      { id: "SF-4", title: "Write docs for the promo engine" },
+    ],
+  },
+  {
+    name: "In progress",
+    cards: [
+      { id: "SF-1", title: "Ship promo-code analytics" },
+      { id: "SF-2", title: "Port pricing to TypeScript" },
+    ],
+  },
+] as const;
+
+function TasksBoardDemo() {
+  const { ref, stage } = useLoopStage(BOARD_BEATS, BOARD_RESET);
+  const settled = stage >= BOARD_BEATS.length;
+  const landed = stage >= 1 || settled;
+  let n = 0;
+  return (
+    <div className="board-demo" ref={ref} aria-hidden>
+      <div className="board-bar">
+        <span className="board-project">storefront 1.4</span>
+        <span className="board-new">+ New task</span>
+      </div>
+      <div className="board-cols">
+        {BOARD_COLUMNS.map((col) => (
+          <div key={col.name} className="board-col">
+            <span className="board-col-head">
+              {col.name}
+              <em>{col.cards.length}</em>
+            </span>
+            {col.cards.map((card) => {
+              const delay = n++ * 90;
+              return (
+                <div
+                  key={card.id}
+                  className={landed ? "board-card in" : "board-card"}
+                  style={{ transitionDelay: `${delay}ms` }}
+                >
+                  <span className="board-id">
+                    {card.id}
+                    {card.id === "SF-1" && (stage >= 2 || settled) ? (
+                      <DemoCheck />
+                    ) : null}
+                  </span>
+                  {card.title}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────
+ * REVIEW STORYBOARD (loops while in view)
+ *
+ *      0ms   the diff header, no hunks
+ *    400ms   diff lines land, 70ms apart
+ *   2400ms   the working-tree bar arrives
+ *   3400ms   Commit arms
+ *   7000ms   loop restarts
+ *   rest     full diff, armed — also the reduced-motion state
+ * ──────────────────────────────────────────────── */
+const REVIEW_BEATS = [400, 2400, 3400];
+const REVIEW_RESET = 7000;
+
+const REVIEW_LINES = [
+  { sign: " ", text: "export function applyPromo(cart, code) {" },
+  { sign: "-", text: "  const percent = PERCENT_CODES[code] ?? 0;" },
+  { sign: "+", text: "  const percent = Object.hasOwn(PERCENT_CODES, code)" },
+  { sign: "+", text: "    ? PERCENT_CODES[code]" },
+  { sign: "+", text: "    : 0;" },
+  { sign: " ", text: "  const subtotal = cart.items.reduce(sum, 0);" },
+] as const;
+
+function ReviewDemo() {
+  const { ref, stage } = useLoopStage(REVIEW_BEATS, REVIEW_RESET);
+  const settled = stage >= REVIEW_BEATS.length;
+  const landed = stage >= 1 || settled;
+  return (
+    <div className="review-demo" ref={ref} aria-hidden>
+      <div className="review-head">
+        <span className="review-file">applyPromo.ts</span>
+        <span className="review-count">
+          <em className="review-add">+3</em>
+          <em className="review-del">-1</em>
+        </span>
+      </div>
+      <div className="review-hunk">
+        {REVIEW_LINES.map((l, i) => (
+          <p
+            key={l.text}
+            className={
+              (landed ? "review-line in" : "review-line") +
+              (l.sign === "+" ? " is-add" : l.sign === "-" ? " is-del" : "")
+            }
+            style={{ transitionDelay: `${i * 70}ms` }}
+          >
+            <span className="review-sign">{l.sign}</span>
+            {l.text}
+          </p>
+        ))}
+      </div>
+      <div className={stage >= 2 || settled ? "review-foot in" : "review-foot"}>
+        <GitBranchIcon className="review-ic" />
+        <span>Uncommitted · 1 file</span>
+        <span className={stage >= 3 || settled ? "review-commit armed" : "review-commit"}>
+          Commit
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────
+ * BUILD STORYBOARD (loops while in view)
+ *
+ *      0ms   an empty prompt, caret blinking
+ *    300ms   the request types itself
+ *   2100ms   sent; the agent starts working
+ *   2900ms   the panel surface lands
+ *   3800ms   the command lands
+ *   4700ms   the skill lands
+ *   6200ms   the thread reports back
+ *   9400ms   loop restarts
+ *   rest     all three surfaces present — reduced-motion state
+ * ──────────────────────────────────────────────── */
+const BUILD_BEATS = [300, 2100, 2900, 3800, 4700, 6200];
+const BUILD_RESET = 9400;
+const BUILD_PROMPT = "Add a review queue panel";
+
+const BUILD_SURFACES = [
+  {
+    kind: "Panel",
+    name: "Review queue",
+    detail: "In the sidebar, above Tasks",
+    icon: PanelIcon,
+  },
+  {
+    kind: "Command",
+    name: "bb review",
+    detail: "The same queue, from any shell",
+    icon: TerminalGlyph,
+  },
+  {
+    kind: "Skill",
+    name: "review-queue",
+    detail: "So every agent knows to use it",
+    icon: ChecklistGlyph,
+  },
+] as const;
+
+function BuildDemo() {
+  const { ref, stage } = useLoopStage(BUILD_BEATS, BUILD_RESET);
+  const settled = stage >= BUILD_BEATS.length;
+  return (
+    <div className="build-demo" ref={ref} aria-hidden>
+      <div className="build-ask">
+        <p className={stage >= 2 || settled ? "build-prompt sent" : "build-prompt"}>
+          <span className={stage >= 1 && !settled ? "build-typed typing" : "build-typed"}>
+            {BUILD_PROMPT}
+          </span>
+          <span className="build-caret" />
+        </p>
+        <div className="build-steps">
+          <p className={stage >= 2 || settled ? "gang-step in" : "gang-step out"}>
+            Scaffolded the plugin
+          </p>
+          <p className={stage >= 6 || settled ? "gang-say in" : "gang-say out"}>
+            The panel is live in your sidebar. bb building bb.
+          </p>
+        </div>
+      </div>
+      <ul className="build-surfaces">
+        {BUILD_SURFACES.map((s, i) => {
+          const Icon = s.icon;
+          const on = settled || stage >= i + 3;
+          return (
+            <li key={s.kind} className={on ? "build-surface in" : "build-surface"}>
+              <Icon className="build-ic" />
+              <div className="build-body">
+                <span className="build-name">{s.name}</span>
+                <span className="build-detail">{s.detail}</span>
+              </div>
+              <span className="build-kind">{s.kind}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────
+ * GANG STORYBOARD (loops while in view)
+ *
+ *      0ms   four threads working across three projects
+ *   1500ms   a step lands in the open transcript
+ *   3000ms   the codex thread finishes its edit
+ *   4200ms   the claude thread completes; its child appears nested
+ *   5600ms   the last step lands; the pi thread completes
+ *   8600ms   loop restarts
+ *   rest     everything settled — also the reduced-motion state
+ * ──────────────────────────────────────────────── */
+const GANG_BEATS = [1500, 3000, 4200, 5600];
+const GANG_RESET = 8600;
+
+const GANG_STEPS = [
+  { kind: "step", text: "Explored 3 files" },
+  {
+    kind: "say",
+    text: "The promo engine has no test for stacked codes.",
+  },
+  { kind: "step", text: "Edited promo.test.ts" },
+  { kind: "say", text: "Added four cases. Running the suite." },
+] as const;
+
+function useLoopStage(beats: number[], resetAt: number) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [stage, setStage] = useState(beats.length);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+    let timers: number[] = [];
+    const run = () => {
+      setStage(0);
+      timers = beats.map((at, i) => window.setTimeout(() => setStage(i + 1), at));
+      timers.push(window.setTimeout(run, resetAt));
+    };
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          if (!timers.length) run();
+        } else {
+          timers.forEach(clearTimeout);
+          timers = [];
+          setStage(beats.length);
+        }
+      },
+      { rootMargin: "0px 0px -18% 0px" },
+    );
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      timers.forEach(clearTimeout);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return { ref, stage };
+}
+
+function GangDemo() {
+  const { ref, stage } = useLoopStage(GANG_BEATS, GANG_RESET);
+  const settled = stage >= GANG_BEATS.length;
+  const shown = settled ? GANG_STEPS.length : Math.min(stage + 1, GANG_STEPS.length);
+  return (
+    <div className="gang-demo" ref={ref} aria-hidden>
+      <div className="gang-side">
+        <span className="sub-group">storefront</span>
+        <div className="sub-row gang-row is-open">
+          <OpenAiIcon className="gang-pv" />
+          <span className="sub-title">Audit promo code coverage</span>
+          {stage >= 2 || settled ? <DemoCheck /> : <DemoSpinner />}
+        </div>
+        <div className="sub-row gang-row">
+          <ClaudeIcon className="gang-pv" />
+          <span className="sub-title">Trace order checkout flow</span>
+          {stage >= 3 || settled ? <DemoCheck /> : <DemoSpinner />}
+        </div>
+        <div
+          className={
+            stage >= 3 || settled ? "sub-row gang-row gang-kid in" : "sub-row gang-row gang-kid"
+          }
+        >
+          <ClaudeIcon className="gang-pv" />
+          <span className="sub-title">Confirm the checkout totals</span>
+          <DemoSpinner />
+        </div>
+        <div className="sub-row gang-row">
+          <CursorIcon className="gang-pv" />
+          <span className="sub-title">Explain promo checkout impact</span>
+          <HugeiconsIcon icon={MessageQuestionIcon} className="gang-wait" />
+        </div>
+        <span className="sub-group gang-gap">checkout-api</span>
+        <div className="sub-row gang-row">
+          <PiIcon className="gang-pv" />
+          <span className="sub-title">Summarize service route</span>
+          {stage >= 4 || settled ? <DemoCheck /> : <DemoSpinner />}
+        </div>
+        <span className="sub-group gang-gap">mobile</span>
+        <div className="sub-row gang-row">
+          <OpencodeIcon className="gang-pv" />
+          <span className="sub-title">Suggest README improvement</span>
+          <DemoSpinner />
+        </div>
+      </div>
+      <div className="gang-thread">
+        <div className="gang-head">
+          <OpenAiIcon className="gang-pv" />
+          <span className="gang-title">Audit promo code coverage</span>
+          <span className="gang-badge">Codex</span>
+        </div>
+        <div className="gang-feed">
+          {GANG_STEPS.slice(0, shown).map((s, i) => (
+            <p
+              key={s.text}
+              className={s.kind === "step" ? "gang-step in" : "gang-say in"}
+              style={{ animationDelay: `${i * 40}ms` }}
+            >
+              {s.text}
+            </p>
+          ))}
+        </div>
+        <div className="gang-tree">
+          <FolderGitIcon className="gang-tree-ic" />
+          Worktree · bb/audit-promo-coverage
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────
  * SPAWN MACHINE (loops while in view; ~6.4s per cause)
  *
  * Three causes fire into one sidebar, one at a time:
@@ -1898,7 +2217,13 @@ function StatNumber({ value }: { value: string }) {
       setText(value);
       observer.disconnect();
       window.removeEventListener("scroll", onScroll);
+      window.clearTimeout(hold);
     };
+    // Rendering law: a zeroed numeral is a false statement. The roll waits
+    // for the reader, but never holds the real value hostage — after the
+    // hold it reveals regardless, so any capture, crawler, or slow scroll
+    // sees the truth.
+    const hold = window.setTimeout(reveal, 5000);
     const observer = new IntersectionObserver(([entry]) => {
       if (entry?.isIntersecting) reveal();
     });
@@ -1913,6 +2238,7 @@ function StatNumber({ value }: { value: string }) {
     return () => {
       observer.disconnect();
       window.removeEventListener("scroll", onScroll);
+      window.clearTimeout(hold);
     };
   }, [value]);
   return (
@@ -2016,12 +2342,8 @@ function LandingPage() {
             <p>
               An agent built the Tasks plugin: a panel, a CLI, and a skill.
             </p>
-            <div className="bento-window bento-zoom">
-              <DemoWindow
-                src="/landing/demo-tasks.mp4"
-                poster="/landing/demo-tasks-poster.webp"
-                label="Screen recording of the Tasks plugin bb built from one prompt"
-              />
+            <div className="bento-window bento-component">
+              <TasksBoardDemo />
             </div>
           </li>
           <li>
@@ -2030,12 +2352,8 @@ function LandingPage() {
               Working-tree diffs, commits, and PRs sit beside the
               conversation.
             </p>
-            <div className="bento-window">
-              <img
-                src="/landing/care-diff.webp"
-                alt="The diff panel showing a README change"
-                loading="lazy"
-              />
+            <div className="bento-window bento-component">
+              <ReviewDemo />
             </div>
           </li>
           <li>
@@ -2074,12 +2392,8 @@ function LandingPage() {
             </p>
           </div>
         </div>
-        <div className="stage">
-          <DemoWindow
-            src="/landing/demo-install.mp4"
-            poster="/landing/demo-install-poster.webp"
-            label="Screen recording of bb's Extensions page: browsing plugins, installing the GitHub plugin, and landing on its installed page"
-          />
+        <div className="rail">
+          <BuildDemo />
         </div>
       </section>
 
@@ -2101,12 +2415,8 @@ function LandingPage() {
             </div>
           </div>
         </div>
-        <div className="room stage">
-          <DemoWindow
-            src="/landing/demo-panorama.mp4"
-            poster="/landing/demo-panorama-poster.webp"
-            label="Screen recording of bb running several agent threads at once: a worktree edit with its diff open, a child thread nested under its parent, and other agents working in the sidebar"
-          />
+        <div className="rail">
+          <GangDemo />
         </div>
       </section>
 
@@ -2155,13 +2465,6 @@ function LandingPage() {
             <span>PRs merged last month</span>
           </li>
         </ul>
-        <p className="pr-feed-head rail">
-          <strong>
-            {GITHUB_STATS.agentMergedLastMonth} of those{" "}
-            {GITHUB_STATS.mergedLastMonth} were written by agents running in bb.
-          </strong>{" "}
-          Every one carries its agent&rsquo;s signature in the pull request.
-        </p>
         <PRFeed />
         <div className="open-cta">
           <GitHubLink placement="local" className="btn btn-ghost">
