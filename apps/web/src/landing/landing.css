@@ -58,6 +58,7 @@
   --surface-3: color-mix(in oklab, var(--ink-strong) 7%, var(--canvas));
   --line: color-mix(in oklab, var(--ink-strong) 11%, var(--canvas));
   --line-strong: color-mix(in oklab, var(--ink-strong) 16%, var(--canvas));
+  --band: color-mix(in oklab, var(--ink-strong) 3.5%, var(--canvas));
 
   /* widths + rhythm */
   --rail: 1200px;
@@ -162,6 +163,22 @@ code,
 
 .measure {
   max-width: var(--measure);
+}
+
+/* Alternating section fills: a .slate section paints a full-bleed light
+   slate band behind its own box (100vmax spill, clipped) — sharp flat
+   transitions, no hairlines, no gradients. Strict white/slate alternation
+   down the page. */
+.slate {
+  background: var(--band);
+  box-shadow: 0 0 0 100vmax var(--band);
+  clip-path: inset(0 -100vmax);
+}
+
+/* Inner panels invert against their band so the layer under a capture is
+   always one step off the ground it sits on. */
+.slate .room {
+  background: var(--bg);
 }
 
 /* ── Nav ────────────────────────────────────────────────────────── */
@@ -470,34 +487,30 @@ code,
   animation-delay: 0.57s;
 }
 
-/* Release rail: a full-width line in the page frame under the nav, not a
-   floating pill. The hairlines bleed to the viewport edge; the text sits on
-   the editorial rail. */
-.release-rail {
-  position: relative;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100vw;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 8px;
-}
-
 .updates-callout {
-  width: min(var(--rail), calc(100vw - 2 * var(--gutter)));
-  margin-inline: auto;
-  padding: 9px 0;
+  width: fit-content;
+  max-width: min(100%, 680px);
+  margin: 0 auto 48px;
+  padding: 6px 12px 6px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--bg) 82%, transparent);
   color: var(--dim);
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
   font-size: 13px;
   line-height: 1.35;
-  transition: color var(--duration-hover) var(--ease-standard);
+  transition:
+    background var(--duration-hover) var(--ease-standard),
+    border-color var(--duration-hover) var(--ease-standard),
+    transform var(--duration-hover) var(--ease-standard);
 }
 
 .updates-callout:hover {
-  color: var(--ink);
+  background: var(--state-hover);
+  border-color: color-mix(in oklab, var(--ink) 22%, var(--bg));
+  transform: translateY(-1px);
 }
 
 .updates-label {
@@ -624,24 +637,17 @@ code,
    breaks out of the 980px text column and takes the stage at up to 1340px,
    the width the three-pane composition (sidebar, thread, Changes) needs to
    breathe. The text column above stays narrow; only the product widens. */
-/* The theater: above the sidebar-collapse breakpoint the interactive demo
-   sits in a recessed room at product-stage width — a ground with its own
-   faint drafting grid, the window seated low inside it as the page's one
-   elevated hero object. */
+/* The theater band: the interactive demo sits centered at product-stage
+   width on the slate band, seated low, the page's one elevated hero object. */
 @media (min-width: 1100px) {
   .hero-stage {
-    position: relative;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(var(--stage), calc(100vw - 32px));
-    padding: 52px 44px 20px;
-    border-radius: var(--r-room);
-    background: var(--surface-1);
-    overflow: hidden;
+    padding: 56px 0 24px;
   }
 
   .hero-stage .mock {
     position: relative;
+    width: min(var(--stage), calc(100vw - 32px));
+    margin-inline: calc((100% - min(var(--stage), 100vw - 32px)) / 2);
     border-radius: var(--r-card);
     box-shadow: var(--shadow-window);
   }
@@ -1957,20 +1963,7 @@ code,
    act; the header grammar stays constant. */
 .act {
   position: relative;
-  margin-top: calc(var(--act) * 0.6);
-  padding-top: calc(var(--act) * 0.55);
-}
-
-/* Zed's section grammar in bb's register: each act opens on a full-bleed
-   hairline, not a texture or a tonal band. */
-.act::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100vw;
-  border-top: 1px solid var(--line);
+  padding-block: calc(var(--act) * 0.55);
 }
 
 .act-head {
@@ -2105,18 +2098,6 @@ code,
   box-shadow: none;
 }
 
-.causal-pane .demo-caption {
-  position: absolute;
-  bottom: 0;
-  inset-inline: 0;
-  padding: 26px 14px 10px;
-  background: linear-gradient(
-    to top,
-    color-mix(in oklab, var(--bg) 92%, transparent),
-    transparent
-  );
-}
-
 @media (max-width: 900px) {
   .act-head {
     grid-template-columns: 1fr;
@@ -2156,19 +2137,9 @@ code,
   background: var(--bg);
 }
 
-/* Caption sits under the frame, outside it — the frame itself is pure
-   product, no invented window dressing. */
-.demo-caption {
-  padding: 10px 2px 0;
-  font-size: 12.5px;
-  line-height: 1.45;
-  color: var(--subtle);
-}
-
 /* ── Statement ──────────────────────────────────────────────────── */
 
 .statement {
-  border-top: 1px solid var(--border-soft);
   padding: 84px 0;
   text-align: center;
 }

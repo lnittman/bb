@@ -1073,7 +1073,7 @@ function HeroAppMock() {
   }, []);
 
   return (
-    <section className="mockup-wrap hero-stage">
+    <section className="mockup-wrap hero-stage slate">
       <span className="stage-label" aria-hidden>
         <i className="stage-dot" />
         Interactive demo
@@ -1257,16 +1257,21 @@ function HeroAppMock() {
 function Band({
   title,
   flip,
+  slate,
   visual,
   children,
 }: {
   title: string;
   flip?: boolean;
+  slate?: boolean;
   visual: ReactNode;
   children: ReactNode;
 }) {
+  const classes = ["band", flip && "band-flip", slate && "slate"]
+    .filter(Boolean)
+    .join(" ");
   return (
-    <section className={flip ? "band band-flip" : "band"}>
+    <section className={classes}>
       <div className="band-grid">
         <div className="band-copy">
           <h2>{title}</h2>
@@ -1290,12 +1295,10 @@ function DemoWindow({
   src,
   poster,
   label,
-  caption,
 }: {
   src: string;
   poster: string;
   label: string;
-  caption: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
@@ -1329,7 +1332,6 @@ function DemoWindow({
         preload="none"
         aria-label={label}
       />
-      <figcaption className="demo-caption">{caption}</figcaption>
     </figure>
   );
 }
@@ -1345,8 +1347,10 @@ function LandingPage() {
     <div className="wrap">
       <SiteNav />
 
-      {!PRODUCT_HUNT_LAUNCH_ACTIVE && (
-        <div className="release-rail">
+      <header className="hero">
+        {PRODUCT_HUNT_LAUNCH_ACTIVE ? (
+          <ProductHuntCallout placement="hero" />
+        ) : (
           <a className="updates-callout" href={LATEST_RELEASE_URL}>
             <span className="updates-label">New</span>
             <span className="updates-title">
@@ -1354,13 +1358,7 @@ function LandingPage() {
             </span>
             <ChevronRight className="updates-arrow" />
           </a>
-        </div>
-      )}
-
-      <header className="hero">
-        {PRODUCT_HUNT_LAUNCH_ACTIVE ? (
-          <ProductHuntCallout placement="hero" />
-        ) : null}
+        )}
         <h1>The IDE that builds itself</h1>
         <p className="sub">
           Claude Code, Codex, Cursor, and Pi — every agent in one place, each
@@ -1389,6 +1387,7 @@ function LandingPage() {
       </section>
 
       <Band
+        slate
         title="Fully customizable."
         flip
         visual={
@@ -1396,7 +1395,6 @@ function LandingPage() {
             src="/landing/demo-tasks.mp4"
             poster="/landing/demo-tasks-poster.webp"
             label="Screen recording of the Tasks plugin in bb: the sidebar panel, a project list, and its board view"
-            caption="Recorded live — the Tasks plugin: a panel, a CLI, and a skill."
           />
         }
       >
@@ -1437,12 +1435,11 @@ function LandingPage() {
             src="/landing/demo-panorama.mp4"
             poster="/landing/demo-panorama-poster.webp"
             label="Screen recording of bb running several agent threads at once: a worktree edit with its diff open, a child thread nested under its parent, and other agents working in the sidebar"
-            caption="Recorded live — a worktree edit under review, a child thread reporting back, two more agents at work."
           />
         </div>
       </section>
 
-      <section className="act">
+      <section className="act slate">
         <div className="act-head rail">
           <h2>Anything can kick off work.</h2>
           <div className="act-lead">
@@ -1472,7 +1469,6 @@ function LandingPage() {
               src="/landing/demo-spawn.mp4"
               poster="/landing/demo-spawn-poster.webp"
               label="Screen recording of the bb sidebar as a thread spawned from the CLI arrives and starts running"
-              caption="Recorded live — the sidebar, as the spawned thread arrives."
             />
           </div>
         </div>
@@ -1505,7 +1501,7 @@ function LandingPage() {
         </div>
       </section>
 
-      <section className="closer">
+      <section className="closer slate">
         <h2 className="sec-title">Put your agents to work.</h2>
         <p>Free, open source, and local-first. Install in under a minute.</p>
         <InstallOptions placement="closer" />
