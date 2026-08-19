@@ -36,9 +36,23 @@ if (!lastPage) {
   throw new Error("Could not read contributor count from Link header");
 }
 
+// PRs merged in the trailing 30 days — the cadence stat.
+const since = new Date(Date.now() - 30 * 24 * 3600 * 1000)
+  .toISOString()
+  .slice(0, 10);
+const merged = await (
+  await api(
+    `/search/issues?q=${encodeURIComponent(
+      `repo:${REPO} is:pr is:merged merged:>${since}`,
+    )}`,
+  )
+).json();
+
 const stats = {
   stars: repo.stargazers_count,
+  forks: repo.forks_count,
   contributors: Number(lastPage),
+  mergedLastMonth: merged.total_count,
   fetchedAt: new Date().toISOString().slice(0, 10),
 };
 writeFileSync(OUT, `${JSON.stringify(stats, null, 2)}\n`);

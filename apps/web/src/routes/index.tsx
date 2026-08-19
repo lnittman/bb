@@ -1357,6 +1357,44 @@ function DemoWindow({
 
 /* ── Page ─────────────────────────────────────────────────────────── */
 
+/** One full-bleed avatar film strip: square cells in a continuous row,
+ *  ghost cells interleaved for texture (zed's open-source grammar). The
+ *  pattern is deterministic so prerender and hydration agree. */
+function OpenSourceStrip({ half }: { half: "first" | "second" }) {
+  const mid = Math.ceil(CONTRIBUTOR_LOGINS.length / 2);
+  const logins =
+    half === "first"
+      ? CONTRIBUTOR_LOGINS.slice(0, mid)
+      : CONTRIBUTOR_LOGINS.slice(mid);
+  const cells: ReactNode[] = [];
+  // ghost padding on both ends so the strip runs past the viewport edges
+  for (let i = 0; i < 8; i++) {
+    cells.push(<li key={`lead${i}`} className="os-ghost" aria-hidden />);
+  }
+  logins.forEach((login, i) => {
+    // a ghost cell every third slot, offset per half so the rows stagger
+    if (i % 3 === (half === "first" ? 1 : 2)) {
+      cells.push(<li key={`g${i}`} className="os-ghost" aria-hidden />);
+    }
+    const url = CONTRIBUTOR_AVATARS[`../assets/contributors/${login}.webp`];
+    if (url) {
+      cells.push(
+        <li key={login}>
+          <img src={url} alt={login} width={36} height={36} loading="lazy" />
+        </li>,
+      );
+    }
+  });
+  for (let i = 0; i < 8; i++) {
+    cells.push(<li key={`tail${i}`} className="os-ghost" aria-hidden />);
+  }
+  return (
+    <ul className="os-strip" aria-label="bb contributors">
+      {cells}
+    </ul>
+  );
+}
+
 /** A stat numeral that rolls to its value with a character morph (torph)
  *  the first time it scrolls into view. Prerendered HTML carries the real
  *  value; the roll starts from 0 only after hydration, and reduced motion
@@ -1626,49 +1664,39 @@ function LandingPage() {
       </section>
 
       <section className="act open-act">
-        <div className="rail open-rail">
-          <ul className="avatar-strip" aria-label="bb contributors">
-            {CONTRIBUTOR_LOGINS.slice(0, 16).map((login) => {
-              const url =
-                CONTRIBUTOR_AVATARS[`../assets/contributors/${login}.webp`];
-              return url ? (
-                <li key={login}>
-                  <img src={url} alt={login} width={28} height={28} />
-                </li>
-              ) : null;
-            })}
-            <li className="avatar-more">
-              +{Math.max(0, GITHUB_STATS.contributors - 16)} more
-            </li>
-          </ul>
-          <ul className="stat-row">
-            <li>
-              <StatNumber value={GITHUB_STATS.stars.toLocaleString("en-US")} />
-              <span>GitHub stars</span>
-            </li>
-            <li>
-              <StatNumber value={String(GITHUB_STATS.contributors)} />
-              <span>contributors</span>
-            </li>
-            <li>
-              <strong>MIT</strong>
-              <span>licensed, end to end</span>
-            </li>
-          </ul>
-          <div className="open-copy">
-            <h2 className="sec-title">Fork it. Make it your own.</h2>
+        <div className="act-head rail">
+          <h2>Open source, end to end.</h2>
+          <div className="act-lead">
             <p>
-              bb is MIT-licensed end to end. Fork the repo, customize the
-              agents, tools, and UI, and deploy your own build across your
-              whole organization — still local-first, on the subscriptions you
-              already pay for.
+              bb is MIT-licensed and built in the open — fork it, customize
+              the agents, tools, and UI, and ship your own build.
             </p>
-            <div className="cta-row">
-              <GitHubLink placement="local" className="btn btn-ghost">
-                View the source →
-              </GitHubLink>
-            </div>
           </div>
+        </div>
+        <OpenSourceStrip half="first" />
+        <ul className="stat-band rail">
+          <li>
+            <StatNumber value={GITHUB_STATS.stars.toLocaleString("en-US")} />
+            <span>Stars</span>
+          </li>
+          <li>
+            <StatNumber value={String(GITHUB_STATS.forks)} />
+            <span>Forks</span>
+          </li>
+          <li>
+            <StatNumber value={String(GITHUB_STATS.contributors)} />
+            <span>Contributors</span>
+          </li>
+          <li>
+            <StatNumber value={String(GITHUB_STATS.mergedLastMonth)} />
+            <span>PRs merged last month</span>
+          </li>
+        </ul>
+        <OpenSourceStrip half="second" />
+        <div className="open-cta">
+          <GitHubLink placement="local" className="btn btn-ghost">
+            View the source →
+          </GitHubLink>
         </div>
       </section>
 

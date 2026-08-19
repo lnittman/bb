@@ -2216,80 +2216,87 @@ code,
   color: var(--subtle);
 }
 
-/* ── Open-source beat: faces, numbers, and the fork statement ────── */
+/* ── Open-source beat: film strips of faces around a ruled stat band ──
+   zed's open-source grammar in the light register: full-bleed rows of
+   square avatar cells (ghost cells for texture) sandwiching four quiet
+   tabular numerals separated by hairlines. */
 
-.open-rail {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 30px;
-}
-
-.avatar-strip {
+.os-strip {
   list-style: none;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
   display: flex;
-  align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  padding-left: 10px;
+  gap: 10px;
+  padding: 4px 0;
+  overflow: hidden;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 12%,
+    black 88%,
+    transparent
+  );
 }
 
-.avatar-strip li {
-  margin-left: -10px;
+.os-strip li {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-.avatar-strip img {
+.os-strip img {
   display: block;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid var(--canvas);
+  width: 100%;
+  height: 100%;
+  filter: grayscale(0.25);
 }
 
-.avatar-more {
-  margin-left: 16px;
-  font-size: 12.5px;
-  color: var(--subtle);
+.os-ghost {
+  border: 1px solid var(--line);
 }
 
-.stat-row {
+.stat-band {
   list-style: none;
-  display: flex;
-  justify-content: center;
-  gap: clamp(40px, 6vw, 88px);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-block: 26px;
   text-align: center;
 }
 
-.stat-row li {
+.stat-band li {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
+  padding: 10px 12px;
 }
 
-.stat-row strong {
-  font-size: clamp(40px, 4.4vw, 62px);
+.stat-band li + li {
+  border-left: 1px solid var(--line);
+}
+
+.stat-band strong {
+  font-size: clamp(24px, 2.4vw, 34px);
   line-height: 1;
   font-weight: 620;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   color: var(--ink-strong);
 }
 
-/* Direct-child only: torph renders its own nested spans inside the strong. */
-.stat-row li > span {
-  font-size: 13.5px;
+.stat-band li > span {
+  font-size: 12.5px;
   color: var(--dim);
 }
 
-.open-copy {
-  text-align: center;
-  max-width: 620px;
-}
-
-.open-copy p {
-  margin-top: 16px;
-  color: var(--dim);
-  line-height: 1.6;
+.open-cta {
+  margin-top: 40px;
+  display: flex;
+  justify-content: center;
 }
 
 /* ── Closer: one ending with the subscribe inline ────────────────── */
@@ -2316,61 +2323,9 @@ code,
     min-height: 360px;
   }
 
-  .stat-row {
-    flex-wrap: wrap;
-    gap: 28px 40px;
   }
-}
-
-.avatar-strip {
-  list-style: none;
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  padding-left: 10px;
-}
-
-.avatar-strip li {
-  margin-left: -10px;
-}
-
-.avatar-strip img {
-  display: block;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2px solid var(--canvas);
-}
-
-.stat-row {
-  list-style: none;
-  display: flex;
-  justify-content: center;
-  gap: clamp(40px, 6vw, 88px);
-  text-align: center;
-}
-
-.stat-row li {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.stat-row strong {
-  font-size: clamp(40px, 4.4vw, 62px);
-  line-height: 1;
-  font-weight: 620;
-  letter-spacing: -0.04em;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink-strong);
-}
 
 /* Direct-child only: torph renders its own nested spans inside the strong. */
-.stat-row li > span {
-  font-size: 13.5px;
-  color: var(--dim);
-}
-
 /* Authored crop: the spawn story lives in the sidebar, so the pane zooms
    into the capture's left region. The 2x source keeps it crisp. */
 .causal-pane .demo-window {
