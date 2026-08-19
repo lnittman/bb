@@ -2126,38 +2126,56 @@ code,
   color: var(--subtle);
 }
 
-/* ── The spawn demo: cause above effect, both crafted ─────────────── */
+/* ── The spawn machine: three causes firing into one sidebar ─────── */
 
 .causal {
-  display: flex;
-  justify-content: center;
+  display: block;
 }
 
 .spawn-demo {
-  width: min(660px, 100%);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: clamp(8px, 2vw, 24px) 0;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(20px, 2.6vw, 36px);
+  align-items: center;
 }
 
-/* One-line terminal bar — an artifact, not a slab. */
+.spawn-causes {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Every cause rests at reduced presence; the live one takes the stage. */
+.spawn-cause {
+  opacity: 0.55;
+  transform: scale(0.985);
+  transition:
+    opacity var(--duration-panel) var(--ease-out),
+    transform var(--duration-panel) var(--ease-out),
+    box-shadow var(--duration-state) var(--ease-standard);
+}
+
+.spawn-cause.live {
+  opacity: 1;
+  transform: none;
+}
+
+/* The terminal line — the one dark artifact. */
 .spawn-term {
   display: flex;
   align-items: baseline;
-  padding: 13px 18px;
+  padding: 14px 18px;
   border-radius: 12px;
   background: color-mix(in oklch, var(--ink-strong) 96%, var(--canvas));
   color: color-mix(in oklch, var(--canvas) 92%, var(--ink-strong));
   font-family: var(--font-mono);
-  font-size: 13.5px;
+  font-size: 13px;
   line-height: 1.5;
   white-space: nowrap;
   overflow: hidden;
-  transition: box-shadow var(--duration-state) var(--ease-standard);
 }
 
-.spawn-term.sent {
+.spawn-term.live.sent {
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--ink-strong) 12%, transparent);
 }
 
@@ -2165,11 +2183,16 @@ code,
   display: inline-block;
   overflow: hidden;
   white-space: nowrap;
-  max-width: 0;
+  max-width: 60ch;
   vertical-align: bottom;
 }
 
+.spawn-cause:not(.live) .spawn-cmd {
+  max-width: 60ch;
+}
+
 .spawn-cmd.typing {
+  max-width: 0;
   animation: spawn-type 1.7s steps(58, end) forwards;
 }
 
@@ -2179,48 +2202,18 @@ code,
   }
 }
 
-/* The sidebar fragment the row arrives into. */
-/* Two causes share one slot: the CLI line and the Telegram message
-   crossfade as the loop alternates its source. */
-.spawn-sources {
-  position: relative;
-}
-
-.spawn-term.source-out {
-  opacity: 0;
-  transform: translateY(-4px);
-}
-
-.spawn-term {
-  transition:
-    opacity var(--duration-panel) var(--ease-out),
-    transform var(--duration-panel) var(--ease-out),
-    box-shadow var(--duration-state) var(--ease-standard);
-}
-
-.spawn-tg {
-  position: absolute;
-  inset: 0;
+/* Message + schedule causes: white artifacts with the shadow ring. */
+.spawn-tg,
+.spawn-cron {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 16px;
+  padding: 12px 16px;
   border-radius: 12px;
   background: var(--bg);
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
     0 10px 26px -16px color-mix(in oklab, var(--ink-strong) 24%, transparent);
-  opacity: 0;
-  transform: translateY(6px);
-  pointer-events: none;
-  transition:
-    opacity var(--duration-panel) var(--ease-out),
-    transform var(--duration-panel) var(--ease-out);
-}
-
-.spawn-tg.in {
-  opacity: 1;
-  transform: none;
 }
 
 .spawn-tg img {
@@ -2229,6 +2222,12 @@ code,
   border-radius: 50%;
   outline: 1px solid color-mix(in oklab, var(--ink-strong) 10%, transparent);
   outline-offset: -1px;
+}
+
+.cron-ic {
+  width: 22px;
+  height: 22px;
+  color: var(--dim);
 }
 
 .tg-body {
@@ -2263,34 +2262,44 @@ code,
   flex: none;
   font-size: 11.5px;
   color: var(--subtle);
+  font-variant-numeric: tabular-nums;
 }
 
+/* The sidebar the threads arrive into — the machine's output. */
 .spawn-window {
-  border-radius: 12px;
+  border-radius: var(--r-card);
   background: var(--bg);
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
     var(--shadow-window);
-  padding: 18px 20px;
+  padding: 22px 24px;
   display: flex;
   flex-direction: column;
   gap: 2px;
   font-size: 14px;
+  min-height: 380px;
+  justify-content: center;
 }
 
 .spawn-gap {
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
 .spawn-new {
+  max-height: 44px;
   transition:
     transform 0.55s var(--ease-out),
-    opacity 0.55s var(--ease-out);
+    opacity 0.55s var(--ease-out),
+    max-height 0.55s var(--ease-out),
+    padding 0.55s var(--ease-out);
 }
 
 .spawn-demo .spawn-new:not(.in) {
   opacity: 0;
   transform: translateY(-8px);
+  max-height: 0;
+  padding-block: 0;
+  overflow: hidden;
 }
 
 .spawn-dot {
@@ -2301,13 +2310,149 @@ code,
   background: var(--dim);
 }
 
+@media (max-width: 900px) {
+  .spawn-demo {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .spawn-window {
+    min-height: 0;
+  }
+}
+
+/* ── Mock plugin panels (hero sidebar IA views) ──────────────────── */
+
+.main-panel {
+  padding: 18px 22px;
+  overflow: hidden;
+}
+
+.ppanel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+}
+
+.ppanel-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ppanel-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ppanel-cta {
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: var(--r-control);
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.tboard {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.tcol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tcol-head {
+  font-size: 11.5px;
+  font-weight: 550;
+  color: var(--dim);
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.tcol-head em {
+  font-style: normal;
+  color: var(--subtle);
+}
+
+.tcard {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 9px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink);
+  box-shadow: 0 1px 2px color-mix(in oklab, var(--ink) 5%, transparent);
+}
+
+.tcard-id {
+  display: block;
+  font-size: 10.5px;
+  color: var(--subtle);
+  margin-bottom: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.plist {
+  display: flex;
+  flex-direction: column;
+}
+
+.plist-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 11px 2px;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 13px;
+}
+
+.plist-row:last-child {
+  border-bottom: none;
+}
+
+.plist-name {
+  flex: none;
+  min-width: 118px;
+  font-weight: 550;
+  color: var(--ink);
+}
+
+.plist-blurb {
+  color: var(--dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auto-ok,
+.auto-paused {
+  margin-left: auto;
+  flex: none;
+  font-size: 11.5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--ok) 14%, var(--bg));
+  color: var(--ok);
+}
+
+.auto-paused {
+  background: var(--surface);
+  color: var(--subtle);
+}
+
+/* Shared terminal glyph bits. */
 .term-ps {
   opacity: 0.55;
   margin-right: 6px;
-}
-
-.term-str {
-  opacity: 0.78;
 }
 
 .term-caret {
@@ -2837,13 +2982,7 @@ code,
     margin-bottom: 26px;
   }
 
-  .causal {
-    grid-template-columns: 1fr;
-  }
 
-  .term-plane {
-    padding: 18px 20px;
-  }
 }
 
 /* ── Band visuals: real captures in window chrome ────────────────── */

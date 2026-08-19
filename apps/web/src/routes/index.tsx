@@ -1657,33 +1657,38 @@ function AskDemo() {
 }
 
 /* ────────────────────────────────────────────────
- * SPAWN STORYBOARD (loops while in view)
+ * SPAWN MACHINE (loops while in view; ~6.4s per cause)
  *
- *      0ms   terminal empty, caret blinking; sidebar resting
- *    350ms   the CLI command types itself
- *   2250ms   enter — the bar acknowledges
- *   2550ms   a thread arrives in storefront, working
- *   3250ms   its title morphs in
- *   5400ms   it settles with an unread dot
- *   7200ms   the source swaps: a Telegram message from Hermes
- *   8400ms   a second thread arrives, working
- *   9100ms   its title morphs in
- *  11200ms   it settles
- *  14200ms   the loop restarts
- *  rest      CLI shown, both threads settled — reduced-motion state
+ * Three causes fire into one sidebar, one at a time:
+ *   cause activates → (CLI types / message lands / schedule ticks)
+ *   → its thread arrives, working → title morphs in → settles with a dot
+ *   → the next cause takes over. After all three, a quiet reset.
+ * Offscreen and reduced motion rest fully settled: every cause calm,
+ * every thread present.
  * ──────────────────────────────────────────────── */
-const SPAWN_LOOP = [350, 2250, 2550, 3250, 5400, 7200, 8400, 9100, 11200];
-const SPAWN_RESTART = 14200;
+const BEAT_MS = 6400;
+const BEAT = {
+  fire: 1900, // CLI finishes typing / message read / schedule hits
+  row: 2200,
+  title: 2900,
+  dot: 5000,
+};
+const SPAWN_RESET_MS = 3 * BEAT_MS + 1600;
 
 const SPAWN_COMMAND = 'bb thread spawn --prompt "Trace one order to confirmation"';
-const SPAWN_TITLE = "Trace order checkout flow";
-const SPAWN_TG_TITLE = "Audit promo code coverage";
 
-/** Loops the spawn storyboard while the demo is on screen; rests settled
- *  (both threads present, CLI shown) offscreen and under reduced motion. */
-function useSpawnLoop() {
+const SPAWN_CAUSES = [
+  { id: "cli", title: "Trace order checkout flow" },
+  { id: "telegram", title: "Audit promo code coverage" },
+  { id: "cron", title: "Nightly dependency sweep" },
+] as const;
+
+type SpawnPhase = { beat: number; t: number };
+
+function useSpawnMachine() {
   const ref = useRef<HTMLDivElement>(null);
-  const [stage, setStage] = useState(SPAWN_LOOP.length);
+  const settledPhase: SpawnPhase = { beat: 3, t: 0 };
+  const [phase, setPhase] = useState<SpawnPhase>(settledPhase);
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       return;
@@ -1691,64 +1696,78 @@ function useSpawnLoop() {
     const el = ref.current;
     if (!el) return;
     let timers: number[] = [];
-    const run = () => {
-      setStage(0);
-      timers = SPAWN_LOOP.map((at, i) =>
-        window.setTimeout(() => setStage(i + 1), at),
+    const schedule = () => {
+      for (let beat = 0; beat < 3; beat++) {
+        const base = beat * BEAT_MS;
+        timers.push(
+          window.setTimeout(() => setPhase({ beat, t: 0 }), base),
+          window.setTimeout(() => setPhase({ beat, t: 1 }), base + BEAT.fire),
+          window.setTimeout(() => setPhase({ beat, t: 2 }), base + BEAT.row),
+          window.setTimeout(() => setPhase({ beat, t: 3 }), base + BEAT.title),
+          window.setTimeout(() => setPhase({ beat, t: 4 }), base + BEAT.dot),
+        );
+      }
+      timers.push(
+        window.setTimeout(() => {
+          timers = [];
+          schedule();
+        }, SPAWN_RESET_MS),
       );
-      timers.push(window.setTimeout(run, SPAWN_RESTART));
     };
     const stop = () => {
       timers.forEach(clearTimeout);
       timers = [];
-      setStage(SPAWN_LOOP.length);
+      setPhase({ beat: 3, t: 0 });
     };
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting) {
-          if (!timers.length) run();
+          if (!timers.length) schedule();
         } else {
           stop();
         }
       },
-      { rootMargin: "0px 0px -20% 0px" },
+      { rootMargin: "0px 0px -18% 0px" },
     );
     observer.observe(el);
     return () => {
       observer.disconnect();
       timers.forEach(clearTimeout);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  return { ref, stage };
+  return { ref, phase };
+}
+
+/** Progress of cause `i` under the current phase: 0 = untouched, then
+ *  1..4 through fire/row/title/dot; completed causes hold 4. */
+function causeStage(phase: SpawnPhase, i: number) {
+  if (phase.beat > i) return 4;
+  if (phase.beat < i) return 0;
+  return phase.t;
 }
 
 function SpawnDemo() {
-  const { ref, stage } = useSpawnLoop();
-  const settled = stage >= SPAWN_LOOP.length;
-  const tg = stage >= 6 && !settled;
+  const { ref, phase } = useSpawnMachine();
+  const cli = causeStage(phase, 0);
+  const tg = causeStage(phase, 1);
+  const cron = causeStage(phase, 2);
+  const active = phase.beat < 3 ? phase.beat : -1;
   return (
     <div className="spawn-demo" ref={ref} aria-hidden>
-      <div className="spawn-sources">
+      <div className="spawn-causes">
         <p
-          className={
-            tg
-              ? "spawn-term source-out"
-              : stage >= 2
-                ? "spawn-term sent"
-                : "spawn-term"
-          }
+          className={`spawn-term spawn-cause${active === 0 ? " live" : ""}${
+            cli >= 1 ? " sent" : ""
+          }`}
         >
           <span className="term-ps">$</span>
-          <span
-            className={
-              stage >= 1 && !settled ? "spawn-cmd typing" : "spawn-cmd"
-            }
-          >
+          <span className={active === 0 ? "spawn-cmd typing" : "spawn-cmd"}>
             {SPAWN_COMMAND}
           </span>
           <span className="term-caret" />
         </p>
-        <div className={tg ? "spawn-tg in" : "spawn-tg"}>
+        <div className={`spawn-tg spawn-cause${active === 1 ? " live" : ""}`}>
           <img src={hermesAvatar} alt="" width={26} height={26} />
           <div className="tg-body">
             <span className="tg-from">
@@ -1758,49 +1777,55 @@ function SpawnDemo() {
               spawn a thread: audit our promo code coverage
             </span>
           </div>
-          <span className="tg-time">now</span>
+          <span className="tg-time">{tg >= 1 ? "read" : "now"}</span>
+        </div>
+        <div className={`spawn-cron spawn-cause${active === 2 ? " live" : ""}`}>
+          <HugeiconsIcon icon={Clock01Icon} className="cron-ic" />
+          <div className="tg-body">
+            <span className="tg-from">
+              Automation <em>· every night</em>
+            </span>
+            <span className="tg-msg">Dependency sweep across storefront</span>
+          </div>
+          <span className="tg-time">{cron >= 1 ? "running" : "02:00"}</span>
         </div>
       </div>
       <div className="spawn-window">
         <span className="sub-group">storefront</span>
-        <div
-          className={
-            stage >= 7 || settled ? "sub-row spawn-new in" : "sub-row spawn-new"
-          }
-        >
-          <span className="sub-title">
-            <TextMorph
-              as="span"
-              duration={520}
-              ease="cubic-bezier(0.19, 1, 0.22, 1)"
-            >
-              {stage >= 8 || settled ? SPAWN_TG_TITLE : "New thread"}
-            </TextMorph>
-          </span>
-          {stage >= 9 || settled ? <i className="spawn-dot" /> : <DemoSpinner />}
-        </div>
-        <div
-          className={
-            stage >= 3 || settled ? "sub-row spawn-new in" : "sub-row spawn-new"
-          }
-        >
-          <span className="sub-title">
-            <TextMorph
-              as="span"
-              duration={520}
-              ease="cubic-bezier(0.19, 1, 0.22, 1)"
-            >
-              {stage >= 4 || settled ? SPAWN_TITLE : "New thread"}
-            </TextMorph>
-          </span>
-          {stage >= 5 || settled ? <i className="spawn-dot" /> : <DemoSpinner />}
-        </div>
+        {[
+          { stage: cron, title: SPAWN_CAUSES[2].title },
+          { stage: tg, title: SPAWN_CAUSES[1].title },
+          { stage: cli, title: SPAWN_CAUSES[0].title },
+        ].map((row) => (
+          <div
+            key={row.title}
+            className={row.stage >= 2 ? "sub-row spawn-new in" : "sub-row spawn-new"}
+          >
+            <span className="sub-title">
+              <TextMorph
+                as="span"
+                duration={520}
+                ease="cubic-bezier(0.19, 1, 0.22, 1)"
+              >
+                {row.stage >= 3 ? row.title : "New thread"}
+              </TextMorph>
+            </span>
+            {row.stage >= 4 ? (
+              <i className="spawn-dot" />
+            ) : row.stage >= 2 ? (
+              <DemoSpinner />
+            ) : null}
+          </div>
+        ))}
         <div className="sub-row sub-quiet">
           <span className="sub-title">Summarize checkout cart integration</span>
         </div>
         <span className="sub-group spawn-gap">checkout-api</span>
         <div className="sub-row sub-quiet">
           <span className="sub-title">Describe order endpoint validation</span>
+        </div>
+        <div className="sub-row sub-quiet">
+          <span className="sub-title">Summarize service route</span>
         </div>
       </div>
     </div>
@@ -2090,7 +2115,7 @@ function LandingPage() {
             </p>
           </div>
         </div>
-        <div className="room stage causal">
+        <div className="causal rail">
           <SpawnDemo />
         </div>
       </section>
