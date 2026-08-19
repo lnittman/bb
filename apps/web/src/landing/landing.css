@@ -1981,12 +1981,15 @@ code,
   padding-block: calc(var(--act) * 0.6);
 }
 
+/* Section headers: centered title over a balanced centered lead — the
+   reference grammar (x.ai/bot, zed). */
 .act-head {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: 48px;
-  align-items: start;
-  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  margin-bottom: 44px;
 }
 
 .act-head h2 {
@@ -1996,18 +1999,20 @@ code,
   letter-spacing: -0.038em;
   color: var(--ink-strong);
   text-wrap: balance;
-  max-width: 13ch;
+  max-width: 18ch;
 }
 
 .act-lead p {
   color: var(--dim);
   font-size: 16px;
   line-height: 1.6;
-  max-width: 54ch;
+  max-width: 58ch;
+  margin-inline: auto;
+  text-wrap: balance;
 }
 
 .act-lead p + p {
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 .act-claim {
@@ -2016,8 +2021,8 @@ code,
 }
 
 .act-lead .providers {
-  justify-content: flex-start;
-  margin-top: 20px;
+  justify-content: center;
+  margin-top: 18px;
 }
 
 /* A room: the recessed ground a capture sits on. */
@@ -2103,32 +2108,32 @@ code,
   box-shadow: var(--shadow-window);
 }
 
-/* ── Living bento: claims carried by real product fragments ──────── */
+/* ── Living bento: claims carried by real product fragments ────────
+ *
+ * BENTO STORYBOARD
+ *   0ms    grid enters view (-18% rootMargin)
+ *   0-640  cards settle up 12px, staggered 90ms
+ * Transform only; nothing is ever hidden. Cards are pure tone-on-tone
+ * fills (one step deeper than the band, no borders); each fragment sits
+ * in an inset white window that bleeds off the card's bottom edge. */
 
 .bento {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: clamp(14px, 1.6vw, 22px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(16px, 1.8vw, 24px);
 }
 
-/* ── BENTO STORYBOARD ──
- *   0ms   grid enters view (-18% rootMargin)
- *   0-640 cards settle up 12px, staggered 70ms left-to-right
- * Transform only; nothing is ever hidden. */
 .bento li {
-  transform: translateY(12px);
-  grid-column: span 3;
   display: flex;
   flex-direction: column;
-  padding: 18px 18px 0;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--r-card);
-  background: var(--bg);
+  min-height: 430px;
+  padding: 26px 26px 0;
+  border-radius: 20px;
+  background: color-mix(in oklab, var(--ink-strong) 6%, var(--canvas));
   overflow: hidden;
-  transition:
-    transform var(--duration-enter) var(--ease-out),
-    border-color var(--duration-state) var(--ease-standard);
+  transform: translateY(12px);
+  transition: transform var(--duration-enter) var(--ease-out);
 }
 
 .bento-in li {
@@ -2136,68 +2141,48 @@ code,
 }
 
 .bento-in li:nth-child(2) {
-  transition-delay: 70ms;
+  transition-delay: 90ms;
 }
 
 .bento-in li:nth-child(3) {
-  transition-delay: 140ms;
+  transition-delay: 180ms;
 }
 
 .bento-in li:nth-child(4) {
-  transition-delay: 210ms;
-}
-
-.bento-in li:nth-child(5) {
-  transition-delay: 280ms;
-}
-
-.bento-in li:nth-child(6) {
-  transition-delay: 350ms;
-}
-
-.bento-in li:hover {
-  transform: translateY(-2px);
-  transition-delay: 0ms;
-}
-
-.bento li:hover {
-  transform: translateY(-2px);
-  border-color: var(--line-strong);
-}
-
-.bento .bento-lg {
-  grid-column: span 6;
+  transition-delay: 270ms;
 }
 
 .bento h3 {
-  font-size: 14.5px;
+  font-size: 15.5px;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.012em;
   color: var(--ink-strong);
 }
 
 .bento p {
-  margin-top: 4px;
-  font-size: 13px;
+  margin-top: 5px;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--dim);
+  max-width: 46ch;
 }
 
-/* The fragment fills the card's lower half, cropped confidently. */
-.bento-media {
-  margin: 14px -18px 0;
-  border-top: 1px solid var(--border-soft);
-  height: 190px;
+/* The fragment: a real surface inset in the card, bleeding off the
+   bottom edge — a window into the product, not a pasted crop. */
+.bento-window {
+  margin-top: 22px;
+  flex: 1;
+  min-height: 0;
+  border-radius: 12px 12px 0 0;
+  background: var(--bg);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
+    0 12px 32px -18px color-mix(in oklab, var(--ink-strong) 30%, transparent);
   overflow: hidden;
-  background: var(--surface-1);
 }
 
-.bento-lg .bento-media {
-  height: 300px;
-}
-
-.bento-media img,
-.bento-media video {
+.bento-window img,
+.bento-window video {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -2205,14 +2190,27 @@ code,
   border: 0;
   border-radius: 0;
   box-shadow: none;
+  display: block;
 }
 
-.bento-media .demo-window {
+.bento-window .demo-window {
   height: 100%;
 }
 
+/* The tasks recording zooms into its panel so the plugin is readable at
+   card scale; the 2x source keeps it crisp. */
+.bento-zoom video {
+  width: 148%;
+  height: auto;
+}
+
+/* The ask card shows its full question width and crops the tail. */
+.bento-fit img {
+  height: auto;
+}
+
 .bento-more {
-  margin-top: 20px;
+  margin-top: 22px;
   text-align: center;
   font-size: 13px;
   color: var(--subtle);
@@ -2249,7 +2247,7 @@ code,
 }
 
 .avatar-more {
-  margin-left: 10px;
+  margin-left: 16px;
   font-size: 12.5px;
   color: var(--subtle);
 }
@@ -2277,7 +2275,8 @@ code,
   color: var(--ink-strong);
 }
 
-.stat-row span {
+/* Direct-child only: torph renders its own nested spans inside the strong. */
+.stat-row li > span {
   font-size: 13.5px;
   color: var(--dim);
 }
@@ -2309,9 +2308,12 @@ code,
 }
 
 @media (max-width: 960px) {
-  .bento li,
-  .bento .bento-lg {
-    grid-column: span 12;
+  .bento {
+    grid-template-columns: 1fr;
+  }
+
+  .bento li {
+    min-height: 360px;
   }
 
   .stat-row {
@@ -2363,7 +2365,8 @@ code,
   color: var(--ink-strong);
 }
 
-.stat-row span {
+/* Direct-child only: torph renders its own nested spans inside the strong. */
+.stat-row li > span {
   font-size: 13.5px;
   color: var(--dim);
 }
@@ -2391,8 +2394,7 @@ code,
 
 @media (max-width: 900px) {
   .act-head {
-    grid-template-columns: 1fr;
-    gap: 18px;
+    gap: 12px;
     margin-bottom: 26px;
   }
 

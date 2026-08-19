@@ -29,6 +29,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { createFileRoute } from "@tanstack/react-router";
+import { TextMorph } from "torph/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
@@ -1356,6 +1357,47 @@ function DemoWindow({
 
 /* ── Page ─────────────────────────────────────────────────────────── */
 
+/** A stat numeral that rolls to its value with a character morph (torph)
+ *  the first time it scrolls into view. Prerendered HTML carries the real
+ *  value; the roll starts from 0 only after hydration, and reduced motion
+ *  never leaves the real value. */
+function StatNumber({ value }: { value: string }) {
+  const [text, setText] = useState(value);
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+    // Already on screen (deep link, short page): keep the real value.
+    if (el.getBoundingClientRect().top < window.innerHeight) return;
+    setText("0");
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setText(value);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px -20% 0px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [value]);
+  return (
+    <strong ref={ref}>
+      <TextMorph
+        as="span"
+        duration={620}
+        ease="cubic-bezier(0.19, 1, 0.22, 1)"
+      >
+        {text}
+      </TextMorph>
+    </strong>
+  );
+}
+
 /** Transform-only entrance for the bento: cards settle up as the grid enters
  *  the viewport. Opacity never changes, so every render context shows full
  *  content — motion is pure enhancement. */
@@ -1463,10 +1505,13 @@ function LandingPage() {
           </div>
         </div>
         <ul className="bento rail">
-          <li className="bento-lg">
+          <li>
             <h3>Built from one prompt</h3>
-            <p>The Tasks plugin — its panel, CLI, and skill — as it appeared.</p>
-            <div className="bento-media">
+            <p>
+              The Tasks plugin — its panel, CLI, and skill — exactly as it
+              appeared.
+            </p>
+            <div className="bento-window bento-zoom">
               <DemoWindow
                 src="/landing/demo-tasks.mp4"
                 poster="/landing/demo-tasks-poster.webp"
@@ -1474,10 +1519,12 @@ function LandingPage() {
               />
             </div>
           </li>
-          <li className="bento-lg">
+          <li>
             <h3>Review from the thread</h3>
-            <p>Working-tree diffs, commits, and PRs beside the conversation.</p>
-            <div className="bento-media">
+            <p>
+              Working-tree diffs, commits, and PRs beside the conversation.
+            </p>
+            <div className="bento-window">
               <img
                 src="/landing/care-diff.webp"
                 alt="The diff panel showing a README change"
@@ -1487,8 +1534,11 @@ function LandingPage() {
           </li>
           <li>
             <h3>Subagents</h3>
-            <p>Threads spawn child threads and report back.</p>
-            <div className="bento-media">
+            <p>
+              Threads spawn child threads, manage them, and take the report
+              back.
+            </p>
+            <div className="bento-window">
               <img
                 src="/landing/care-subagent.webp"
                 alt="A child thread nested under its parent in the sidebar"
@@ -1497,20 +1547,11 @@ function LandingPage() {
             </div>
           </li>
           <li>
-            <h3>A worktree per thread</h3>
-            <p>Isolated checkouts — never your working tree.</p>
-            <div className="bento-media">
-              <img
-                src="/landing/care-review.webp"
-                alt="The working-tree bar showing uncommitted changes"
-                loading="lazy"
-              />
-            </div>
-          </li>
-          <li>
             <h3>Asks, not guesses</h3>
-            <p>Agents pause with a real question when they need you.</p>
-            <div className="bento-media">
+            <p>
+              Agents pause with a real question when they need your call.
+            </p>
+            <div className="bento-window bento-fit">
               <img
                 src="/landing/care-ask.webp"
                 alt="An agent asking a multiple-choice question in the thread"
@@ -1518,22 +1559,11 @@ function LandingPage() {
               />
             </div>
           </li>
-          <li>
-            <h3>Any model, per thread</h3>
-            <p>Pick the provider and model each task deserves.</p>
-            <div className="bento-media">
-              <img
-                src="/landing/care-models.webp"
-                alt="The per-thread model picker open in the composer"
-                loading="lazy"
-              />
-            </div>
-          </li>
         </ul>
         <p className="bento-more rail">
-          Also wired in: permission modes per thread · automations with retries
-          and backoff · the bb CLI and SDK · remote machines · local-first
-          SQLite
+          Also wired in: a worktree per thread · any model, per thread ·
+          permission modes · automations with retries and backoff · the bb CLI
+          and SDK · remote machines · local-first SQLite
         </p>
       </section>
 
@@ -1613,11 +1643,11 @@ function LandingPage() {
           </ul>
           <ul className="stat-row">
             <li>
-              <strong>{GITHUB_STATS.stars.toLocaleString("en-US")}</strong>
+              <StatNumber value={GITHUB_STATS.stars.toLocaleString("en-US")} />
               <span>GitHub stars</span>
             </li>
             <li>
-              <strong>{GITHUB_STATS.contributors}</strong>
+              <StatNumber value={String(GITHUB_STATS.contributors)} />
               <span>contributors</span>
             </li>
             <li>
