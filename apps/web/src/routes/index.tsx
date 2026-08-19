@@ -35,6 +35,14 @@ import type { CSSProperties, ReactNode } from "react";
 import changelogMd from "../../../../CHANGELOG.md?raw";
 import { initAnalytics, trackLandingEvent } from "../landing/analytics";
 import GITHUB_STATS from "../landing/github-stats.json";
+import CONTRIBUTOR_LOGINS from "../assets/contributors/index.json";
+
+// Baked 64px contributor avatars (see scripts/refresh-github-stats.mjs's
+// sibling flow) — build-time faces, no runtime GitHub calls.
+const CONTRIBUTOR_AVATARS = import.meta.glob(
+  "../assets/contributors/*.webp",
+  { eager: true, import: "default", query: "?url" },
+) as Record<string, string>;
 import blackstoneLogo from "../assets/company-logos/blackstone.png";
 import datadogLogo from "../assets/company-logos/datadog.svg";
 import figmaLogo from "../assets/company-logos/figma.svg";
@@ -1386,33 +1394,101 @@ function LandingPage() {
         <CompanyProofLogos />
       </section>
 
-      <Band
-        slate
-        title="Fully customizable."
-        flip
-        visual={
-          <DemoWindow
-            src="/landing/demo-tasks.mp4"
-            poster="/landing/demo-tasks-poster.webp"
-            label="Screen recording of the Tasks plugin in bb: the sidebar panel, a project list, and its board view"
+      <section className="act slate">
+        <div className="act-head rail">
+          <h2>Ask for a feature. Watch it appear.</h2>
+          <div className="act-lead">
+            <p>
+              Almost anything in bb can be changed in a single prompt. Ask for
+              a task tracker and one appears: a panel in your sidebar, a{" "}
+              <code>bb tasks</code> command, and a skill that teaches every
+              agent to use it.
+            </p>
+            <p>
+              The Extensions page ships with bb — browse plugins others built,
+              or describe your own. The GitHub integration, agent memory,
+              scheduled jobs, and even remote access are all plugins.
+            </p>
+          </div>
+        </div>
+        <div className="room stage showroom">
+          <img
+            className="showroom-still"
+            src="/landing/extensions-page.webp"
+            alt="bb's Extensions page: browse plugins, install official ones, or create a plugin from a prompt"
+            width={1280}
+            height={800}
+            loading="lazy"
           />
-        }
-      >
-        <p>
-          Almost anything in bb can be changed in a single prompt. Ask for a
-          task tracker and one appears: a panel in your sidebar, a{" "}
-          <code>bb tasks</code> command, and a skill that teaches every agent to
-          use it.
-        </p>
-        <p>
-          Many of bb&rsquo;s own features are built with the same tools you
-          have. The GitHub integration, agent memory, scheduled jobs, and even
-          remote access are all plugins.
-        </p>
-        <p>Nothing is stopping you from building your ideal workbench.</p>
-      </Band>
+          <div className="showroom-side">
+            <DemoWindow
+              src="/landing/demo-tasks.mp4"
+              poster="/landing/demo-tasks-poster.webp"
+              label="Screen recording of the Tasks plugin bb built from one prompt: the task list, a project, and its board view"
+            />
+            <p className="showroom-note">
+              The Tasks plugin above was built from one prompt — the panel,
+              the CLI, and the skill.
+            </p>
+          </div>
+        </div>
+      </section>
 
       <section className="act">
+        <div className="act-head rail">
+          <h2>The boring parts are load-bearing.</h2>
+          <div className="act-lead">
+            <p>
+              Trust in an agent workbench is a function of the unglamorous
+              parts. Everything a real working day needs is already wired in.
+            </p>
+          </div>
+        </div>
+        <ul className="cap-grid rail">
+          <li>
+            <h3>A worktree per thread</h3>
+            <p>Agents work on isolated checkouts, never your working tree.</p>
+          </li>
+          <li>
+            <h3>Review from the thread</h3>
+            <p>Working-tree diffs, commits, and PRs without leaving the conversation.</p>
+          </li>
+          <li>
+            <h3>Subagents</h3>
+            <p>Threads spawn child threads, manage them, and report back.</p>
+          </li>
+          <li>
+            <h3>Asks, not guesses</h3>
+            <p>Agents pause with a real question when they need your call.</p>
+          </li>
+          <li>
+            <h3>Permission modes</h3>
+            <p>Read-only to full access, chosen per thread.</p>
+          </li>
+          <li>
+            <h3>Any model, per thread</h3>
+            <p>Pick the provider and model each task deserves.</p>
+          </li>
+          <li>
+            <h3>Automations</h3>
+            <p>Scheduled agents and scripts, with retries and backoff.</p>
+          </li>
+          <li>
+            <h3>CLI and SDK</h3>
+            <p>Every feature is scriptable from the shell or TypeScript.</p>
+          </li>
+          <li>
+            <h3>Remote machines</h3>
+            <p>Enroll other hosts and run work where the code lives.</p>
+          </li>
+          <li>
+            <h3>Local-first</h3>
+            <p>Your threads and data live on your machine, in SQLite.</p>
+          </li>
+        </ul>
+      </section>
+
+      <section className="act slate">
         <div className="act-head rail">
           <h2>The gang&rsquo;s all here</h2>
           <div className="act-lead">
@@ -1439,7 +1515,7 @@ function LandingPage() {
         </div>
       </section>
 
-      <section className="act slate">
+      <section className="act">
         <div className="act-head rail">
           <h2>Anything can kick off work.</h2>
           <div className="act-lead">
@@ -1474,7 +1550,88 @@ function LandingPage() {
         </div>
       </section>
 
-      <section className="statement">
+      <section className="act slate">
+        <div className="act-head rail">
+          <h2>Care in the details.</h2>
+          <div className="act-lead">
+            <p>
+              The small surfaces are the product: how an agent reports its
+              work, how a diff reads, how a child thread nests under the work
+              that spawned it. All real pixels from the recordings above.
+            </p>
+          </div>
+        </div>
+        <ul className="mosaic rail">
+          <li>
+            <img
+              src="/landing/care-report.webp"
+              alt="A thread header and the agent's summary of its README edit"
+              loading="lazy"
+            />
+            <h3>Work, reported</h3>
+            <p>Every thread ends in a summary you can act on.</p>
+          </li>
+          <li>
+            <img
+              src="/landing/care-diff.webp"
+              alt="The diff panel showing a README change with additions and a removal"
+              loading="lazy"
+            />
+            <h3>Diffs where you talk</h3>
+            <p>The change is always one pane away from the conversation.</p>
+          </li>
+          <li>
+            <img
+              src="/landing/care-subagent.webp"
+              alt="A child thread nested under its parent thread in the sidebar"
+              loading="lazy"
+            />
+            <h3>Children under parents</h3>
+            <p>Spawned work stays attached to the thread that asked for it.</p>
+          </li>
+          <li>
+            <img
+              src="/landing/care-review.webp"
+              alt="The working-tree bar showing uncommitted changes above the follow-up composer"
+              loading="lazy"
+            />
+            <h3>The working tree, in view</h3>
+            <p>Uncommitted state rides with the thread until you commit it.</p>
+          </li>
+        </ul>
+      </section>
+
+      <section className="act stats-act">
+        <div className="rail">
+          <ul className="avatar-strip" aria-label="bb contributors">
+            {CONTRIBUTOR_LOGINS.map((login) => {
+              const url =
+                CONTRIBUTOR_AVATARS[`../assets/contributors/${login}.webp`];
+              return url ? (
+                <li key={login}>
+                  <img src={url} alt={login} width={28} height={28} />
+                </li>
+              ) : null;
+            })}
+          </ul>
+          <ul className="stat-row">
+            <li>
+              <strong>{GITHUB_STATS.stars.toLocaleString("en-US")}</strong>
+              <span>GitHub stars</span>
+            </li>
+            <li>
+              <strong>{GITHUB_STATS.contributors}</strong>
+              <span>contributors</span>
+            </li>
+            <li>
+              <strong>MIT</strong>
+              <span>licensed, end to end</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section className="statement slate">
         <h2 className="sec-title">Fork it. Make it your own.</h2>
         <p>
           bb is MIT-licensed end to end. Fork the repo, customize the agents,
@@ -1482,18 +1639,6 @@ function LandingPage() {
           organization. It still runs local-first on your machines, on the
           provider subscriptions you already pay for.
         </p>
-        <ul className="repo-stats" aria-label="GitHub repository stats">
-          <li>
-            <strong>{GITHUB_STATS.stars.toLocaleString("en-US")}</strong> stars
-            on GitHub
-          </li>
-          <li>
-            <strong>{GITHUB_STATS.contributors}</strong> contributors
-          </li>
-          <li>
-            <strong>MIT</strong> licensed
-          </li>
-        </ul>
         <div className="cta-row">
           <GitHubLink placement="local" className="btn btn-ghost">
             View the source →
@@ -1501,7 +1646,7 @@ function LandingPage() {
         </div>
       </section>
 
-      <section className="closer slate">
+      <section className="closer">
         <h2 className="sec-title">Put your agents to work.</h2>
         <p>Free, open source, and local-first. Install in under a minute.</p>
         <InstallOptions placement="closer" />
@@ -1512,7 +1657,7 @@ function LandingPage() {
         </div>
       </section>
 
-      <section className="subscribe">
+      <section className="subscribe slate">
         <h2 className="subscribe-title">Stay in the loop.</h2>
         <p>Product updates and what we&rsquo;re building next. No spam.</p>
         <EmailSignup placement="footer" />

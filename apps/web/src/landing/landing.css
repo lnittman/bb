@@ -151,14 +151,19 @@ code,
 /* The three named widths. `.rail` is the editorial column every header and
    text field aligns to; `.stage` is the product width rooms break out to;
    `.measure` caps prose. Sections use these — never bespoke widths. */
+/* Both rails live inside the 980px text column, so auto margins can't
+   center them (they'd resolve to zero on a wider child) — symmetric
+   negative margins do the breakout, exactly like the nav. */
 .rail {
   width: min(var(--rail), calc(100vw - 2 * var(--gutter)));
-  margin-inline: auto;
+  margin-inline: calc(
+    (100% - min(var(--rail), 100vw - 2 * var(--gutter))) / 2
+  );
 }
 
 .stage {
   width: min(var(--stage), calc(100vw - 32px));
-  margin-inline: auto;
+  margin-inline: calc((100% - min(var(--stage), 100vw - 32px)) / 2);
 }
 
 .measure {
@@ -2076,6 +2081,201 @@ code,
   min-width: 0;
 }
 
+/* ── Showroom: the Extensions page + the plugin it built ─────────── */
+
+.showroom {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: clamp(20px, 2.5vw, 32px);
+  align-items: start;
+}
+
+.showroom-still {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  background: var(--bg);
+  box-shadow: var(--shadow-window);
+}
+
+.showroom-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.showroom-note {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--dim);
+  max-width: 40ch;
+}
+
+/* ── Capability grid: a ruled table of load-bearing facts ────────── */
+
+.cap-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border: 1px solid var(--border-soft);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.cap-grid li {
+  padding: 20px 20px 22px;
+  border-right: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.cap-grid li:nth-child(5n) {
+  border-right: none;
+}
+
+.cap-grid li:nth-child(n + 6) {
+  border-bottom: none;
+}
+
+.cap-grid h3 {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink-strong);
+}
+
+.cap-grid p {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dim);
+}
+
+/* ── Care mosaic: real pixels, close up ──────────────────────────── */
+
+.mosaic {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(18px, 2.2vw, 28px);
+}
+
+.mosaic li {
+  display: flex;
+  flex-direction: column;
+}
+
+.mosaic img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  object-position: top left;
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  background: var(--bg);
+}
+
+.mosaic h3 {
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-strong);
+}
+
+.mosaic p {
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--dim);
+}
+
+/* ── Stats: faces, then numbers ──────────────────────────────────── */
+
+.stats-act .rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+.avatar-strip {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding-left: 10px;
+}
+
+.avatar-strip li {
+  margin-left: -10px;
+}
+
+.avatar-strip img {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--canvas);
+}
+
+.stat-row {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  gap: clamp(40px, 6vw, 88px);
+  text-align: center;
+}
+
+.stat-row li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat-row strong {
+  font-size: clamp(40px, 4.4vw, 62px);
+  line-height: 1;
+  font-weight: 620;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-strong);
+}
+
+.stat-row span {
+  font-size: 13.5px;
+  color: var(--dim);
+}
+
+@media (max-width: 960px) {
+  .showroom {
+    grid-template-columns: 1fr;
+  }
+
+  .cap-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cap-grid li:nth-child(5n) {
+    border-right: 1px solid var(--border-soft);
+  }
+
+  .cap-grid li:nth-child(2n) {
+    border-right: none;
+  }
+
+  .cap-grid li:nth-child(n + 6) {
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .cap-grid li:nth-child(n + 9) {
+    border-bottom: none;
+  }
+
+  .mosaic {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Authored crop: the spawn story lives in the sidebar, so the pane zooms
    into the capture's left region instead of showing a mostly-empty desktop.
    The 2x source keeps the enlarged UI crisp. */
@@ -2142,30 +2342,6 @@ code,
 .statement {
   padding: 84px 0;
   text-align: center;
-}
-
-/* Repo stats: checked-in numbers (scripts/refresh-github-stats.mjs), so the
-   claim is specific without a network fetch at build or runtime. */
-.repo-stats {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  list-style: none;
-  margin-top: 22px;
-  font-size: 14px;
-  color: var(--dim);
-}
-
-.repo-stats li + li::before {
-  content: "\00B7";
-  margin: 0 14px;
-  color: var(--subtle);
-}
-
-.repo-stats strong {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink);
 }
 
 .statement .sec-title {
@@ -2427,10 +2603,6 @@ code,
      above it instead of centered multi-line text on a narrow screen. */
   .statement {
     text-align: left;
-  }
-
-  .repo-stats {
-    justify-content: flex-start;
   }
 
   .statement .cta-row {
