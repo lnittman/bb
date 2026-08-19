@@ -189,7 +189,7 @@ code,
 
 /* The theater band: interactive mock + builder rail as one slate section. */
 .band-theater {
-  padding-top: calc(var(--act) * 0.4);
+  padding-top: calc(var(--act) * 0.45);
   padding-bottom: calc(var(--act) * 0.35);
 }
 
@@ -656,17 +656,13 @@ code,
    breaks out of the 980px text column and takes the stage at up to 1340px,
    the width the three-pane composition (sidebar, thread, Changes) needs to
    breathe. The text column above stays narrow; only the product widens. */
-/* The theater: on the slate band, the interactive demo sits inside a
-   white room container at product-stage width — the same grammar as the
-   causal room. */
+/* The theater: the interactive demo sits directly on the slate band at
+   product-stage width — no container, just the window and its shadow. */
 @media (min-width: 1100px) {
   .hero-stage {
     position: relative;
     width: min(var(--stage), calc(100vw - 32px));
     margin-inline: calc((100% - min(var(--stage), 100vw - 32px)) / 2);
-    padding: clamp(28px, 3vw, 48px);
-    border-radius: var(--r-room);
-    background: var(--bg);
   }
 
   .hero-stage .mock {

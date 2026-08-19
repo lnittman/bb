@@ -2042,7 +2042,7 @@ function LandingPage() {
             </p>
           </div>
         </div>
-        <div className="room stage">
+        <div className="stage">
           <DemoWindow
             src="/landing/demo-install.mp4"
             poster="/landing/demo-install-poster.webp"
