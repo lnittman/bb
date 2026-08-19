@@ -171,6 +171,15 @@ code,
   max-width: var(--measure);
 }
 
+/* Crafted demos sit on a tighter measure than the rail so they read as
+   objects with air around them rather than walls of product. */
+.gang-demo,
+.build-demo,
+.spawn-demo {
+  max-width: 1040px;
+  margin-inline: auto;
+}
+
 /* Alternating section fills: a .slate section paints a full-bleed light
    slate band behind its own box (100vmax spill, clipped) — sharp flat
    transitions, no hairlines, no gradients. Strict white/slate alternation
@@ -2485,7 +2494,7 @@ code,
   display: flex;
   align-items: center;
   gap: 13px;
-  padding: 15px 17px;
+  padding: 14px 16px;
   border-radius: var(--r-card);
   background: var(--bg);
   box-shadow:
@@ -2576,8 +2585,8 @@ code,
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
     var(--shadow-window);
-  padding: 20px 20px 22px;
-  font-size: 14px;
+  padding: 18px 18px 20px;
+  font-size: 13.5px;
 }
 
 .gang-side {
@@ -2673,9 +2682,9 @@ code,
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding-top: 16px;
-  min-height: 190px;
+  gap: 11px;
+  padding-top: 15px;
+  min-height: 158px;
 }
 
 .gang-step,
@@ -2883,12 +2892,12 @@ code,
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
     var(--shadow-window);
-  padding: 22px 24px;
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
   gap: 2px;
   font-size: 14px;
-  min-height: 380px;
+  min-height: 316px;
   justify-content: center;
 }
 
@@ -3447,13 +3456,14 @@ code,
   margin-top: clamp(14px, 1.6vw, 22px);
   border-radius: 20px;
   background: color-mix(in oklab, var(--ink-strong) 6%, var(--canvas));
-  padding: 10px 22px;
+  padding: 10px 0;
   height: 348px;
 }
 
 /* Only the scrolling list fades at its edges — the card itself stays crisp. */
 .pr-feed-clip {
   height: 100%;
+  padding-inline: 22px;
   overflow: hidden;
   mask-image: linear-gradient(
     to bottom,
