@@ -1504,6 +1504,75 @@ function AskDemo() {
   );
 }
 
+/* ────────────────────────────────────────────────
+ * SPAWN STORYBOARD (plays once per view entry)
+ *
+ *     0ms   empty prompt, caret blinking; sidebar resting
+ *   350ms   the command types itself (CSS steps over the mono line)
+ *  2250ms   Enter — the bar acknowledges
+ *  2550ms   a new row slides into storefront, working
+ *  3250ms   its title morphs in (torph)
+ *  5400ms   the agent keeps working; the row settles with an unread dot
+ *  rest     command shown, row settled — also the reduced-motion state
+ * ──────────────────────────────────────────────── */
+const SPAWN_TIMING = {
+  type: 350,
+  enter: 2250,
+  rowIn: 2550,
+  title: 3250,
+  settle: 5400,
+};
+
+const SPAWN_COMMAND = 'bb thread spawn --prompt "Trace one order to confirmation"';
+const SPAWN_TITLE = "Trace order checkout flow";
+
+function SpawnDemo() {
+  const { ref, stage } = useViewStage([
+    SPAWN_TIMING.type,
+    SPAWN_TIMING.enter,
+    SPAWN_TIMING.rowIn,
+    SPAWN_TIMING.title,
+    SPAWN_TIMING.settle,
+  ]);
+  return (
+    <div className="spawn-demo" ref={ref} aria-hidden>
+      <p className={stage >= 2 ? "spawn-term sent" : "spawn-term"}>
+        <span className="term-ps">$</span>
+        <span className={stage >= 1 ? "spawn-cmd typing" : "spawn-cmd"}>
+          {SPAWN_COMMAND}
+        </span>
+        <span className="term-caret" />
+      </p>
+      <div className="spawn-window">
+        <span className="sub-group">storefront</span>
+        <div
+          className={
+            stage >= 3 ? "sub-row spawn-new in" : "sub-row spawn-new"
+          }
+        >
+          <span className="sub-title">
+            <TextMorph
+              as="span"
+              duration={520}
+              ease="cubic-bezier(0.19, 1, 0.22, 1)"
+            >
+              {stage >= 4 ? SPAWN_TITLE : "New thread"}
+            </TextMorph>
+          </span>
+          {stage >= 5 ? <i className="spawn-dot" /> : <DemoSpinner />}
+        </div>
+        <div className="sub-row sub-quiet">
+          <span className="sub-title">Summarize checkout cart integration</span>
+        </div>
+        <span className="sub-group spawn-gap">checkout-api</span>
+        <div className="sub-row sub-quiet">
+          <span className="sub-title">Describe order endpoint validation</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** The merged-PR feed: real recent merges (baked at authoring time),
  *  looping in a slow vertical marquee. Two copies of the list scroll as one
  *  track; reduced motion rests on the static list. */
@@ -1777,21 +1846,7 @@ function LandingPage() {
           </div>
         </div>
         <div className="room stage causal">
-          <div className="term-plane" aria-hidden>
-            <p className="term-line">
-              <span className="term-ps">$</span> bb thread spawn --prompt{" "}
-              <span className="term-str">&quot;List the spawn flags&quot;</span>
-              <span className="term-caret" />
-            </p>
-            <p className="term-note">any shell, cron job, or bot</p>
-          </div>
-          <div className="causal-pane">
-            <DemoWindow
-              src="/landing/demo-spawn.mp4"
-              poster="/landing/demo-spawn-poster.webp"
-              label="Screen recording of the bb sidebar as a thread spawned from the CLI arrives and starts running"
-            />
-          </div>
+          <SpawnDemo />
         </div>
       </section>
 

@@ -1997,32 +1997,93 @@ code,
   padding: clamp(24px, 4vw, 56px);
 }
 
-/* Causal room: the command plane on the left causes the capture on the
-   right. Terminal is real command text, not artwork. */
+/* ── The spawn demo: cause above effect, both crafted ─────────────── */
+
 .causal {
-  display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
-  gap: clamp(20px, 2.5vw, 32px);
-  align-items: stretch;
+  display: flex;
+  justify-content: center;
 }
 
-.term-plane {
+.spawn-demo {
+  width: min(660px, 100%);
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 14px;
-  padding: clamp(20px, 2.4vw, 34px);
-  border-radius: var(--r-card);
-  background: color-mix(in oklch, var(--ink-strong) 96%, var(--canvas));
-  color: color-mix(in oklch, var(--canvas) 92%, var(--ink-strong));
-  box-shadow: var(--shadow-window);
+  gap: 16px;
+  padding: clamp(8px, 2vw, 24px) 0;
 }
 
-.term-line {
+/* One-line terminal bar — an artifact, not a slab. */
+.spawn-term {
+  display: flex;
+  align-items: baseline;
+  padding: 13px 18px;
+  border-radius: 12px;
+  background: color-mix(in oklch, var(--ink-strong) 96%, var(--canvas));
+  color: color-mix(in oklch, var(--canvas) 92%, var(--ink-strong));
   font-family: var(--font-mono);
-  font-size: clamp(13px, 1.15vw, 15.5px);
-  line-height: 1.7;
-  overflow-wrap: break-word;
+  font-size: 13.5px;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: box-shadow var(--duration-state) var(--ease-standard);
+}
+
+.spawn-term.sent {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ink-strong) 12%, transparent);
+}
+
+.spawn-cmd {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 0;
+  vertical-align: bottom;
+}
+
+.spawn-cmd.typing {
+  animation: spawn-type 1.7s steps(58, end) forwards;
+}
+
+@keyframes spawn-type {
+  to {
+    max-width: 60ch;
+  }
+}
+
+/* The sidebar fragment the row arrives into. */
+.spawn-window {
+  border-radius: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-window);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.spawn-gap {
+  margin-top: 12px;
+}
+
+.spawn-new {
+  transition:
+    transform 0.55s var(--ease-out),
+    opacity 0.55s var(--ease-out);
+}
+
+.spawn-demo .spawn-new:not(.in) {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.spawn-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dim);
 }
 
 .term-ps {
@@ -2048,17 +2109,6 @@ code,
   50% {
     opacity: 0;
   }
-}
-
-.term-note {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  letter-spacing: 0.01em;
-  opacity: 0.45;
-}
-
-.causal-pane {
-  min-width: 0;
 }
 
 /* ── Showroom: one dominant real surface ─────────────────────────── */
@@ -2475,27 +2525,6 @@ code,
   }
 
 /* Direct-child only: torph renders its own nested spans inside the strong. */
-/* Authored crop: the spawn story lives in the sidebar, so the pane zooms
-   into the capture's left region. The 2x source keeps it crisp. */
-.causal-pane .demo-window {
-  position: relative;
-  overflow: hidden;
-  aspect-ratio: 8 / 7;
-  border: 1px solid var(--border);
-  border-radius: var(--r-card);
-  background: var(--bg);
-  box-shadow: var(--shadow-window);
-}
-
-.causal-pane .demo-window video {
-  width: 235%;
-  max-width: none;
-  aspect-ratio: 1280 / 800;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-}
-
 @media (max-width: 900px) {
   .act-head {
     gap: 12px;
@@ -2873,6 +2902,15 @@ code,
   }
 
   .sub-demo .sub-child:not(.in) {
+    opacity: 1;
+    transform: none;
+  }
+
+  .spawn-cmd {
+    max-width: 60ch;
+  }
+
+  .spawn-demo .spawn-new:not(.in) {
     opacity: 1;
     transform: none;
   }
