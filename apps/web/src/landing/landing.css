@@ -167,12 +167,9 @@ code,
 /* ── Nav ────────────────────────────────────────────────────────── */
 
 .nav {
-  /* Sticky treats left/right as stick thresholds, not offsets, so the
-     rail-width breakout is done with symmetric negative margins instead of
-     the translate trick the (non-sticky) stages use. */
-  position: sticky;
-  top: 0;
-  z-index: 40;
+  /* Static (scrolls with the page, as in prod); the negative margins break
+     the row out of the text column to the editorial rail. */
+  width: min(var(--rail), calc(100vw - 2 * var(--gutter)));
   margin-inline: calc(
     (100% - min(var(--rail), 100vw - 2 * var(--gutter))) / 2
   );
@@ -181,20 +178,6 @@ code,
   justify-content: space-between;
   padding: 18px 0;
   animation: hdr-down 0.55s var(--ease-out) both;
-}
-
-/* Past the top of the page the nav gains a translucent ground so content
-   scrolls under it legibly. The ground bleeds slightly past the rail so the
-   hairline doesn't stop at the text column. */
-.nav[data-scrolled]::before {
-  content: "";
-  position: absolute;
-  inset: 0 calc((100% - 100vw) / 2);
-  z-index: -1;
-  background: color-mix(in oklab, var(--canvas) 86%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--line);
 }
 
 /* The header drops in first, then the hero copy rises in below it. */
@@ -2041,24 +2024,14 @@ code,
 .demo-window {
   width: 100%;
   margin: 0;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--bg);
-  overflow: hidden;
-  box-shadow:
-    0 1px 0 color-mix(in oklab, var(--ink) 4%, transparent),
-    0 24px 56px -28px color-mix(in oklab, var(--ink) 30%, transparent);
 }
 
-/* Slim window title bar: same traffic-light grammar as the hero mock, minus
-   the app chrome — these frames hold recordings, not a working recreation. */
-.demo-bar {
-  display: flex;
-  align-items: center;
-  height: 34px;
-  padding: 0 13px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border-soft);
+.demo-window video,
+.demo-frame {
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  background: var(--bg);
+  box-shadow: var(--shadow-window);
 }
 
 .demo-window video {
@@ -2069,9 +2042,10 @@ code,
   background: var(--bg);
 }
 
+/* Caption sits under the frame, outside it — the frame itself is pure
+   product, no invented window dressing. */
 .demo-caption {
-  padding: 9px 14px 10px;
-  border-top: 1px solid var(--border-soft);
+  padding: 10px 2px 0;
   font-size: 12.5px;
   line-height: 1.45;
   color: var(--subtle);

@@ -1319,13 +1319,6 @@ function DemoWindow({
   }, []);
   return (
     <figure className="demo-window">
-      <div className="demo-bar" aria-hidden>
-        <span className="mock-dots">
-          <i />
-          <i />
-          <i />
-        </span>
-      </div>
       <video
         ref={videoRef}
         src={src}
