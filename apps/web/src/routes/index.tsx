@@ -1354,6 +1354,156 @@ function DemoWindow({
 
 /* ── Page ─────────────────────────────────────────────────────────── */
 
+/* ────────────────────────────────────────────────
+ * SUBAGENTS STORYBOARD (plays once per view entry)
+ *
+ *     0ms   parent row working (spinner)
+ *   900ms   child row slides in, nested, working
+ *  3200ms   child completes (check)
+ *  4000ms   parent absorbs the report, completes
+ *  rest     both settled — also the reduced-motion state
+ * ──────────────────────────────────────────────── */
+const SUB_TIMING = {
+  childIn: 900,
+  childDone: 3200,
+  parentDone: 4000,
+};
+
+function useViewStage(stages: number[]) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [stage, setStage] = useState(stages.length);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+    let timers: number[] = [];
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          observer.disconnect();
+          setStage(0);
+          timers = stages.map((at, i) =>
+            window.setTimeout(() => setStage(i + 1), at),
+          );
+        }
+      },
+      { rootMargin: "0px 0px -25% 0px" },
+    );
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      timers.forEach(clearTimeout);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return { ref, stage };
+}
+
+function DemoSpinner() {
+  return (
+    <HugeiconsIcon icon={Loading03Icon} className="dm-spin" aria-hidden />
+  );
+}
+
+function DemoCheck() {
+  return (
+    <HugeiconsIcon
+      icon={CheckmarkCircle02Icon}
+      className="dm-check"
+      aria-hidden
+    />
+  );
+}
+
+function SubagentsDemo() {
+  const { ref, stage } = useViewStage([
+    SUB_TIMING.childIn,
+    SUB_TIMING.childDone,
+    SUB_TIMING.parentDone,
+  ]);
+  return (
+    <div className="sub-demo" ref={ref} aria-hidden>
+      <span className="sub-group">storefront</span>
+      <div className="sub-row">
+        <span className="sub-title">Expand README testing documentation</span>
+        {stage >= 3 ? <DemoCheck /> : <DemoSpinner />}
+      </div>
+      <div className={stage >= 1 ? "sub-row sub-child in" : "sub-row sub-child"}>
+        <span className="sub-title">Identify missing promo edge cases</span>
+        {stage >= 2 ? <DemoCheck /> : <DemoSpinner />}
+      </div>
+      <div className="sub-row sub-quiet">
+        <span className="sub-title">Trace order checkout flow</span>
+      </div>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────
+ * ASK STORYBOARD (plays once per view entry)
+ *
+ *     0ms   question card resting, no selection
+ *  1100ms   highlight lands on "Single code per cart"
+ *  2100ms   radio fills — selected
+ *  2900ms   Submit arms (primary)
+ *  rest     selected + armed — also the reduced-motion state
+ * ──────────────────────────────────────────────── */
+const ASK_TIMING = {
+  highlight: 1100,
+  select: 2100,
+  arm: 2900,
+};
+
+const ASK_OPTIONS = [
+  "Single code per cart",
+  "Allow stacking",
+  "Depends on the campaign",
+];
+
+function AskDemo() {
+  const { ref, stage } = useViewStage([
+    ASK_TIMING.highlight,
+    ASK_TIMING.select,
+    ASK_TIMING.arm,
+  ]);
+  return (
+    <div className="ask-demo" ref={ref} aria-hidden>
+      <p className="ask-q">
+        Should the promo engine support stacking codes, or one per cart?
+      </p>
+      <ul>
+        {ASK_OPTIONS.map((opt, i) => {
+          const active = i === 0 && stage >= 1;
+          const selected = i === 0 && stage >= 2;
+          return (
+            <li
+              key={opt}
+              className={
+                selected
+                  ? "ask-opt selected"
+                  : active
+                    ? "ask-opt active"
+                    : "ask-opt"
+              }
+            >
+              <i className="ask-radio" />
+              {opt}
+            </li>
+          );
+        })}
+      </ul>
+      <div className="ask-foot">
+        <span>Cancel</span>
+        <span className={stage >= 3 ? "ask-submit armed" : "ask-submit"}>
+          Submit answer
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /** The merged-PR feed: real recent merges (baked at authoring time),
  *  looping in a slow vertical marquee. Two copies of the list scroll as one
  *  track; reduced motion rests on the static list. */
@@ -1500,30 +1650,6 @@ function LandingPage() {
 
       <section className="act">
         <div className="act-head rail">
-          <h2>Ask for a feature. Watch it appear.</h2>
-          <div className="act-lead">
-            <p>
-              Almost anything in bb can be changed in a single prompt — ask for
-              a task tracker and one appears as a panel, a{" "}
-              <code>bb tasks</code> command, and a skill. The Extensions page
-              ships with bb: browse plugins others built, or describe your own.
-            </p>
-          </div>
-        </div>
-        <div className="room stage">
-          <img
-            className="showroom-still"
-            src="/landing/extensions-page.webp"
-            alt="bb's Extensions page: browse plugins, install official ones, or create a plugin from a prompt"
-            width={1280}
-            height={800}
-            loading="lazy"
-          />
-        </div>
-      </section>
-
-      <section className="act slate">
-        <div className="act-head rail">
           <h2>The boring parts are load-bearing.</h2>
           <div className="act-lead">
             <p>
@@ -1566,12 +1692,8 @@ function LandingPage() {
               Threads spawn child threads, manage them, and take the report
               back.
             </p>
-            <div className="bento-window">
-              <img
-                src="/landing/care-subagent.webp"
-                alt="A child thread nested under its parent in the sidebar"
-                loading="lazy"
-              />
+            <div className="bento-window bento-component">
+              <SubagentsDemo />
             </div>
           </li>
           <li>
@@ -1579,12 +1701,8 @@ function LandingPage() {
             <p>
               Agents pause with a real question when they need your call.
             </p>
-            <div className="bento-window bento-fit">
-              <img
-                src="/landing/care-ask.webp"
-                alt="An agent asking a multiple-choice question in the thread"
-                loading="lazy"
-              />
+            <div className="bento-window bento-component">
+              <AskDemo />
             </div>
           </li>
         </ul>
@@ -1593,6 +1711,30 @@ function LandingPage() {
           permission modes · automations with retries and backoff · the bb CLI
           and SDK · remote machines · local-first SQLite
         </p>
+      </section>
+
+      <section className="act slate">
+        <div className="act-head rail">
+          <h2>Ask for a feature. Watch it appear.</h2>
+          <div className="act-lead">
+            <p>
+              Almost anything in bb can be changed in a single prompt — ask for
+              a task tracker and one appears as a panel, a{" "}
+              <code>bb tasks</code> command, and a skill. The Extensions page
+              ships with bb: browse plugins others built, or describe your own.
+            </p>
+          </div>
+        </div>
+        <div className="room stage">
+          <img
+            className="showroom-still"
+            src="/landing/extensions-page.webp"
+            alt="bb's Extensions page: browse plugins, install official ones, or create a plugin from a prompt"
+            width={1280}
+            height={800}
+            loading="lazy"
+          />
+        </div>
       </section>
 
       <section className="act">
