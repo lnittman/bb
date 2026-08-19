@@ -398,19 +398,37 @@ code,
 /* The browser path: an outline button that copies the install command.
    Explicit background because a bare <button> otherwise shows the UA
    `buttonface` grey (the anchor-based ghost buttons stay transparent). */
+/* The command button is two cells, not a padded row: the command itself,
+   and a copy well that runs the button's full height. The button drops its
+   own padding so the divider can reach both edges; each cell carries its
+   own. */
 .cmd-btn {
   position: relative;
   background: var(--bg);
   font-family: var(--font-mono);
+  align-items: stretch;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
 }
 
 .cmd-dollar {
+  display: flex;
+  align-items: center;
+  padding-left: 18px;
   color: var(--accent);
 }
 
 /* Copy state: the glyph swaps in place, blurring and scaling through the
    change with no vertical drift (a y-shift reads as the icon falling).
    Both glyphs occupy the same grid cell so the control never reflows. */
+.cmd-text {
+  display: flex;
+  align-items: center;
+  padding: 13px 16px 13px 8px;
+  white-space: nowrap;
+}
+
 .cmd-swap {
   position: relative;
   display: inline-grid;
@@ -445,13 +463,23 @@ code,
   color: var(--ok);
 }
 
+/* The copy well: a full-height cell whose divider meets the button's top
+   and bottom edges, with the glyph optically centered inside it. */
 .cmd-copy {
-  margin-left: 3px;
-  padding-left: 11px;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  margin: 0;
+  padding: 0;
   border-left: 1px solid var(--border);
   font-family: var(--font-sans);
-  font-size: 12.5px;
   color: var(--subtle);
+  transition: background var(--duration-hover) var(--ease-standard);
+}
+
+.cmd-btn:hover .cmd-copy {
+  background: color-mix(in oklab, var(--ink-strong) 4%, var(--bg));
 }
 
 .cmd-btn:hover .cmd-copy {
