@@ -399,6 +399,43 @@ code,
   color: var(--accent);
 }
 
+/* Copy state: the glyph swaps in place, blurring and scaling through the
+   change with no vertical drift (a y-shift reads as the icon falling).
+   Both glyphs occupy the same grid cell so the control never reflows. */
+.cmd-swap {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+}
+
+.cmd-swap svg {
+  grid-area: 1 / 1;
+  width: 15px;
+  height: 15px;
+  transition:
+    opacity 220ms var(--ease-out),
+    transform 220ms var(--ease-out),
+    filter 220ms var(--ease-out);
+}
+
+.cmd-glyph-out {
+  opacity: 0;
+  transform: scale(0.65);
+  filter: blur(4px);
+}
+
+.cmd-glyph-in {
+  opacity: 1;
+  transform: none;
+  filter: blur(0);
+}
+
+.cmd-btn.copied .cmd-swap svg {
+  color: var(--ok);
+}
+
 .cmd-copy {
   margin-left: 3px;
   padding-left: 11px;
@@ -418,44 +455,7 @@ code,
 
 /* Copy confirmation toast — anchored above the button, out of flow so it
    never shifts the centered CTA row. */
-.cmd-toast {
-  position: absolute;
-  bottom: calc(100% + 9px);
-  left: 50%;
-  z-index: 2;
-  padding: 6px 11px;
-  border-radius: 7px;
-  background: var(--ink);
-  color: var(--bg);
-  font-family: var(--font-sans);
-  font-size: 12.5px;
-  font-weight: 500;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transform: translateX(-50%) translateY(4px);
-  box-shadow: 0 8px 22px -8px color-mix(in oklab, var(--ink) 50%, transparent);
-  transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
-}
-
-.cmd-toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-
 /* little pointer notch under the toast */
-.cmd-toast::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 5px solid transparent;
-  border-top-color: var(--ink);
-}
-
 /* Each button carries its own caption, directly beneath it, so the platform
    note clearly targets its option rather than the pair. */
 .install-choice {
@@ -3447,7 +3447,7 @@ code,
   margin-top: clamp(14px, 1.6vw, 22px);
   border-radius: 20px;
   background: color-mix(in oklab, var(--ink-strong) 6%, var(--canvas));
-  padding: 10px 26px;
+  padding: 10px 22px;
   height: 348px;
 }
 
@@ -3482,19 +3482,25 @@ code,
   list-style: none;
 }
 
+/* The row tile is a real object: inset from the card wall, properly
+   rounded for its height, and padded so the avatar and title never sit
+   against its edge. */
 .pr-feed li a {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 9px 10px;
-  margin-inline: -10px;
-  border-radius: 8px;
+  padding: 11px 14px;
+  margin-inline: 0;
+  border-radius: 12px;
   color: inherit;
-  transition: background var(--duration-hover) var(--ease-standard);
+  transition:
+    background var(--duration-hover) var(--ease-standard),
+    box-shadow var(--duration-hover) var(--ease-standard);
 }
 
 .pr-feed li a:hover {
-  background: color-mix(in oklab, var(--ink-strong) 5%, var(--canvas));
+  background: var(--bg);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink-strong) 8%, transparent);
 }
 
 .pr-feed li a:hover .pr-title {

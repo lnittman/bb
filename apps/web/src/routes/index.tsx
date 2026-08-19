@@ -212,14 +212,11 @@ function RunCommandButton({ placement }: { placement: CtaPlacement }) {
     >
       <span className="cmd-dollar">$</span>
       <span className="cmd-text">{CLI_COMMAND}</span>
-      <span className="cmd-copy">Copy</span>
-      {/* Toast floats above the button (absolute) so confirming the copy never
-          reflows the centered CTA row — the label stays a fixed width. */}
-      <span
-        className={copied ? "cmd-toast show" : "cmd-toast"}
-        aria-hidden="true"
-      >
-        Copied to clipboard
+      <span className="cmd-copy">
+        <span className="cmd-swap">
+          <CopyGlyph className={copied ? "cmd-glyph-out" : "cmd-glyph-in"} />
+          <CheckGlyph className={copied ? "cmd-glyph-in" : "cmd-glyph-out"} />
+        </span>
       </span>
     </button>
   );
@@ -435,6 +432,39 @@ const GitMergeIcon = ({ className }: IconProps) => (
 const Spinner = ({ className }: IconProps) => (
   <HugeiconsIcon icon={Loading03Icon} className={className} />
 );
+// Copy and check, drawn at the same stroke weight so they swap cleanly in
+// place (see .cmd-swap).
+const CopyGlyph = ({ className }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.7"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="9" y="9" width="12" height="12" rx="3" />
+    <path d="M15 5.5A2.5 2.5 0 0 0 12.5 3h-7A2.5 2.5 0 0 0 3 5.5v7A2.5 2.5 0 0 0 5.5 15" />
+  </svg>
+);
+
+const CheckGlyph = ({ className }: IconProps) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.1"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M5 12.8 9.4 17 19 7.2" />
+  </svg>
+);
+
 // A shell prompt in a window, drawn to match the Hugeicons stroke weight the
 // rest of the mock uses (the free set has no terminal glyph).
 const TerminalGlyph = ({ className }: IconProps) => (
