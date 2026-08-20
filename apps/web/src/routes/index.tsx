@@ -1151,23 +1151,13 @@ function HeroAppMock() {
   const [view, setView] = useState<
     "thread" | "new" | "extensions" | "automations" | "tasks"
   >("thread");
-  const [diffOpen, setDiffOpen] = useState(false);
-  // The pane joins after mount (never in prerendered HTML), so hydration
-  // matches and the entrance reads as one sequence instead of a flash.
-  useEffect(() => {
-    if (!window.matchMedia(HERO_DIFF_MIN_WIDTH).matches) {
-      return;
-    }
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setDiffOpen(true);
-      return;
-    }
-    const timer = window.setTimeout(
-      () => setDiffOpen(true),
-      HERO_TIMING.diffJoins,
-    );
-    return () => window.clearTimeout(timer);
-  }, []);
+  // Open from the first byte. The Changes pane is the hero's strongest
+  // evidence — it is the frame where bb is reviewing code rather than
+  // chatting — and it used to join on a timer after mount, which meant it
+  // existed in neither the prerendered HTML nor any capture taken before
+  // the timer fired. CSS decides where it is too narrow to show; the
+  // toggle stays live for anyone who wants it out of the way.
+  const [diffOpen, setDiffOpen] = useState(true);
   // Subagents a running thread spawns, keyed by parent id. They persist once
   // spawned and render as nested child rows in the sidebar.
   const [spawned, setSpawned] = useState<Record<string, MockThread[]>>({});
@@ -1922,6 +1912,27 @@ function BoardColGlyph({ state }: { state: string }) {
  * List/Board control is a real control, and cards respond to the pointer.
  * Nothing animates on its own — a task board that deals itself is a
  * screensaver, not a product. */
+/** Runs a state change inside a view transition when the browser has one.
+ *  Everything the transition needs is declarative — matching
+ *  `view-transition-name`s across the two states — so where the API is
+ *  missing, or motion is not wanted, this is just the state change and the
+ *  swap is instant. */
+function withViewTransition(change: () => void) {
+  const start = (
+    document as Document & {
+      startViewTransition?: (cb: () => void) => unknown;
+    }
+  ).startViewTransition;
+  if (
+    typeof start !== "function" ||
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    change();
+    return;
+  }
+  start.call(document, change);
+}
+
 function TasksBoardDemo() {
   const [view, setView] = useState<"board" | "list">("board");
   const listed = BOARD_COLUMNS.flatMap((col) =>
@@ -1946,7 +1957,7 @@ function TasksBoardDemo() {
               type="button"
               className={view === v ? "on" : undefined}
               aria-pressed={view === v}
-              onClick={() => setView(v)}
+              onClick={() => withViewTransition(() => setView(v))}
             >
               {v === "list" ? "List" : "Board"}
             </button>
@@ -1969,8 +1980,15 @@ function TasksBoardDemo() {
                   <em>{col.cards.length}</em>
                   <PlusGlyph className="board-col-add" />
                 </span>
+                {/* The name is what ties this card to its row in the list
+                    view. Same name on both sides, so the browser treats them
+                    as one thing that moved rather than two that swapped. */}
                 {col.cards.map((card) => (
-                  <div key={card.id} className="board-card">
+                  <div
+                    key={card.id}
+                    className="board-card"
+                    style={{ viewTransitionName: `task-${card.id}` }}
+                  >
                     <span className="board-id">{card.id}</span>
                     <span className="board-card-title">{card.title}</span>
                     <PriorityGlyph level={card.pri} />
@@ -1982,7 +2000,11 @@ function TasksBoardDemo() {
         ) : (
           <div className="board-list">
             {listed.map((card) => (
-              <div key={card.id} className="board-lrow">
+              <div
+                key={card.id}
+                className="board-lrow"
+                style={{ viewTransitionName: `task-${card.id}` }}
+              >
                 <BoardColGlyph state={card.col.state} />
                 <span className="board-lid">{card.id}</span>
                 <span className="board-ltitle">{card.title}</span>

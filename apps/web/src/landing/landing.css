@@ -136,6 +136,63 @@ html {
   scrollbar-gutter: stable both-edges;
 }
 
+/* ── Shared-element transitions ──────────────────────────────────────
+   The Tasks board's List/Board toggle is a rearrangement, not a
+   replacement: the same twelve tasks in a different shape. Matching
+   view-transition-names on the card and its row let the browser move each
+   one between the two layouts instead of blinking the whole view.
+
+   A view transition snapshots the whole document, so the root's own
+   cross-fade is switched off — a local toggle must not dissolve the page
+   around it. Only the named cards animate. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-group(*) {
+  animation-duration: var(--duration-panel);
+  animation-timing-function: var(--ease-out);
+}
+
+/* Selection carries the palette rather than the browser's blue. Mixed
+   against the ink anchor so custom themes keep their own temperature. */
+::selection {
+  background: color-mix(in oklab, var(--ink-strong) 16%, transparent);
+  color: var(--ink-strong);
+}
+
+/* The demos are recreations of an app: their chrome is scenery, not content
+   anyone means to copy. Keeping it out of a select-all means the page's real
+   text — the copy, the install command, the PR titles — is what you get. */
+.build-demo,
+.gang-demo,
+.spawn-demo,
+.sub-demo,
+.board-demo,
+.review-demo,
+.mock {
+  user-select: none;
+}
+
+/* The one thing inside a demo worth copying stays copyable. */
+.cmd-text,
+.pr-feed {
+  user-select: text;
+}
+
+/* Underlines sit off the baseline, skip descenders, and hold a real weight
+   rather than whatever the browser picks. */
+.act-lead a,
+.closer a,
+.footer a,
+.subscribe-note a {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-skip-ink: auto;
+}
+
 /* Announced, never drawn. Used for live confirmations whose sighted
    equivalent is a glyph change. */
 .sr-only {
@@ -158,6 +215,11 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Inter's variable file exposes an optical-size axis; let it adapt the
+     letterforms to the 72px headline and the 13px product type alike. */
+  font-optical-sizing: auto;
+  /* Never let a fallback fake a weight or a slant. */
+  font-synthesis: none;
 }
 
 a {
@@ -1740,19 +1802,28 @@ code,
   border-left: 1px solid var(--border-soft);
   background: var(--surface);
   overflow: hidden;
-  /* The pane is the entrance's last beat: it slides in from its own width
-     so the thread column compresses smoothly rather than popping. */
-  animation: diff-join 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* The pane is the entrance's last beat. It used to animate its own width
+     from 0, which ran layout on the largest object above the fold on every
+     frame and reflowed the whole thread column with it. The box is final
+     from the first frame now; only the contents travel, on the compositor. */
+  animation: diff-join var(--duration-panel) var(--ease-out) both;
 }
 
 @keyframes diff-join {
   from {
-    width: 0;
-    opacity: 0;
+    transform: translateX(24px);
   }
   to {
-    width: 320px;
-    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* The width gate used to live in JS, alongside the mount timer that opened
+   the pane. The pane is open in the markup now, so the gate belongs here —
+   below this width the thread column needs the whole frame. */
+@media (max-width: 1099px) {
+  .diff-panel {
+    display: none;
   }
 }
 
@@ -3995,6 +4066,12 @@ button.sub-row:focus-visible {
   animation: pr-scroll 46s linear infinite;
 }
 
+/* The one element on the page running an uninterrupted transform loop, so
+   the one place the compositor hint earns its memory. */
+.pr-feed-track {
+  will-change: transform;
+}
+
 .pr-feed:hover .pr-feed-track,
 .pr-feed:focus-within .pr-feed-track {
   animation-play-state: paused;
@@ -4227,7 +4304,11 @@ button.sub-row:focus-visible {
   flex: 1 1 240px;
   min-width: 0;
   padding: 10px 14px;
-  font-size: 14.5px;
+  /* iOS Safari zooms the whole page when a focused input's text is under
+     16px. The page's only field is the last thing a visitor touches, so it
+     takes the full 16px on touch widths rather than capping maximum-scale
+     in the viewport tag, which would cost pinch zoom everywhere else. */
+  font-size: 16px;
   font-family: inherit;
   color: var(--ink);
   background: var(--bg);
