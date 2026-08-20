@@ -890,17 +890,6 @@ code,
   }
 }
 
-@keyframes c-pop {
-  from {
-    opacity: 0;
-    transform: scale(0.3);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 @keyframes c-left {
   from {
     opacity: 0;
@@ -2206,15 +2195,6 @@ code,
   white-space: nowrap;
 }
 
-.dwin-mini {
-  padding: 7px 11px;
-  gap: 7px;
-}
-
-.dwin-mini .dwin-mini .dwin-title {
-  font-size: 11px;
-}
-
 /* ── Bento demo: the Tasks board building itself ─────────────────── */
 
 /* The board takes its bento window edge to edge — the frame IS the app's
@@ -2828,298 +2808,10 @@ code,
   transform: none;
 }
 
-.build-ask {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px;
-  border-radius: var(--r-card);
-  background: var(--bg);
-  box-shadow:
-    var(--ring),
-    var(--shadow-window);
-}
-
-/* The composer: prompt field + model row inside one ring, exactly the
-   app's composer grammar. */
-.build-composer {
-  border-radius: var(--r-field);
-  background: var(--surface);
-  box-shadow: inset 0 0 0 1px var(--border-soft);
-  transition: box-shadow var(--duration-state) var(--ease-standard);
-}
-
-.build-composer.sent {
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ink-strong) 16%, transparent);
-}
-
-.build-prompt {
-  display: flex;
-  align-items: baseline;
-  min-height: 54px;
-  padding: 12px 14px 4px;
-  font-size: 14px;
-  line-height: 1.45;
-  color: var(--ink);
-}
-
-.build-composer-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 9px 9px 14px;
-}
-
-.build-model {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--dim);
-}
-
-.build-model-ic {
-  width: 13px;
-  height: 13px;
-}
-
-/* The send affordance darkens once the prompt is away. */
-.build-send {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--surface-2);
-  color: var(--subtle);
-  transition:
-    background var(--duration-state) var(--ease-standard),
-    color var(--duration-state) var(--ease-standard);
-}
-
-.build-send.sent {
-  background: var(--ink);
-  color: var(--bg);
-}
-
-.build-send-ic {
-  width: 13px;
-  height: 13px;
-}
-
-.build-typed {
-  display: inline-block;
-  overflow: hidden;
-  white-space: nowrap;
-  max-width: 30ch;
-}
-
-.build-typed.typing {
-  max-width: 0;
-  animation: build-type 1.5s steps(24, end) forwards;
-}
-
-@keyframes build-type {
-  to {
-    max-width: 30ch;
-  }
-}
-
-.build-caret {
-  display: inline-block;
-  width: 7px;
-  height: 1.05em;
-  margin-left: 6px;
-  vertical-align: text-bottom;
-  background: color-mix(in oklab, var(--ink) 55%, transparent);
-  animation: caret-blink 1.1s steps(1) infinite;
-}
-
-.build-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding-left: 2px;
-}
-
 .gang-step.out,
 .gang-say.out {
   opacity: 0;
   animation: none;
-}
-
-/* The output side: the Extensions window with the built plugin, and the
-   Review-queue panel window layered over its corner (Dia's two-window
-   grammar). */
-.build-out {
-  position: relative;
-}
-
-.build-win {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  border-radius: var(--r-card);
-  background: var(--bg);
-  box-shadow:
-    var(--ring),
-    var(--shadow-window);
-}
-
-.build-win-cta {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 550;
-  padding: 3px 9px;
-  border-radius: 6px;
-  background: var(--ink);
-  color: var(--bg);
-  white-space: nowrap;
-}
-
-.build-win-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px 16px;
-}
-
-.build-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--subtle);
-}
-
-.build-surfaces {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* Surface rows are tiles on the window's ground — one depth step below
-   the window itself. */
-.build-surface {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  padding: 11px 13px;
-  border-radius: var(--r-field);
-  background: var(--bg);
-  box-shadow: var(--ring), var(--shadow-tile);
-  opacity: 1;
-  transform: none;
-  transition:
-    opacity 0.5s var(--ease-out),
-    transform 0.5s var(--ease-out);
-}
-
-.build-demo .build-surface:not(.in) {
-  opacity: 0;
-  transform: translateY(10px) scale(0.985);
-}
-
-.build-ic {
-  flex: none;
-  width: 18px;
-  height: 18px;
-  color: var(--dim);
-}
-
-.build-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.build-name {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13.5px;
-  font-weight: 550;
-  color: var(--ink-strong);
-}
-
-.build-name svg {
-  width: 13px;
-  height: 13px;
-}
-
-.build-name-mono {
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-}
-
-.build-detail {
-  font-size: 12px;
-  color: var(--subtle);
-}
-
-.build-kind {
-  margin-left: auto;
-  flex: none;
-  font-size: 11px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--dim);
-}
-
-/* The layered panel-preview window: a real window one size down,
-   overlapping the Extensions frame's lower corner. */
-.build-peek {
-  position: absolute;
-  right: -16px;
-  bottom: -20px;
-  width: min(230px, 60%);
-  border-radius: var(--r-field);
-  background: var(--bg);
-  box-shadow:
-    var(--ring),
-    var(--shadow-window);
-  opacity: 1;
-  transform: none;
-  transition:
-    opacity 0.5s var(--ease-out),
-    transform 0.5s var(--ease-out);
-}
-
-.build-peek .dwin-bar {
-  border-radius: var(--r-field) var(--r-field) 0 0;
-}
-
-.build-demo .build-peek:not(.in) {
-  opacity: 0;
-  transform: translateY(12px) scale(0.97);
-}
-
-.build-peek-body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 11px 12px;
-}
-
-.peek-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 6px 8px;
-  border-radius: 6px;
-}
-
-.peek-row.peek-hot {
-  background: var(--state-hover);
-}
-
-.peek-bar {
-  height: 7px;
-  border-radius: 4px;
-  background: var(--surface-3);
 }
 
 @media (max-width: 900px) {
@@ -3127,29 +2819,7 @@ code,
     grid-template-columns: 1fr;
   }
 
-  .build-ask,
-  .build-out {
-    min-width: 0;
-  }
-
-  .build-typed,
-  .build-typed.typing {
-    max-width: none;
-    white-space: normal;
-    animation: none;
-  }
-
-  .build-prompt {
-    min-height: 0;
-  }
-
-  /* The layered window tucks back into flow, still overlapping upward. */
-  .build-peek {
-    position: static;
-    width: min(240px, 80%);
-    margin: -26px 14px 0 auto;
-  }
-}
+        }
 
 /* ── The gang: one window — sidebar rail and the open thread ─────── */
 
@@ -3217,8 +2887,7 @@ code,
 
 /* space-between would strand the title in the middle of the row; the title
    takes the free space so every row reads on one left rail. */
-.gang-row .sub-title,
-.spawn-window .sub-title {
+.gang-row .sub-title {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -3487,13 +3156,6 @@ code,
   color: var(--ink-strong);
 }
 
-/* A surface that is itself a plugin gets a touch more presence. */
-.build-plugin {
-  box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--ink-strong) 10%, transparent),
-    var(--shadow-window);
-}
-
 /* ── The spawn machine: three causes firing into one sidebar ─────── */
 
 .causal {
@@ -3513,56 +3175,12 @@ code,
   font-size: 13.5px;
 }
 
-.spawn-causes {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-/* While the machine is cycling (.machine-live on the column), the causes
-   not on stage recede; the live one takes it. At rest — settled state,
-   reduced motion, one-shot capture — every cause is crisp and whole. */
-.spawn-cause {
-  transition:
-    opacity var(--duration-panel) var(--ease-out),
-    transform var(--duration-panel) var(--ease-out),
-    box-shadow var(--duration-state) var(--ease-standard);
-}
-
-.machine-live .spawn-cause:not(.live) {
-  opacity: 0.55;
-  transform: scale(0.985);
-}
-
-/* The terminal line — the one dark artifact. */
-.spawn-term {
-  display: flex;
-  align-items: baseline;
-  padding: 14px 18px;
-  border-radius: var(--r-field);
-  background: color-mix(in oklch, var(--ink-strong) 96%, var(--canvas));
-  color: color-mix(in oklch, var(--canvas) 92%, var(--ink-strong));
-  font-family: var(--font-mono);
-  font-size: 13px;
-  line-height: 1.5;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.spawn-term.live.sent {
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ink-strong) 12%, transparent);
-}
-
 .spawn-cmd {
   display: inline-block;
   overflow: hidden;
   white-space: nowrap;
   max-width: 53ch;
   vertical-align: bottom;
-}
-
-.spawn-cause:not(.live) .spawn-cmd {
-  max-width: 53ch;
 }
 
 .spawn-cmd.typing {
@@ -3576,98 +3194,7 @@ code,
   }
 }
 
-/* Message + schedule causes: white artifacts with the shadow ring. */
-.spawn-tg,
-.spawn-cron {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: var(--r-field);
-  background: var(--bg);
-  box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
-    0 10px 26px -16px color-mix(in oklab, var(--ink-strong) 24%, transparent);
-}
-
-.spawn-tg img {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  outline: 1px solid color-mix(in oklab, var(--ink-strong) 10%, transparent);
-  outline-offset: -1px;
-}
-
-.cron-ic {
-  width: 22px;
-  height: 22px;
-  color: var(--dim);
-}
-
-.tg-body {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-.tg-from {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink-strong);
-}
-
-.tg-from em {
-  font-style: normal;
-  font-weight: 480;
-  color: var(--subtle);
-}
-
-.tg-msg {
-  font-size: 13px;
-  color: var(--ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.tg-time {
-  margin-left: auto;
-  flex: none;
-  font-size: 11.5px;
-  color: var(--subtle);
-  font-variant-numeric: tabular-nums;
-}
-
-/* The sidebar the threads arrive into — the machine's output. Content is
-   top-aligned like a real sidebar; min-height keeps the card steady while
-   rows arrive instead of re-centering everything each beat. */
-.spawn-window-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 16px 14px 0;
-}
-
-.spawn-window {
-  border-radius: var(--r-card);
-  background: var(--bg);
-  box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
-    var(--shadow-window);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 13.5px;
-  min-height: 316px;
-}
-
 .sub-gap {
-  margin-top: 14px;
-}
-
-.spawn-gap {
   margin-top: 14px;
 }
 
@@ -3686,49 +3213,20 @@ code,
   pointer-events: none;
 }
 
-.spawn-dot {
-  flex: none;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--dim);
-}
-
 @media (max-width: 900px) {
   .spawn-demo {
     grid-template-columns: 1fr;
     gap: 18px;
   }
 
-  /* Grid children default to min-content width; without this the nowrap
-     command line blows the track past the viewport. */
-  .spawn-causes,
-  .spawn-window {
-    min-width: 0;
-  }
-
-  .spawn-window {
-    min-height: 0;
-  }
-
-  /* The command wraps instead of typing at phone widths, so the whole
-     invocation always reads. */
-  .spawn-term {
-    white-space: normal;
-    font-size: 12px;
-  }
-
-  .spawn-cmd,
+        .spawn-cmd,
   .spawn-cmd.typing {
     max-width: none;
     white-space: normal;
     animation: none;
   }
 
-  .tg-msg {
-    white-space: normal;
   }
-}
 
 /* ── Mock plugin panels (hero sidebar IA views) ──────────────────── */
 
@@ -3856,28 +3354,6 @@ code,
 .auto-paused {
   background: var(--surface);
   color: var(--subtle);
-}
-
-/* Shared terminal glyph bits. */
-.term-ps {
-  opacity: 0.55;
-  margin-right: 6px;
-}
-
-.term-caret {
-  display: inline-block;
-  width: 8px;
-  height: 1.05em;
-  margin-left: 7px;
-  vertical-align: text-bottom;
-  background: color-mix(in oklab, var(--canvas) 85%, transparent);
-  animation: caret-blink 1.1s steps(1) infinite;
-}
-
-@keyframes caret-blink {
-  50% {
-    opacity: 0;
-  }
 }
 
 /* ── Living bento: claims carried by real product fragments ────────
