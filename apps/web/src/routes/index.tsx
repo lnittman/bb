@@ -1631,24 +1631,34 @@ const ASK_OPTIONS = [
   {
     label: "Single code per cart",
     desc: "A new code replaces the applied one. Simplest to reason about.",
+    outcome:
+      "Enforcing one code per cart. The newest code replaces the one already applied, and the stacking branch comes out of the engine.",
   },
   {
     label: "Allow stacking",
     desc: "Codes combine, with precedence rules and discount guards.",
+    outcome:
+      "Stacking it is. Codes combine in precedence order, with a floor guard so a cart can never discount past zero.",
   },
   {
     label: "Depends on the campaign",
     desc: "Stackability becomes a per-code attribute the engine enforces.",
+    outcome:
+      "Making stackability a per-code attribute. The engine checks compatibility at apply time instead of guessing.",
   },
-  { label: "Other…", desc: "" },
+  { label: "Other…", desc: "", outcome: "Say the word and I will take that route instead." },
 ] as const;
 
+/* The Ask card does not perform. It waits — which is what the product
+ * does — and answers to the visitor. Resting state IS the question, so
+ * prerender, no-JS and reduced motion all show a real, complete card. */
 function AskDemo() {
-  const { ref, stage } = useLoopStage(ASK_BEATS, ASK_RESET);
-  const answered = stage >= 4;
+  const [picked, setPicked] = useState<number | null>(null);
+  const [sent, setSent] = useState(false);
+  const chosen = ASK_OPTIONS[picked ?? 0];
   return (
-    <div className="ask-demo" ref={ref} aria-hidden>
-      <p className="ask-wait">
+    <div className="ask-demo">
+      <p className="ask-wait" aria-hidden>
         <MessageQuestionGlyph className="ask-wait-ic" />
         <span>
           Waiting for <strong>answer</strong>
@@ -1657,29 +1667,28 @@ function AskDemo() {
           Should the promo engine support stacking codes…
         </span>
       </p>
-      {answered ? (
+      {sent ? (
         <div className="ask-card">
           <div className="ask-answered">
             <DemoCheck />
             <span>
-              Answered — <strong>Single code per cart</strong>
+              Answered — <strong>{chosen.label}</strong>
             </span>
           </div>
-          <p className="ask-after" style={{ animationDelay: "0.15s" }}>
-            Enforcing one code per cart. The newest code replaces the one
-            already applied, and the stacking branch comes out of the engine.
+          <p className="ask-after" style={{ animationDelay: "0.12s" }}>
+            {chosen.outcome}
           </p>
-          <p className="ask-step" style={{ animationDelay: "0.3s" }}>
+          <p className="ask-step" style={{ animationDelay: "0.26s" }}>
             Edited applyPromo.ts
           </p>
-          <p className="ask-step" style={{ animationDelay: "0.45s" }}>
+          <p className="ask-step" style={{ animationDelay: "0.4s" }}>
             Added 4 tests
           </p>
-          <p className="ask-step" style={{ animationDelay: "0.6s" }}>
+          <p className="ask-step" style={{ animationDelay: "0.54s" }}>
             Ran 24 tests
           </p>
-          <p className="ask-after" style={{ animationDelay: "0.75s" }}>
-            All green. The newest code now replaces the applied one.
+          <p className="ask-after" style={{ animationDelay: "0.68s" }}>
+            All green. The promo engine follows your call.
           </p>
         </div>
       ) : (
@@ -1688,19 +1697,13 @@ function AskDemo() {
             Should the promo engine support stacking codes, or one per cart?
           </p>
           <ul>
-            {ASK_OPTIONS.map((opt, i) => {
-              const active = i === 0 && stage >= 1;
-              const selected = i === 0 && stage >= 2;
-              return (
-                <li
-                  key={opt.label}
-                  className={
-                    selected
-                      ? "ask-opt selected"
-                      : active
-                        ? "ask-opt active"
-                        : "ask-opt"
-                  }
+            {ASK_OPTIONS.map((opt, i) => (
+              <li key={opt.label}>
+                <button
+                  type="button"
+                  className={picked === i ? "ask-opt selected" : "ask-opt"}
+                  aria-pressed={picked === i}
+                  onClick={() => setPicked(i)}
                 >
                   <i className="ask-radio" />
                   <span className="ask-text">
@@ -1710,15 +1713,20 @@ function AskDemo() {
                     ) : null}
                   </span>
                   <span className="ask-num">{i + 1}</span>
-                </li>
-              );
-            })}
+                </button>
+              </li>
+            ))}
           </ul>
           <div className="ask-foot">
             <span>Cancel</span>
-            <span className={stage >= 3 ? "ask-submit armed" : "ask-submit"}>
+            <button
+              type="button"
+              className={picked !== null ? "ask-submit armed" : "ask-submit"}
+              disabled={picked === null}
+              onClick={() => setSent(true)}
+            >
               Submit answer
-            </span>
+            </button>
           </div>
         </div>
       )}
@@ -2165,28 +2173,52 @@ const GANG_STEPS = [
   { kind: "say", text: "All 32 passing. Promo coverage holds." },
 ] as const;
 
+/** Demos play themselves until the visitor touches one, then hand over.
+ *  `takeOver()` stops the loop for good and settles the demo, so anything
+ *  the visitor drives from that point is theirs, not a frame of a script
+ *  that will overwrite them a second later. */
 function useLoopStage(beats: number[], resetAt: number) {
   const ref = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState(beats.length);
+  const timers = useRef<number[]>([]);
+  const driven = useRef(false);
+  const [live, setLive] = useState(false);
+
+  const stop = useCallback(() => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+  }, []);
+
+  const takeOver = useCallback(() => {
+    driven.current = true;
+    stop();
+    setLive(false);
+    setStage(beats.length);
+  }, [beats.length, stop]);
+
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       return;
     }
     const el = ref.current;
     if (!el) return;
-    let timers: number[] = [];
     const run = () => {
+      if (driven.current) return;
       setStage(0);
-      timers = beats.map((at, i) => window.setTimeout(() => setStage(i + 1), at));
-      timers.push(window.setTimeout(run, resetAt));
+      setLive(true);
+      timers.current = beats.map((at, i) =>
+        window.setTimeout(() => setStage(i + 1), at),
+      );
+      timers.current.push(window.setTimeout(run, resetAt));
     };
     const observer = new IntersectionObserver(
       ([entry]) => {
+        if (driven.current) return;
         if (entry?.isIntersecting) {
-          if (!timers.length) run();
+          if (!timers.current.length) run();
         } else {
-          timers.forEach(clearTimeout);
-          timers = [];
+          stop();
+          setLive(false);
           setStage(beats.length);
         }
       },
@@ -2195,11 +2227,11 @@ function useLoopStage(beats: number[], resetAt: number) {
     observer.observe(el);
     return () => {
       observer.disconnect();
-      timers.forEach(clearTimeout);
+      stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  return { ref, stage };
+  return { ref, stage, live, takeOver };
 }
 
 function GangDemo() {

@@ -4102,6 +4102,41 @@ code,
   color: var(--dim);
 }
 
+/* Options are real controls now: the visitor answers the agent. */
+.ask-demo li {
+  list-style: none;
+}
+
+.ask-opt {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ask-opt:hover {
+    background: var(--state-hover);
+  }
+}
+
+.ask-opt:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ink-strong) 45%, transparent);
+  outline-offset: -2px;
+}
+
+.ask-submit {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ask-submit:disabled {
+  cursor: default;
+}
+
 .ask-opt {
   display: flex;
   align-items: center;
