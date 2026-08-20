@@ -3295,6 +3295,17 @@ code,
 }
 
 @media (max-width: 900px) {
+  /* The working-tree bar is a nowrap row of metadata; at phone widths it
+     wraps instead of pushing the page sideways. */
+  .gang-pr {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+
+  .gang-pr-dim {
+    min-width: 0;
+  }
+
   .gang-demo {
     grid-template-columns: 1fr;
   }
@@ -3973,6 +3984,21 @@ code,
   gap: 14px;
   font-size: 13.5px;
   align-items: start;
+}
+
+/* Phones get one column: a 148px rail beside a 92px pane is two
+   unreadable columns, not a two-pane app. */
+@media (max-width: 900px) {
+  .sub-demo {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .sub-main {
+    padding: 12px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--border-soft);
+  }
 }
 
 .sub-rail {
