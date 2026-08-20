@@ -3913,11 +3913,13 @@ code,
   min-height: 0;
   border-radius: 12px 12px 0 0;
   background: var(--bg);
-  /* The ring is INSET: masking an element also clips anything it paints
-     outside its border box, so an outset ring loses its left and right
-     edges the moment the dissolve is applied. An inset ring is painted
-     inside the box and survives. */
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ink-strong) 8%, transparent);
+  /* A real border, not a ring. An OUTSET shadow is clipped away by the
+     dissolve mask; an INSET shadow paints below child backgrounds, so the
+     chrome bar and rows erased it. A border belongs to the element's own
+     box: children sit inside it and the mask keeps it. */
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--border);
   overflow: hidden;
   /* The whole frame dissolves — ring included — so no hard bottom edge
      survives the fade. The slate card behind it stays crisp. */
