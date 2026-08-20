@@ -2880,6 +2880,37 @@ code,
   grid-template-columns: minmax(0, 3.4fr) minmax(0, 5.6fr) minmax(0, 4fr);
 }
 
+/* Three panes need a desktop. Narrower than this they stack, the way the
+   app gives one surface the screen at a time — sidebar, then the thread,
+   then the panel it built. This override has to be as specific as the rule
+   above it; the shared .gang-body mobile rule loses to it on specificity
+   no matter which media query it sits in. */
+@media (max-width: 900px) {
+  .build-demo .gang-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .build-panel {
+    border-left: 0;
+    border-top: 1px solid var(--border-soft);
+    border-radius: 0 0 var(--r-card) var(--r-card);
+  }
+}
+
+/* The context row carries three chips that only fit a wide pane. Narrow, the
+   model chip breaks across two lines and the branch runs into the edge. The
+   branch is the least load-bearing of the three, so it steps out and the
+   other two keep their line. */
+@media (max-width: 620px) {
+  .gang-ctx-branch {
+    display: none;
+  }
+
+  .gang-ctx-item {
+    white-space: nowrap;
+  }
+}
+
 .build-panel {
   display: flex;
   flex-direction: column;
