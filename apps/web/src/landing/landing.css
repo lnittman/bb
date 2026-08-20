@@ -1368,7 +1368,7 @@ code,
 .msg-say {
   font-size: 13.5px;
   line-height: 1.55;
-  color: oklch(0.28 0 0);
+  color: color-mix(in oklab, var(--ink-strong) 88%, var(--canvas));
   max-width: 58ch;
 }
 
@@ -1954,7 +1954,7 @@ code,
   letter-spacing: -0.03em;
   text-wrap: balance;
   overflow-wrap: break-word;
-  color: oklch(0.21 0 0);
+  color: var(--ink-strong);
 }
 
 .band-copy p {
@@ -3208,10 +3208,9 @@ code,
   color: var(--warn, var(--dim));
 }
 
+/* Indent lives with the other rail rules, after the .sub-row base, so the
+   base's padding shorthand can't win on source order. */
 .gang-kid {
-  margin-left: 20px;
-  border-left: 2px solid var(--border);
-  border-radius: 0 8px 8px 0;
   transition:
     opacity 0.45s var(--ease-out),
     transform 0.45s var(--ease-out);
@@ -4053,13 +4052,15 @@ button.sub-row {
   transition: background var(--duration-hover) var(--ease-standard);
 }
 
+/* --state-active and --sidebar-accent, at the app's own strengths. The
+   landing was carrying roughly half of each, which read as a dead rail. */
 .sub-row.is-open {
-  background: var(--state-hover);
+  background: color-mix(in oklab, var(--ink) 11.8%, transparent);
 }
 
 @media (hover: hover) and (pointer: fine) {
   button.sub-row:not(.is-open):hover {
-    background: color-mix(in oklab, var(--ink-strong) 3%, transparent);
+    background: color-mix(in oklch, var(--ink) 8%, var(--bg));
   }
 }
 
@@ -4075,13 +4076,14 @@ button.sub-row:focus-visible {
   padding-bottom: 4px;
 }
 
-/* The unread dot the real sidebar puts on quiet rows. */
+/* The app's unread-success indicator: a 5px dot at muted/60. It is the only
+   thing the rail shows for a finished thread — never a check. */
 .sub-dot {
   flex: none;
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: color-mix(in oklab, var(--ink-strong) 28%, transparent);
+  background: color-mix(in oklab, var(--dim) 60%, transparent);
 }
 
 /* The open thread beside the rail: real text is not the point here, so the
@@ -4097,20 +4099,34 @@ button.sub-row:focus-visible {
   min-width: 0;
 }
 
+/* CHROME_SECTION_LABEL_CLASS: 12px, normal weight, 20px leading, subtle at
+   75%, and the row's own 8px lead. No uppercase, no tracking — the app has
+   neither; a project header reads lowercase because the project name is. */
 .sub-group {
   font-size: 12px;
-  color: var(--subtle);
-  margin-bottom: 8px;
+  font-weight: 400;
+  line-height: 20px;
+  padding-left: 8px;
+  color: color-mix(in oklab, var(--subtle) 75%, transparent);
+  margin-bottom: 4px;
 }
 
+/* Row metrics come from the app's sidebar: 8px leading pad, no trailing pad,
+   8px gap, rounded-md, and a 28px row that grows to a real tap target on
+   coarse pointers. */
 .sub-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 9px 10px;
-  border-radius: 8px;
+  gap: 8px;
+  min-height: 28px;
+  padding: 5px 8px;
+  border-radius: 6px;
   color: var(--ink);
+}
+
+.sub-kids > .sub-row {
+  padding-left: var(--rail-indent);
 }
 
 .sub-row svg {
@@ -4134,10 +4150,30 @@ button.sub-row:focus-visible {
   color: var(--ok);
 }
 
+/* Nesting, as the app actually draws it: one 1px hairline spanning the whole
+   child group (ProjectRow's ThreadTreeGroupLine), sitting at the parent
+   glyph's centre, and a 24px indent step on the row itself. No per-row
+   border, no rounded stub, no ↳ — the app has none of those. */
+.sub-kids {
+  /* The app's step is 24px on top of the row's own 8px lead. */
+  --rail-indent: 32px;
+  --rail-guide: 16px;
+  position: relative;
+}
+
+.sub-guide {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--rail-guide);
+  width: 1px;
+  background: var(--border);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
 .sub-child {
-  margin-left: 22px;
-  border-left: 2px solid var(--border);
-  border-radius: 0 8px 8px 0;
+  padding-left: var(--rail-indent);
   opacity: 1;
   transform: none;
   transition:
@@ -4359,21 +4395,6 @@ button.sub-row:focus-visible {
   color: var(--ink-strong);
 }
 
-.sub-report {
-  margin-left: 34px;
-  font-size: 11.5px;
-  color: var(--subtle);
-  opacity: 0;
-  transform: translateY(-3px);
-  transition:
-    opacity 0.4s var(--ease-out) 0.25s,
-    transform 0.4s var(--ease-out) 0.25s;
-}
-
-.sub-report.in {
-  opacity: 1;
-  transform: none;
-}
 
 .ask-submit.armed {
   background: var(--ink);
@@ -4627,7 +4648,7 @@ button.sub-row:focus-visible {
   font-weight: 700;
   letter-spacing: -0.025em;
   margin-bottom: 12px;
-  color: oklch(0.21 0 0);
+  color: var(--ink-strong);
 }
 
 .closer {

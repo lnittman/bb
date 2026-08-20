@@ -1685,7 +1685,7 @@ function SubagentsDemo() {
       onClick={() => setOpenId(t.id)}
     >
       <span className="sub-title">{t.title}</span>
-      {t.kind === "quiet" ? <i className="sub-dot" /> : <DemoCheck />}
+      {openId === t.id ? null : <i className="sub-dot" />}
     </button>
   );
   return (
@@ -1702,10 +1702,12 @@ function SubagentsDemo() {
           storefront
         </span>
         {row(SUB_THREADS[0])}
-        {row(SUB_THREADS[1])}
-        <span className="sub-report in" aria-hidden>
-          ↳ reported back to its parent
-        </span>
+        {/* The app draws one hairline down the whole child group, not a stub
+            per row, and children are set apart by indent alone. */}
+        <div className="sub-kids">
+          <i className="sub-guide" aria-hidden />
+          {row(SUB_THREADS[1])}
+        </div>
         {SUB_THREADS.slice(2).map(row)}
         <span className="sub-group sub-gap" aria-hidden>
           checkout-api
@@ -1960,10 +1962,7 @@ function TasksBoardDemo() {
                 </span>
                 {col.cards.map((card) => (
                   <div key={card.id} className="board-card">
-                    <span className="board-id">
-                      {card.id}
-                      {card.id === "SF-1" ? <DemoCheck /> : null}
-                    </span>
+                    <span className="board-id">{card.id}</span>
                     <span className="board-card-title">{card.title}</span>
                     <PriorityGlyph level={card.pri} />
                   </div>
@@ -2395,21 +2394,27 @@ function GangDemo() {
         <div className="sub-row gang-row is-open">
           <OpenAiIcon className="gang-pv" />
           <span className="sub-title">Audit promo code coverage</span>
-          {stage >= 5 || settled ? <DemoCheck /> : <DemoSpinner />}
+          {stage >= 5 || settled ? null : <DemoSpinner />}
         </div>
         <div className="sub-row gang-row">
           <ClaudeIcon className="gang-pv" />
           <span className="sub-title">Trace order checkout flow</span>
-          {stage >= 2 || settled ? <DemoCheck /> : <DemoSpinner />}
+          {stage >= 2 || settled ? <i className="sub-dot" /> : <DemoSpinner />}
         </div>
-        <div
-          className={
-            stage >= 2 || settled ? "sub-row gang-row gang-kid in" : "sub-row gang-row gang-kid"
-          }
-        >
-          <ClaudeIcon className="gang-pv" />
-          <span className="sub-title">Confirm the checkout totals</span>
-          <DemoSpinner />
+        {/* One hairline for the whole child group, as the real rail draws it. */}
+        <div className="sub-kids">
+          <i className="sub-guide" aria-hidden />
+          <div
+            className={
+              stage >= 2 || settled
+                ? "sub-row gang-row gang-kid in"
+                : "sub-row gang-row gang-kid"
+            }
+          >
+            <ClaudeIcon className="gang-pv" />
+            <span className="sub-title">Confirm the checkout totals</span>
+            <DemoSpinner />
+          </div>
         </div>
         <div className="sub-row gang-row">
           <CursorIcon className="gang-pv" />
@@ -2420,7 +2425,7 @@ function GangDemo() {
         <div className="sub-row gang-row">
           <PiIcon className="gang-pv" />
           <span className="sub-title">Summarize service route</span>
-          {stage >= 3 || settled ? <DemoCheck /> : <DemoSpinner />}
+          {stage >= 3 || settled ? <i className="sub-dot" /> : <DemoSpinner />}
         </div>
         <span className="sub-group gang-gap">mobile</span>
         <div className="sub-row gang-row">
