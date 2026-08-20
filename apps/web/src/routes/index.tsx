@@ -2149,16 +2149,27 @@ function ReviewDemo() {
  * than bb.
  *
  *      0ms   a thread titled "New thread", nothing in the pane
- *    400ms   the title morphs into the ask; the agent starts working
- *   1800ms   "Scaffolded the plugin"
- *   2600ms   "Registered the CLI"
- *   3400ms   "Wrote the skill"
- *   4200ms   the Review queue panel appears in the sidebar nav
- *   5000ms   the thread reports back and the branch chip fills in
- *  12000ms   loop restarts (everything rests ~half the loop)
+ *    300ms   the title morphs into the ask; the agent starts working
+ *   1100ms   "Scaffolded the plugin"
+ *   1700ms   "Registered the CLI"
+ *   2300ms   "Wrote the skill"
+ *   2900ms   the Review queue panel appears in the sidebar nav
+ *   3600ms   the panel itself opens beside the thread
+ *   4300ms   the thread reports back and the branch chip fills in
+ *  12000ms   loop restarts
+ *
+ * The build runs briskly and then holds: complete for roughly two thirds of
+ * the loop, so a capture taken at random is far more likely to show the
+ * finished argument than a half-built one.
  *   rest     everything present — also the reduced-motion state
+ *
+ * The panel opens in the third column rather than replacing the thread, so
+ * the resting frame holds the whole argument at once: what was asked, what
+ * the agent did, the nav row it added, and the working panel behind it. The
+ * section used to say "the panel is live in your sidebar" and then show a
+ * label — evidence that a string was inserted, not that software was built.
  * ──────────────────────────────────────────────── */
-const BUILD_BEATS = [400, 1800, 2600, 3400, 4200, 5000];
+const BUILD_BEATS = [300, 1100, 1700, 2300, 2900, 3600, 4300];
 const BUILD_RESET = 12000;
 const BUILD_PROMPT = "Add a review queue panel";
 
@@ -2168,13 +2179,22 @@ const BUILD_STEPS = [
   { kind: "step", text: "Wrote the skill" },
 ] as const;
 
+/** What the built panel is for: every thread that stopped to ask you
+ *  something, in one list. */
+const BUILD_QUEUE = [
+  { title: "Audit promo code coverage", ask: "Stack or replace?" },
+  { title: "Port pricing to TypeScript", ask: "Strict null checks?" },
+  { title: "Trace order checkout flow", ask: "Include tax lines?" },
+] as const;
+
 function BuildDemo() {
   const { ref, stage } = useLoopStage(BUILD_BEATS, BUILD_RESET);
   const settled = stage >= BUILD_BEATS.length;
   const asked = stage >= 1 || settled;
   const steps = settled ? 3 : Math.max(0, stage - 1);
   const navOn = stage >= 5 || settled;
-  const done = stage >= 6 || settled;
+  const panelOn = stage >= 6 || settled;
+  const done = stage >= 7 || settled;
   return (
     <div className="build-demo" ref={ref} aria-hidden>
       <div className="dwin-bar">
@@ -2214,7 +2234,15 @@ function BuildDemo() {
           {/* The payoff: a plugin that adds a panel adds a nav row, and the
               row arrives while you are still reading the thread that asked
               for it. Space is reserved so the section never grows. */}
-          <span className={navOn ? "side-act build-nav in" : "side-act build-nav"}>
+          <span
+            className={
+              navOn
+                ? panelOn
+                  ? "side-act build-nav in active-act"
+                  : "side-act build-nav in"
+                : "side-act build-nav"
+            }
+          >
             <PanelIcon className="sa-ic" />
             Review queue
           </span>
@@ -2290,6 +2318,30 @@ function BuildDemo() {
             {done ? null : <Spinner className="gang-ctx-spin" />}
           </div>
         </div>
+        {/* The plugin, running. Its column is in the grid from the first
+            frame — only the contents move — so opening it costs the section
+            no height and reflows nothing. */}
+        <div className={panelOn ? "build-panel in" : "build-panel"}>
+          <div className="build-panel-bar">
+            <PanelIcon className="build-panel-ic" />
+            Review queue
+          </div>
+          <ul className="build-queue">
+            {BUILD_QUEUE.map((q) => (
+              <li key={q.title}>
+                <HugeiconsIcon
+                  icon={MessageQuestionIcon}
+                  className="build-queue-ic"
+                />
+                <span className="build-queue-body">
+                  <span className="build-queue-title">{q.title}</span>
+                  <span className="build-queue-ask">{q.ask}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <span className="build-queue-foot">3 threads waiting on you</span>
+        </div>
       </div>
     </div>
   );
@@ -2299,18 +2351,22 @@ function BuildDemo() {
  * GANG STORYBOARD (loops while in view)
  *
  *      0ms   four threads working across three projects
- *   1500ms   the finding lands in the open transcript
- *   3000ms   the edit lands; the claude thread completes, its child
+ *    900ms   the finding lands in the open transcript
+ *   1900ms   the edit lands; the claude thread completes, its child
  *            appears nested
- *   4200ms   the suite starts; the pi thread completes
- *   5600ms   "Ran 32 tests" lands
- *   7000ms   the suite passes; the open codex thread completes last,
+ *   2800ms   the suite starts; the pi thread completes
+ *   3700ms   "Ran 32 tests" lands
+ *   4600ms   the suite passes; the open codex thread completes last,
  *            on screen
- *  11600ms   loop restarts (the settled office holds ~40% of the loop)
+ *  12000ms   loop restarts
+ *
+ * The settled office used to hold only ~40% of the loop, so most captures
+ * caught a half-finished room. The work now runs at the same pace it reads
+ * at and then rests: settled for roughly two thirds.
  *   rest     everything settled — also the reduced-motion state
  * ──────────────────────────────────────────────── */
-const GANG_BEATS = [1500, 3000, 4200, 5600, 7000];
-const GANG_RESET = 11600;
+const GANG_BEATS = [900, 1900, 2800, 3700, 4600];
+const GANG_RESET = 12000;
 
 const GANG_STEPS = [
   { kind: "step", text: "Explored 3 files" },
