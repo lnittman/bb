@@ -2785,11 +2785,47 @@ code,
 
 /* ── Build: one prompt, an Extensions window, a layered panel ────── */
 
+/* One window, on the gang demo's chrome. */
 .build-demo {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: clamp(16px, 2vw, 28px);
-  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-card);
+  background: var(--bg);
+  box-shadow:
+    var(--ring),
+    var(--shadow-window);
+  font-size: 13.5px;
+}
+
+/* What you asked for. bb's transcript has no bubbles, so the visitor's own
+   words are set apart by weight and ink alone. */
+.gang-you {
+  color: var(--ink-strong);
+  font-weight: 550;
+  line-height: 1.5;
+}
+
+.gang-you.in {
+  animation: gang-in 0.5s var(--ease-out) both;
+}
+
+.gang-you.out {
+  opacity: 0;
+}
+
+/* The nav row the plugin adds. Its space is held from the first frame so
+   the sidebar — and the section — never changes height. */
+.build-nav {
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.45s var(--ease-out),
+    transform 0.45s var(--ease-out);
+}
+
+.build-nav.in {
+  opacity: 1;
+  transform: none;
 }
 
 .build-ask {
@@ -3236,12 +3272,18 @@ code,
   min-width: 0;
 }
 
+/* A thread you are looking at is scrolled to the bottom, so the newest line
+   sits just above the composer. Bottom-aligning the feed is both truer than
+   top-aligning it and the reason these panes no longer carry a band of dead
+   space under the last message. */
 .gang-feed {
   flex: 1;
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
   gap: 11px;
   min-height: 158px;
+  padding-bottom: 14px;
 }
 
 .gang-step,
@@ -3461,10 +3503,14 @@ code,
 /* Equal columns: the terminal line needs the full half-rail to type its
    whole invocation without clipping mid-word. */
 .spawn-demo {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(16px, 2vw, 28px);
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-card);
+  background: var(--bg);
+  box-shadow:
+    var(--ring),
+    var(--shadow-window);
+  font-size: 13.5px;
 }
 
 .spawn-causes {
@@ -4133,6 +4179,13 @@ button.sub-row:focus-visible {
   flex: none;
   width: 15px;
   height: 15px;
+}
+
+/* Hermes messages bb from Telegram, so his row carries an avatar, not a
+   glyph — round, like every other avatar in the product. */
+.sub-row img.gang-pv {
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .dm-spin {

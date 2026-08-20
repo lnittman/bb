@@ -2111,164 +2111,154 @@ function ReviewDemo() {
 /* ────────────────────────────────────────────────
  * BUILD STORYBOARD (loops while in view)
  *
- *      0ms   an empty composer, caret blinking
- *    300ms   the request types itself
- *   2100ms   sent; the agent starts working ("Scaffolded the plugin")
- *   2900ms   the plugin card lands in Extensions; the Review-queue
- *            panel window layers in over the corner
- *   3800ms   the command surface lands ("Registered the CLI")
- *   4700ms   the skill lands ("Wrote the skill")
- *   6200ms   the thread reports back
- *  12400ms   loop restarts (all surfaces rest ~half the loop)
+ * One window, because that is where this actually happens: you are in a
+ * thread, and the thing the agent builds shows up in the sidebar beside
+ * you. The old version split the story across two floating cards with a
+ * skeleton panel hanging off the frame, which read as a mock of bb rather
+ * than bb.
+ *
+ *      0ms   a thread titled "New thread", nothing in the pane
+ *    400ms   the title morphs into the ask; the agent starts working
+ *   1800ms   "Scaffolded the plugin"
+ *   2600ms   "Registered the CLI"
+ *   3400ms   "Wrote the skill"
+ *   4200ms   the Review queue panel appears in the sidebar nav
+ *   5000ms   the thread reports back and the branch chip fills in
+ *  12000ms   loop restarts (everything rests ~half the loop)
  *   rest     everything present — also the reduced-motion state
  * ──────────────────────────────────────────────── */
-const BUILD_BEATS = [300, 2100, 2900, 3800, 4700, 6200];
-const BUILD_RESET = 12400;
+const BUILD_BEATS = [400, 1800, 2600, 3400, 4200, 5000];
+const BUILD_RESET = 12000;
 const BUILD_PROMPT = "Add a review queue panel";
 
-const BUILD_SURFACES = [
-  {
-    kind: "Command",
-    name: "bb review",
-    detail: "The same queue, from any shell",
-    icon: TerminalGlyph,
-  },
-  {
-    kind: "Skill",
-    name: "review-queue",
-    detail: "So every agent knows to use it",
-    icon: ChecklistGlyph,
-  },
+const BUILD_STEPS = [
+  { kind: "step", text: "Scaffolded the plugin" },
+  { kind: "step", text: "Registered the CLI" },
+  { kind: "step", text: "Wrote the skill" },
 ] as const;
-
-/** The Review-queue panel the prompt produced, previewed in its own small
- *  window layered over the Extensions page — skeleton rows, like the real
- *  Extensions carousel previews its plugins. */
-function BuildPeek({ on }: { on: boolean }) {
-  return (
-    <div className={on ? "build-peek in" : "build-peek"}>
-      <div className="dwin-bar dwin-mini">
-        <span className="dwin-title">Review queue</span>
-      </div>
-      <div className="build-peek-body">
-        <div className="peek-row peek-hot">
-          <span className="peek-bar" style={{ width: "72%" }} />
-          <i className="sub-dot" />
-        </div>
-        <div className="peek-row">
-          <span className="peek-bar" style={{ width: "58%" }} />
-          <i className="sub-dot" />
-        </div>
-        <div className="peek-row">
-          <span className="peek-bar" style={{ width: "64%" }} />
-          <i className="sub-dot" />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function BuildDemo() {
   const { ref, stage } = useLoopStage(BUILD_BEATS, BUILD_RESET);
   const settled = stage >= BUILD_BEATS.length;
-  const sent = stage >= 2 || settled;
+  const asked = stage >= 1 || settled;
+  const steps = settled ? 3 : Math.max(0, stage - 1);
+  const navOn = stage >= 5 || settled;
+  const done = stage >= 6 || settled;
   return (
     <div className="build-demo" ref={ref} aria-hidden>
-      <div className="build-ask">
-        <div className={sent ? "build-composer sent" : "build-composer"}>
-          <p className="build-prompt">
-            <span
-              className={
-                stage >= 1 && !settled ? "build-typed typing" : "build-typed"
-              }
-            >
-              {BUILD_PROMPT}
-            </span>
-            <span className="build-caret" />
-          </p>
-          <div className="build-composer-row">
-            <span className="build-model">
-              <ClaudeIcon className="build-model-ic" />
-              Opus 4.8
-              <ChevronDown className="chev-sm" />
-            </span>
-            <span className={sent ? "build-send sent" : "build-send"}>
-              <SendIcon className="build-send-ic" />
-            </span>
-          </div>
-        </div>
-        <div className="build-steps">
-          <p className={sent ? "gang-step in" : "gang-step out"}>
-            Scaffolded the plugin
-          </p>
-          <p className={stage >= 4 || settled ? "gang-step in" : "gang-step out"}>
-            Registered the CLI
-          </p>
-          <p className={stage >= 5 || settled ? "gang-step in" : "gang-step out"}>
-            Wrote the skill
-          </p>
-          <p className={stage >= 6 || settled ? "gang-say in" : "gang-say out"}>
-            The panel is live in your sidebar. bb building bb.
-          </p>
-        </div>
+      <div className="dwin-bar">
+        <span className="dwin-title">
+          <TextMorph as="span" duration={520} ease="cubic-bezier(0.19,1,0.22,1)">
+            {asked ? BUILD_PROMPT : "New thread"}
+          </TextMorph>
+        </span>
+        <span className={done ? "gang-commit armed" : "gang-commit"}>
+          Commit
+          <ChevronDown className="gang-commit-chev" />
+        </span>
       </div>
-      <div className="build-out">
-        <div className="build-win">
-          <div className="dwin-bar">
-            <span className="dwin-title">Extensions</span>
-            <span className="build-win-cta">Create a plugin</span>
+      <div className="gang-body">
+        <div className="gang-side">
+          <div className="side-row-new">
+            <span className="side-act">
+              <NewThreadIcon className="sa-ic" />
+              New thread
+            </span>
+            <span className="side-search">
+              <SearchGlyph className="sa-ic" />
+            </span>
           </div>
-          <div className="build-win-body">
-            <span className="build-label">Installed</span>
-            <div
-              className={
-                stage >= 3 || settled
-                  ? "build-surface build-plugin in"
-                  : "build-surface build-plugin"
-              }
-            >
-              <PanelIcon className="build-ic" />
-              <div className="build-body">
-                <span className="build-name">
-                  Review queue
-                  <DemoCheck />
-                </span>
-                <span className="build-detail">
-                  Every thread waiting on you, one list. By: your agent
-                </span>
-              </div>
-              <span className="build-kind">Plugin</span>
-            </div>
-            <ul className="build-surfaces">
-              {BUILD_SURFACES.map((s, i) => {
-                const Icon = s.icon;
-                const on = settled || stage >= i + 4;
-                return (
-                  <li
-                    key={s.kind}
-                    className={on ? "build-surface in" : "build-surface"}
-                  >
-                    <Icon className="build-ic" />
-                    <div className="build-body">
-                      <span
-                        className={
-                          s.kind === "Command"
-                            ? "build-name build-name-mono"
-                            : "build-name"
-                        }
-                      >
-                        {s.name}
-                      </span>
-                      <span className="build-detail">{s.detail}</span>
-                    </div>
-                    <span className="build-kind">{s.kind}</span>
-                  </li>
-                );
-              })}
-            </ul>
+          <span className="side-act">
+            <ToolboxGlyph className="sa-ic" />
+            Extensions
+          </span>
+          <span className="side-act">
+            <ClockIcon className="sa-ic" />
+            Automations
+          </span>
+          <span className="side-act">
+            <ChecklistGlyph className="sa-ic" />
+            Tasks
+          </span>
+          {/* The payoff: a plugin that adds a panel adds a nav row, and the
+              row arrives while you are still reading the thread that asked
+              for it. Space is reserved so the section never grows. */}
+          <span className={navOn ? "side-act build-nav in" : "side-act build-nav"}>
+            <PanelIcon className="sa-ic" />
+            Review queue
+          </span>
+          <span className="sub-group gang-gap">storefront</span>
+          <div className="sub-row gang-row is-open">
+            <ClaudeIcon className="gang-pv" />
+            <span className="sub-title">
+              <TextMorph
+                as="span"
+                duration={520}
+                ease="cubic-bezier(0.19,1,0.22,1)"
+              >
+                {asked ? BUILD_PROMPT : "New thread"}
+              </TextMorph>
+            </span>
+            {done ? null : <DemoSpinner />}
+          </div>
+          <div className="sub-row gang-row">
+            <OpenAiIcon className="gang-pv" />
+            <span className="sub-title">Audit promo code coverage</span>
+            <i className="sub-dot" />
           </div>
         </div>
-        <BuildPeek on={stage >= 3 || settled} />
+        <div className="gang-thread">
+          <div className="gang-feed">
+            {/* A thread opens with what you asked for. It is the whole
+                premise of the section, so the pane says it out loud
+                instead of leaving the title to carry it. */}
+            <p className={asked ? "gang-you in" : "gang-you out"}>
+              {BUILD_PROMPT}
+            </p>
+            {BUILD_STEPS.map((s, i) => (
+              <p
+                key={s.text}
+                className={steps > i ? "gang-step in" : "gang-step out"}
+              >
+                {s.text}
+              </p>
+            ))}
+            <p className={done ? "gang-say in" : "gang-say out"}>
+              The panel is live in your sidebar. bb building bb.
+            </p>
+          </div>
+          <div className="gang-pr">
+            <GitMergeIcon className="gang-pr-ic" />
+            <span className="gang-pr-strong">Uncommitted</span>
+            <span className="gang-pr-dim">· 6 files,</span>
+            <em className="review-add">+214</em>
+            <em className="review-del">-3</em>
+            <ChevronDown className="gang-commit-chev" />
+          </div>
+          <div className="gang-composer">
+            <span className="gang-ph">Ask a follow-up</span>
+            <span className="gang-send">
+              <SendIcon className="gang-send-ic" />
+            </span>
+          </div>
+          <div className="gang-ctx">
+            <span className="gang-ctx-item">
+              <ClaudeIcon className="gang-ctx-ic" />
+              Opus 4.8
+              <ChevronDown className="gang-commit-chev" />
+            </span>
+            <span className="gang-ctx-item">
+              <FolderGitIcon className="gang-ctx-ic" />
+              Worktree
+              <ChevronDown className="gang-commit-chev" />
+            </span>
+            <span className="gang-ctx-item gang-ctx-branch">
+              <GitBranchIcon className="gang-ctx-ic" />
+              bb/review-queue-panel
+            </span>
+            {done ? null : <Spinner className="gang-ctx-spin" />}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -2448,14 +2438,14 @@ function GangDemo() {
         </div>
         <div className="gang-pr">
           <GitMergeIcon className="gang-pr-ic" />
-          <span className="gang-pr-strong">Working tree</span>
-          <span className="gang-pr-dim">· Uncommitted · 1 file,</span>
+          <span className="gang-pr-strong">Uncommitted</span>
+          <span className="gang-pr-dim">· 2 files,</span>
           <em className="review-add">+38</em>
           <em className="review-del">-2</em>
           <ChevronDown className="gang-commit-chev" />
         </div>
         <div className="gang-composer">
-          <span className="gang-ph">Ask for a follow-up…</span>
+          <span className="gang-ph">Ask a follow-up</span>
           <span className="gang-send">
             <SendIcon className="gang-send-ic" />
           </span>
@@ -2508,11 +2498,59 @@ const SPAWN_RESET_MS = 3 * BEAT_MS + 3600;
 // derived from this string; keep the three in lockstep.
 const SPAWN_COMMAND = 'bb thread spawn --prompt "Trace order checkout flow"';
 
+/* Each cause is a thread, and the thread carries where it came from — the
+ * glyph the rail shows, the line the transcript opens with, and the branch
+ * it works on. The old version floated the causes outside the window as
+ * cards; inside, they are just threads, which is what they are. */
 const SPAWN_CAUSES = [
-  { id: "cli", title: "Trace order checkout flow" },
-  { id: "telegram", title: "Audit promo code coverage" },
-  { id: "cron", title: "Nightly dependency sweep" },
+  {
+    id: "cli",
+    title: "Trace order checkout flow",
+    origin: "Spawned from your shell · bb thread spawn",
+    branch: "bb/trace-order-checkout",
+    lines: [
+      { kind: "say", text: "Cart totals resolve before promo codes apply." },
+      { kind: "step", text: "Read 3 files" },
+      { kind: "say", text: "Traced. The order is cart, then promo, then tax." },
+    ],
+  },
+  {
+    id: "telegram",
+    title: "Audit promo code coverage",
+    origin: "Spawned by Hermes · via Telegram",
+    branch: "bb/audit-promo-coverage",
+    lines: [
+      { kind: "say", text: "The promo engine has no test for stacked codes." },
+      { kind: "step", text: "Edited promo.test.ts" },
+      { kind: "say", text: "Added four cases. All 32 passing." },
+    ],
+  },
+  {
+    id: "cron",
+    title: "Nightly dependency sweep",
+    origin: "Spawned by Automations · every night at 02:00",
+    branch: "bb/nightly-sweep",
+    lines: [
+      { kind: "say", text: "Fourteen manifests read. Seven are behind." },
+      { kind: "step", text: "Opened 3 pull requests" },
+      { kind: "say", text: "Sweep done. Three PRs are up for review." },
+    ],
+  },
 ] as const;
+
+/** Hermes messages bb over Telegram, so the rail shows his avatar the way
+ *  it shows any agent's glyph. */
+const HermesGlyph = ({ className }: IconProps) => (
+  <img src={hermesAvatar} alt="" width={15} height={15} className={className} />
+);
+
+/** The app's own vocabulary for a background spawn: a terminal for a shell
+ *  command, the sender for an agent, a clock for a schedule. */
+const SPAWN_GLYPHS: Record<string, (p: IconProps) => ReactNode> = {
+  cli: TerminalGlyph,
+  telegram: HermesGlyph,
+  cron: ClockIcon,
+};
 
 type SpawnPhase = { beat: number; t: number };
 
@@ -2578,54 +2616,33 @@ function causeStage(phase: SpawnPhase, i: number) {
   return phase.t;
 }
 
+/* One window. The three causes arrive as threads in the rail, each with the
+ * glyph the app gives a background spawn, and the pane follows whichever
+ * one just landed — or whichever one you click. */
 function SpawnDemo() {
   const { ref, phase } = useSpawnMachine();
+  const [picked, setPicked] = useState<string | null>(null);
   const cli = causeStage(phase, 0);
   const tg = causeStage(phase, 1);
   const cron = causeStage(phase, 2);
-  const active = phase.beat < 3 ? phase.beat : -1;
+  const stages: Record<string, number> = { cli, telegram: tg, cron };
+  // Newest arrival leads the pane until a visitor takes over by clicking.
+  const arrived = [...SPAWN_CAUSES].filter((c) => stages[c.id] >= 3);
+  const lead = arrived[arrived.length - 1] ?? SPAWN_CAUSES[2];
+  const open = SPAWN_CAUSES.find((c) => c.id === picked) ?? lead;
+  const rows = [SPAWN_CAUSES[2], SPAWN_CAUSES[1], SPAWN_CAUSES[0]];
   return (
-    <div className="spawn-demo" ref={ref} aria-hidden>
-      <div
-        className={active >= 0 ? "spawn-causes machine-live" : "spawn-causes"}
-      >
-        <p
-          className={`spawn-term spawn-cause${active === 0 ? " live" : ""}${
-            cli >= 1 ? " sent" : ""
-          }`}
-        >
-          <span className="term-ps">$</span>
-          <span className={active === 0 ? "spawn-cmd typing" : "spawn-cmd"}>
-            {SPAWN_COMMAND}
-          </span>
-          <span className="term-caret" />
-        </p>
-        <div className={`spawn-tg spawn-cause${active === 1 ? " live" : ""}`}>
-          <img src={hermesAvatar} alt="" width={26} height={26} />
-          <div className="tg-body">
-            <span className="tg-from">
-              Hermes <em>· via Telegram</em>
-            </span>
-            <span className="tg-msg">
-              spawn a thread: audit our promo code coverage
-            </span>
-          </div>
-          <span className="tg-time">{tg >= 1 ? "read" : "now"}</span>
-        </div>
-        <div className={`spawn-cron spawn-cause${active === 2 ? " live" : ""}`}>
-          <HugeiconsIcon icon={Clock01Icon} className="cron-ic" />
-          <div className="tg-body">
-            <span className="tg-from">
-              Automation <em>· every night</em>
-            </span>
-            <span className="tg-msg">Dependency sweep across storefront</span>
-          </div>
-          <span className="tg-time">{cron >= 1 ? "running" : "02:00"}</span>
-        </div>
+    <div className="spawn-demo" ref={ref}>
+      <div className="dwin-bar">
+        <span className="dwin-title">{open.title}</span>
+        <span className="gang-commit">
+          Commit
+          <ChevronDown className="gang-commit-chev" />
+        </span>
       </div>
-      <div className="spawn-window">
-        <div className="spawn-window-body">
-          <div className="sub-top">
+      <div className="gang-body">
+        <div className="gang-side">
+          <div className="sub-top" aria-hidden>
             <span className="sub-newthread">
               <NewThreadIcon className="sub-top-ic" />
               New thread
@@ -2633,43 +2650,85 @@ function SpawnDemo() {
             <SearchGlyph className="sub-top-ic sub-search" />
           </div>
           <span className="sub-group">storefront</span>
-          {[
-            { stage: cron, title: SPAWN_CAUSES[2].title },
-            { stage: tg, title: SPAWN_CAUSES[1].title },
-            { stage: cli, title: SPAWN_CAUSES[0].title },
-          ].map((row) => (
-            <div
-              key={row.title}
-              className={row.stage >= 2 ? "sub-row spawn-new in" : "sub-row spawn-new"}
-            >
-              <span className="sub-title">
-                <TextMorph
-                  as="span"
-                  duration={520}
-                  ease="cubic-bezier(0.19, 1, 0.22, 1)"
-                >
-                  {row.stage >= 3 ? row.title : "New thread"}
-                </TextMorph>
-              </span>
-              {row.stage >= 4 ? (
-                <i className="spawn-dot" />
-              ) : row.stage >= 2 ? (
-                <DemoSpinner />
-              ) : null}
-            </div>
-          ))}
-          <div className="sub-row sub-quiet">
+          {rows.map((c) => {
+            const st = stages[c.id];
+            const Glyph = SPAWN_GLYPHS[c.id];
+            return (
+              <button
+                key={c.id}
+                type="button"
+                className={
+                  (st >= 2 ? "sub-row gang-row spawn-new in" : "sub-row gang-row spawn-new") +
+                  (open.id === c.id ? " is-open" : "")
+                }
+                aria-pressed={open.id === c.id}
+                onClick={() => setPicked(c.id)}
+              >
+                <Glyph className="gang-pv" />
+                <span className="sub-title">
+                  <TextMorph
+                    as="span"
+                    duration={520}
+                    ease="cubic-bezier(0.19, 1, 0.22, 1)"
+                  >
+                    {st >= 3 ? c.title : "New thread"}
+                  </TextMorph>
+                </span>
+                {st >= 4 ? (
+                  open.id === c.id ? null : (
+                    <i className="sub-dot" />
+                  )
+                ) : st >= 2 ? (
+                  <DemoSpinner />
+                ) : null}
+              </button>
+            );
+          })}
+          <div className="sub-row gang-row sub-quiet">
+            <ClaudeIcon className="gang-pv" />
             <span className="sub-title">Summarize checkout cart integration</span>
             <i className="sub-dot" />
           </div>
-          <span className="sub-group spawn-gap">checkout-api</span>
-          <div className="sub-row sub-quiet">
+          <span className="sub-group gang-gap">checkout-api</span>
+          <div className="sub-row gang-row sub-quiet">
+            <PiIcon className="gang-pv" />
             <span className="sub-title">Describe order endpoint validation</span>
             <i className="sub-dot" />
           </div>
-          <div className="sub-row sub-quiet">
+          <div className="sub-row gang-row sub-quiet">
+            <OpencodeIcon className="gang-pv" />
             <span className="sub-title">Summarize service route</span>
             <i className="sub-dot" />
+          </div>
+        </div>
+        <div className="gang-thread">
+          <div className="gang-feed" key={open.id}>
+            <p className="gang-step in">{open.origin}</p>
+            {open.lines.map((l) => (
+              <p
+                key={l.text}
+                className={l.kind === "step" ? "gang-step in" : "gang-say in"}
+              >
+                {l.text}
+              </p>
+            ))}
+          </div>
+          <div className="gang-composer">
+            <span className="gang-ph">Ask a follow-up</span>
+            <span className="gang-send">
+              <SendIcon className="gang-send-ic" />
+            </span>
+          </div>
+          <div className="gang-ctx">
+            <span className="gang-ctx-item">
+              <ClaudeIcon className="gang-ctx-ic" />
+              Opus 4.8
+              <ChevronDown className="gang-commit-chev" />
+            </span>
+            <span className="gang-ctx-item gang-ctx-branch">
+              <GitBranchIcon className="gang-ctx-ic" />
+              {open.branch}
+            </span>
           </div>
         </div>
       </div>
