@@ -2489,11 +2489,6 @@ code,
     transform 0.45s var(--ease-out);
 }
 
-.board-demo .board-card:not(.in) {
-  opacity: 0;
-  transform: translateY(8px);
-}
-
 .board-id {
   display: flex;
   align-items: center;
