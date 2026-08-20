@@ -1568,43 +1568,160 @@ function QuietRow({ title }: { title: string }) {
   );
 }
 
+/* Every row in the rail opens, exactly as it does in the app. The demo
+ * rests on the finished spawn — parent, nested child, report — and the
+ * visitor browses it. (The pane used to hold skeleton bars; a real
+ * transcript per thread is both truer and worth touching.) */
+const SUB_THREADS = [
+  {
+    id: "parent",
+    title: "Expand README testing documentation",
+    kind: "parent",
+    lines: [
+      { kind: "step", text: "Explored 2 files" },
+      {
+        kind: "say",
+        text: "The Testing section never named the risky part. Spawning a thread to find the real edge cases.",
+      },
+      { kind: "step", text: "Spawned 1 subagent" },
+      {
+        kind: "say",
+        text: "Rewrote the section around its report. Committed.",
+      },
+    ],
+  },
+  {
+    id: "child",
+    title: "Identify missing promo edge cases",
+    kind: "child",
+    lines: [
+      { kind: "step", text: "Read promo.test.ts" },
+      {
+        kind: "say",
+        text: "Two gaps: codes that collide with object prototype keys, and empty carts.",
+      },
+      { kind: "step", text: "Reported to parent" },
+    ],
+  },
+  {
+    id: "trace",
+    title: "Trace order checkout flow",
+    kind: "quiet",
+    lines: [
+      { kind: "step", text: "Explored 4 files" },
+      {
+        kind: "say",
+        text: "Cart to promo to order. The confirmation reads the order, never the cart.",
+      },
+    ],
+  },
+  {
+    id: "cart",
+    title: "Summarize checkout cart integration",
+    kind: "quiet",
+    lines: [
+      { kind: "step", text: "Explored 3 files" },
+      {
+        kind: "say",
+        text: "The cart owns totals; checkout only posts them. One source of truth.",
+      },
+    ],
+  },
+  {
+    id: "coverage",
+    title: "Audit promo test coverage gaps",
+    kind: "quiet",
+    lines: [
+      { kind: "step", text: "Ran the suite" },
+      {
+        kind: "say",
+        text: "24 passing, but nothing covers stacked codes. That is the gap.",
+      },
+    ],
+  },
+] as const;
+
+const SUB_API_THREADS = [
+  {
+    id: "errors",
+    title: "Explain orders error handling",
+    kind: "quiet",
+    lines: [
+      { kind: "step", text: "Read src/routes/orders.ts" },
+      {
+        kind: "say",
+        text: "An empty cart 400s before anything is written. Nothing else is guarded yet.",
+      },
+    ],
+  },
+  {
+    id: "route",
+    title: "Summarize service route",
+    kind: "quiet",
+    lines: [
+      { kind: "step", text: "Read the route" },
+      {
+        kind: "say",
+        text: "One POST. It validates, then returns the created order.",
+      },
+    ],
+  },
+] as const;
+
 function SubagentsDemo() {
-  const { ref, stage } = useLoopStage(SUB_BEATS, SUB_RESET);
+  const [openId, setOpenId] = useState("parent");
+  const all = [...SUB_THREADS, ...SUB_API_THREADS];
+  const open = all.find((t) => t.id === openId) ?? all[0];
+  const row = (t: (typeof all)[number]) => (
+    <button
+      key={t.id}
+      type="button"
+      className={
+        (t.kind === "child" ? "sub-row sub-child in" : "sub-row") +
+        (t.kind === "quiet" ? " sub-quiet" : "") +
+        (openId === t.id ? " is-open" : "")
+      }
+      aria-pressed={openId === t.id}
+      onClick={() => setOpenId(t.id)}
+    >
+      <span className="sub-title">{t.title}</span>
+      {t.kind === "quiet" ? <i className="sub-dot" /> : <DemoCheck />}
+    </button>
+  );
   return (
-    <div className="sub-demo" ref={ref} aria-hidden>
+    <div className="sub-demo">
       <div className="sub-rail">
-        <div className="sub-top">
+        <div className="sub-top" aria-hidden>
           <span className="sub-newthread">
             <NewThreadIcon className="sub-top-ic" />
             New thread
           </span>
           <SearchGlyph className="sub-top-ic sub-search" />
         </div>
-        <span className="sub-group">storefront</span>
-        <div className="sub-row">
-          <span className="sub-title">Expand README testing documentation</span>
-          {stage >= 3 ? <DemoCheck /> : <DemoSpinner />}
-        </div>
-        <div
-          className={stage >= 1 ? "sub-row sub-child in" : "sub-row sub-child"}
-        >
-          <span className="sub-title">Identify missing promo edge cases</span>
-          {stage >= 2 ? <DemoCheck /> : <DemoSpinner />}
-        </div>
-        <span className={stage >= 2 ? "sub-report in" : "sub-report"}>
+        <span className="sub-group" aria-hidden>
+          storefront
+        </span>
+        {row(SUB_THREADS[0])}
+        {row(SUB_THREADS[1])}
+        <span className="sub-report in" aria-hidden>
           ↳ reported back to its parent
         </span>
-        <QuietRow title="Trace order checkout flow" />
-        <QuietRow title="Summarize checkout cart integration" />
-        <QuietRow title="Audit promo test coverage gaps" />
-        <span className="sub-group sub-gap">checkout-api</span>
-        <QuietRow title="Explain orders error handling" />
-        <QuietRow title="Summarize service route" />
+        {SUB_THREADS.slice(2).map(row)}
+        <span className="sub-group sub-gap" aria-hidden>
+          checkout-api
+        </span>
+        {SUB_API_THREADS.map(row)}
       </div>
       <div className="sub-main">
-        <span className="sub-sk" style={{ width: "180%" }} />
-        <span className="sub-sk" style={{ width: "120%" }} />
-        <span className="sub-sk" style={{ width: "160%" }} />
+        <span className="sub-main-title">{open.title}</span>
+        {open.lines.map((l) => (
+          <p
+            key={l.text}
+            className={l.kind === "step" ? "gang-step in" : "gang-say in"}
+          >
+            {l.text}
+          </p>
+        ))}
       </div>
     </div>
   );
@@ -1790,76 +1907,90 @@ function BoardColGlyph({ state }: { state: string }) {
   return <DoingStateGlyph className="board-state board-state-doing" />;
 }
 
+/* The board rests in a real, complete state and answers the visitor: the
+ * List/Board control is a real control, and cards respond to the pointer.
+ * Nothing animates on its own — a task board that deals itself is a
+ * screensaver, not a product. */
 function TasksBoardDemo() {
-  const { ref, stage } = useLoopStage(BOARD_BEATS, BOARD_RESET);
-  const settled = stage >= BOARD_BEATS.length;
-  const landed = stage >= 1 || settled;
-  const done = stage >= 2 || settled;
-  let n = 0;
+  const [view, setView] = useState<"board" | "list">("board");
+  const listed = BOARD_COLUMNS.flatMap((col) =>
+    col.cards.map((card) => ({ ...card, col })),
+  );
   return (
-    <div className="board-demo" ref={ref} aria-hidden>
-      <div className="board-chrome">
+    <div className="board-demo">
+      <div className="board-chrome" aria-hidden>
         <ChecklistGlyph className="board-chrome-ic" />
         <span className="board-chrome-title">Tasks</span>
         <PanelRightIcon className="board-chrome-ic board-chrome-panel" />
       </div>
       <div className="board-bar">
-        <span className="board-project">
+        <span className="board-project" aria-hidden>
           <i className="board-proj-dot" />
           storefront 1.4
         </span>
         <span className="board-seg">
-          <em>List</em>
-          <em className="on">Board</em>
+          {(["list", "board"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              className={view === v ? "on" : undefined}
+              aria-pressed={view === v}
+              onClick={() => setView(v)}
+            >
+              {v === "list" ? "List" : "Board"}
+            </button>
+          ))}
         </span>
-        <RefreshGlyph
-          className={
-            landed && !settled ? "board-refresh sweep" : "board-refresh"
-          }
-        />
-        <span className="board-new">
+        <RefreshGlyph className="board-refresh" />
+        <span className="board-new" aria-hidden>
           <PlusGlyph className="board-new-ic" />
           New task
         </span>
       </div>
       <div className="board-main">
-        <div className="board-cols">
-          {BOARD_COLUMNS.map((col) => (
-            <div key={col.name} className="board-col">
-              <span className="board-col-head">
-                <BoardColGlyph state={col.state} />
-                {col.name}
-                <em>{col.cards.length}</em>
-                <PlusGlyph className="board-col-add" />
-              </span>
-              {col.cards.map((card) => {
-                const delay = n++ * 90;
-                return (
-                  <div
-                    key={card.id}
-                    className={landed ? "board-card in" : "board-card"}
-                    style={{ transitionDelay: `${delay}ms` }}
-                  >
+        {view === "board" ? (
+          <div className="board-cols">
+            {BOARD_COLUMNS.map((col) => (
+              <div key={col.name} className="board-col">
+                <span className="board-col-head" aria-hidden>
+                  <BoardColGlyph state={col.state} />
+                  {col.name}
+                  <em>{col.cards.length}</em>
+                  <PlusGlyph className="board-col-add" />
+                </span>
+                {col.cards.map((card) => (
+                  <div key={card.id} className="board-card">
                     <span className="board-id">
                       {card.id}
-                      {card.id === "SF-1" && done ? <DemoCheck /> : null}
+                      {card.id === "SF-1" ? <DemoCheck /> : null}
                     </span>
                     <span className="board-card-title">{card.title}</span>
                     <PriorityGlyph level={card.pri} />
                   </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-        <aside className="board-rail">
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="board-list">
+            {listed.map((card) => (
+              <div key={card.id} className="board-lrow">
+                <BoardColGlyph state={card.col.state} />
+                <span className="board-lid">{card.id}</span>
+                <span className="board-ltitle">{card.title}</span>
+                <PriorityGlyph level={card.pri} />
+              </div>
+            ))}
+          </div>
+        )}
+        <aside className="board-rail" aria-hidden>
           <span className="brail-row">
             <strong>All tasks</strong>
             <em>12</em>
           </span>
           <span className="brail-row">
             <strong>Active</strong>
-            <em>{done ? 3 : 4}</em>
+            <em>3</em>
           </span>
           <span className="brail-label">Projects</span>
           <span className="brail-row">
