@@ -1595,7 +1595,8 @@ function SubagentsDemo() {
  *  2100ms   radio fills — selected
  *  2900ms   Submit arms (primary)
  *  3800ms   submit presses; the card answers
- *  rest     answered — also the reduced-motion state
+ *  rest     answered, the follow-up work running past the frame's
+ *           dissolve — also the reduced-motion state
  * ──────────────────────────────────────────────── */
 const ASK_TIMING = {
   highlight: 1100,
@@ -1637,6 +1638,10 @@ function AskDemo() {
           </p>
           <p className="ask-step">Edited applyPromo.ts</p>
           <p className="ask-step">Added 4 tests</p>
+          <p className="ask-step">Ran 24 tests</p>
+          <p className="ask-after">
+            All green. The newest code now replaces the applied one.
+          </p>
         </>
       ) : (
         <>
@@ -1679,11 +1684,11 @@ function AskDemo() {
  *      0ms   the board's columns are empty
  *    300ms   cards land column by column, 90ms apart
  *   2600ms   the in-progress card ticks over to done
- *   6000ms   loop restarts
+ *   9000ms   loop restarts (the board rests settled ~70% of the loop)
  *   rest     full board — also the reduced-motion state
  * ──────────────────────────────────────────────── */
 const BOARD_BEATS = [300, 2600];
-const BOARD_RESET = 6000;
+const BOARD_RESET = 9000;
 
 const BOARD_COLUMNS = [
   {
@@ -1765,11 +1770,11 @@ function TasksBoardDemo() {
  *    400ms   diff lines land, 70ms apart
  *   2400ms   the working-tree bar arrives
  *   3400ms   Commit arms
- *   7000ms   loop restarts
+ *  10000ms   loop restarts (the diff rests armed ~65% of the loop)
  *   rest     full diff, armed — also the reduced-motion state
  * ──────────────────────────────────────────────── */
 const REVIEW_BEATS = [400, 2400, 3400];
-const REVIEW_RESET = 7000;
+const REVIEW_RESET = 10000;
 
 const REVIEW_LINES = [
   { sign: " ", text: "export function applyPromo(cart, code) {" },
@@ -1831,16 +1836,16 @@ function ReviewDemo() {
  *
  *      0ms   an empty prompt, caret blinking
  *    300ms   the request types itself
- *   2100ms   sent; the agent starts working
+ *   2100ms   sent; the agent starts working ("Scaffolded the plugin")
  *   2900ms   the panel surface lands
- *   3800ms   the command lands
- *   4700ms   the skill lands
+ *   3800ms   the command lands ("Registered the CLI" in the transcript)
+ *   4700ms   the skill lands ("Wrote the skill")
  *   6200ms   the thread reports back
- *   9400ms   loop restarts
+ *  12400ms   loop restarts (all three surfaces rest ~half the loop)
  *   rest     all three surfaces present — reduced-motion state
  * ──────────────────────────────────────────────── */
 const BUILD_BEATS = [300, 2100, 2900, 3800, 4700, 6200];
-const BUILD_RESET = 9400;
+const BUILD_RESET = 12400;
 const BUILD_PROMPT = "Add a review queue panel";
 
 const BUILD_SURFACES = [
@@ -1880,6 +1885,12 @@ function BuildDemo() {
           <p className={stage >= 2 || settled ? "gang-step in" : "gang-step out"}>
             Scaffolded the plugin
           </p>
+          <p className={stage >= 4 || settled ? "gang-step in" : "gang-step out"}>
+            Registered the CLI
+          </p>
+          <p className={stage >= 5 || settled ? "gang-step in" : "gang-step out"}>
+            Wrote the skill
+          </p>
           <p className={stage >= 6 || settled ? "gang-say in" : "gang-say out"}>
             The panel is live in your sidebar. bb building bb.
           </p>
@@ -1909,15 +1920,18 @@ function BuildDemo() {
  * GANG STORYBOARD (loops while in view)
  *
  *      0ms   four threads working across three projects
- *   1500ms   a step lands in the open transcript
- *   3000ms   the codex thread finishes its edit
- *   4200ms   the claude thread completes; its child appears nested
- *   5600ms   the last step lands; the pi thread completes
- *   8600ms   loop restarts
+ *   1500ms   the finding lands in the open transcript
+ *   3000ms   the edit lands; the claude thread completes, its child
+ *            appears nested
+ *   4200ms   the suite starts; the pi thread completes
+ *   5600ms   "Ran 32 tests" lands
+ *   7000ms   the suite passes; the open codex thread completes last,
+ *            on screen
+ *  11600ms   loop restarts (the settled office holds ~40% of the loop)
  *   rest     everything settled — also the reduced-motion state
  * ──────────────────────────────────────────────── */
-const GANG_BEATS = [1500, 3000, 4200, 5600];
-const GANG_RESET = 8600;
+const GANG_BEATS = [1500, 3000, 4200, 5600, 7000];
+const GANG_RESET = 11600;
 
 const GANG_STEPS = [
   { kind: "step", text: "Explored 3 files" },
@@ -1927,6 +1941,8 @@ const GANG_STEPS = [
   },
   { kind: "step", text: "Edited promo.test.ts" },
   { kind: "say", text: "Added four cases. Running the suite." },
+  { kind: "step", text: "Ran 32 tests" },
+  { kind: "say", text: "All 32 passing. Promo coverage holds." },
 ] as const;
 
 function useLoopStage(beats: number[], resetAt: number) {
@@ -1977,16 +1993,16 @@ function GangDemo() {
         <div className="sub-row gang-row is-open">
           <OpenAiIcon className="gang-pv" />
           <span className="sub-title">Audit promo code coverage</span>
-          {stage >= 2 || settled ? <DemoCheck /> : <DemoSpinner />}
+          {stage >= 5 || settled ? <DemoCheck /> : <DemoSpinner />}
         </div>
         <div className="sub-row gang-row">
           <ClaudeIcon className="gang-pv" />
           <span className="sub-title">Trace order checkout flow</span>
-          {stage >= 3 || settled ? <DemoCheck /> : <DemoSpinner />}
+          {stage >= 2 || settled ? <DemoCheck /> : <DemoSpinner />}
         </div>
         <div
           className={
-            stage >= 3 || settled ? "sub-row gang-row gang-kid in" : "sub-row gang-row gang-kid"
+            stage >= 2 || settled ? "sub-row gang-row gang-kid in" : "sub-row gang-row gang-kid"
           }
         >
           <ClaudeIcon className="gang-pv" />
@@ -2002,7 +2018,7 @@ function GangDemo() {
         <div className="sub-row gang-row">
           <PiIcon className="gang-pv" />
           <span className="sub-title">Summarize service route</span>
-          {stage >= 4 || settled ? <DemoCheck /> : <DemoSpinner />}
+          {stage >= 3 || settled ? <DemoCheck /> : <DemoSpinner />}
         </div>
         <span className="sub-group gang-gap">mobile</span>
         <div className="sub-row gang-row">
@@ -2054,9 +2070,13 @@ const BEAT = {
   title: 2900,
   dot: 5000,
 };
-const SPAWN_RESET_MS = 3 * BEAT_MS + 1600;
+// After the third cause settles, the whole machine holds its finished
+// state for a beat before quietly resetting.
+const SPAWN_RESET_MS = 3 * BEAT_MS + 3600;
 
-const SPAWN_COMMAND = 'bb thread spawn --prompt "Trace one order to confirmation"';
+// 52 characters — .spawn-cmd's 53ch cap and spawn-type's steps(52) are
+// derived from this string; keep the three in lockstep.
+const SPAWN_COMMAND = 'bb thread spawn --prompt "Trace order checkout flow"';
 
 const SPAWN_CAUSES = [
   { id: "cli", title: "Trace order checkout flow" },
@@ -2136,7 +2156,9 @@ function SpawnDemo() {
   const active = phase.beat < 3 ? phase.beat : -1;
   return (
     <div className="spawn-demo" ref={ref} aria-hidden>
-      <div className="spawn-causes">
+      <div
+        className={active >= 0 ? "spawn-causes machine-live" : "spawn-causes"}
+      >
         <p
           className={`spawn-term spawn-cause${active === 0 ? " live" : ""}${
             cli >= 1 ? " sent" : ""

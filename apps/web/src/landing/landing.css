@@ -67,8 +67,11 @@
   --gutter: clamp(20px, 4vw, 48px);
   --act: 144px;
 
-  /* radius ladder: controls / cards + windows / rooms */
+  /* radius ladder: controls / fields + tiles / cards + windows / rooms.
+     --r-field is the step between control and card: input boxes, terminal
+     pills, and cause tiles nested one level inside a card. */
   --r-control: 8px;
+  --r-field: 10px;
   --r-card: 14px;
   --r-room: 28px;
 
@@ -2214,7 +2217,6 @@ code,
 .review-demo {
   display: flex;
   flex-direction: column;
-  height: 100%;
   font-size: 12px;
 }
 
@@ -2455,7 +2457,7 @@ code,
   align-items: baseline;
   min-height: 62px;
   padding: 13px 15px;
-  border-radius: 11px;
+  border-radius: var(--r-field);
   background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--border-soft);
   font-size: 14px;
@@ -2602,7 +2604,7 @@ code,
 .gang-demo {
   display: grid;
   grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: clamp(16px, 2vw, 26px);
+  gap: clamp(16px, 2vw, 28px);
   align-items: stretch;
 }
 
@@ -2613,7 +2615,7 @@ code,
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
     var(--shadow-window);
-  padding: 18px 18px 20px;
+  padding: 20px;
   font-size: 13.5px;
 }
 
@@ -2780,10 +2782,12 @@ code,
   display: block;
 }
 
+/* Equal columns: the terminal line needs the full half-rail to type its
+   whole invocation without clipping mid-word. */
 .spawn-demo {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: clamp(20px, 2.6vw, 36px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(16px, 2vw, 28px);
   align-items: center;
 }
 
@@ -2793,19 +2797,19 @@ code,
   gap: 14px;
 }
 
-/* Every cause rests at reduced presence; the live one takes the stage. */
+/* While the machine is cycling (.machine-live on the column), the causes
+   not on stage recede; the live one takes it. At rest — settled state,
+   reduced motion, one-shot capture — every cause is crisp and whole. */
 .spawn-cause {
-  opacity: 0.55;
-  transform: scale(0.985);
   transition:
     opacity var(--duration-panel) var(--ease-out),
     transform var(--duration-panel) var(--ease-out),
     box-shadow var(--duration-state) var(--ease-standard);
 }
 
-.spawn-cause.live {
-  opacity: 1;
-  transform: none;
+.machine-live .spawn-cause:not(.live) {
+  opacity: 0.55;
+  transform: scale(0.985);
 }
 
 /* The terminal line — the one dark artifact. */
@@ -2813,7 +2817,7 @@ code,
   display: flex;
   align-items: baseline;
   padding: 14px 18px;
-  border-radius: 12px;
+  border-radius: var(--r-field);
   background: color-mix(in oklch, var(--ink-strong) 96%, var(--canvas));
   color: color-mix(in oklch, var(--canvas) 92%, var(--ink-strong));
   font-family: var(--font-mono);
@@ -2831,22 +2835,22 @@ code,
   display: inline-block;
   overflow: hidden;
   white-space: nowrap;
-  max-width: 60ch;
+  max-width: 53ch;
   vertical-align: bottom;
 }
 
 .spawn-cause:not(.live) .spawn-cmd {
-  max-width: 60ch;
+  max-width: 53ch;
 }
 
 .spawn-cmd.typing {
   max-width: 0;
-  animation: spawn-type 1.7s steps(58, end) forwards;
+  animation: spawn-type 1.7s steps(52, end) forwards;
 }
 
 @keyframes spawn-type {
   to {
-    max-width: 60ch;
+    max-width: 53ch;
   }
 }
 
@@ -2857,7 +2861,7 @@ code,
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-radius: 12px;
+  border-radius: var(--r-field);
   background: var(--bg);
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
@@ -2913,20 +2917,21 @@ code,
   font-variant-numeric: tabular-nums;
 }
 
-/* The sidebar the threads arrive into — the machine's output. */
+/* The sidebar the threads arrive into — the machine's output. Content is
+   top-aligned like a real sidebar; min-height keeps the card steady while
+   rows arrive instead of re-centering everything each beat. */
 .spawn-window {
   border-radius: var(--r-card);
   background: var(--bg);
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
     var(--shadow-window);
-  padding: 20px 22px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 14px;
+  font-size: 13.5px;
   min-height: 316px;
-  justify-content: center;
 }
 
 .spawn-gap {
@@ -3241,40 +3246,48 @@ code,
   display: block;
 }
 
-.bento-window /* Built demo components inside bento windows: mock-grammar fragments in
-   the app's own tokens, animated per their storyboards. */
+/* Built demo components inside bento windows: mock-grammar fragments in
+   the app's own tokens, animated per their storyboards. No bottom padding:
+   the content column runs past the frame's cut edge, so the dissolve
+   below always has product to dissolve (Dia's device — cropped, never
+   fitted). */
 .bento-component {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  padding: 22px 24px;
+  padding: 20px 22px 0;
 }
 
 /* Dia's device: the demo CONTENT dissolves at the bottom of the frame
-   while the frame itself stays a crisp object. The content runs past the
-   edge, so the fade reads as "there is more of this", never as a
-   half-empty box. The mask lives on the content, never on the window. */
+   while the frame itself stays a crisp object. The fade is eased — three
+   stops, not a linear two-stop ramp — so the dissolve reads as
+   atmosphere, not a wipe. The mask lives on the content, never on the
+   window (masking the window would eat its own ring). */
 .bento-component > * {
   mask-image: linear-gradient(
     to bottom,
-    black calc(100% - 64px),
-    transparent calc(100% - 6px)
+    black calc(100% - 72px),
+    rgb(0 0 0 / 0.45) calc(100% - 34px),
+    rgb(0 0 0 / 0.1) calc(100% - 12px),
+    transparent 100%
   );
 }
 
-/* Tall demos overflow their frame by design. */
+/* Every demo fills its window exactly, so the dissolve band above always
+   lands just inside the frame; taller content crops by design. */
 .board-demo,
 .review-demo,
 .sub-demo,
 .ask-demo {
   overflow: hidden;
+  height: 100%;
 }
 
 .sub-demo {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 14px;
+  font-size: 13.5px;
 }
 
 .sub-group {
@@ -4053,7 +4066,7 @@ code,
   }
 
   .spawn-cmd {
-    max-width: 60ch;
+    max-width: 53ch;
   }
 
   .spawn-demo .spawn-new:not(.in) {
