@@ -81,6 +81,16 @@
     0 28px 72px -34px color-mix(in oklab, var(--ink-strong) 28%, transparent),
     0 90px 160px -100px color-mix(in oklab, var(--ink-strong) 18%, transparent);
 
+  /* demo depth ladder under --shadow-window: the hairline ring every
+     product surface wears, the tile shadow for cards sitting on a panel,
+     and the raise for floating artifacts one level below a full window. */
+  --ring: 0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent);
+  --shadow-tile:
+    0 1px 2px color-mix(in oklab, var(--ink-strong) 6%, transparent),
+    0 2px 6px -2px color-mix(in oklab, var(--ink-strong) 5%, transparent);
+  --shadow-raise:
+    0 10px 26px -16px color-mix(in oklab, var(--ink-strong) 24%, transparent);
+
   /* motion constants */
   --duration-press: 90ms;
   --duration-hover: 160ms;
@@ -921,26 +931,10 @@ code,
   animation: c-frame 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* title bar drops down, traffic-light dots pop in */
+/* title bar drops down */
 .mock.constructing .mock-bar {
   animation: c-down 0.44s cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: 0.16s;
-}
-
-.mock.constructing .mock-dots i {
-  animation: c-pop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-.mock.constructing .mock-dots i:nth-child(1) {
-  animation-delay: 0.3s;
-}
-
-.mock.constructing .mock-dots i:nth-child(2) {
-  animation-delay: 0.37s;
-}
-
-.mock.constructing .mock-dots i:nth-child(3) {
-  animation-delay: 0.44s;
 }
 
 /* sidebar rows cascade in from the left */
@@ -1087,30 +1081,6 @@ code,
   font-size: 13px;
   font-weight: 500;
   color: var(--ink);
-}
-
-.mock-dots {
-  display: inline-flex;
-  gap: 7px;
-}
-
-.mock-dots i {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: var(--border);
-}
-
-.mock-dots i:nth-child(1) {
-  background: #ff5f57;
-}
-
-.mock-dots i:nth-child(2) {
-  background: #febc2e;
-}
-
-.mock-dots i:nth-child(3) {
-  background: #28c840;
 }
 
 .trow-pin .trow-title {
@@ -2211,34 +2181,164 @@ code,
   color: var(--subtle);
 }
 
+/* ── Shared demo window chrome ───────────────────────────────────── */
+
+/* One title-bar recipe for every crafted demo window: traffic dots on a
+   one-step-recessed strip, a quiet title, hairline below. Matches the
+   hero mock's chrome grammar at demo scale. */
+.dwin-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  padding: 9px 14px;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border-soft);
+  border-radius: var(--r-card) var(--r-card) 0 0;
+}
+
+.dwin-title {
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dwin-mini {
+  padding: 7px 11px;
+  gap: 7px;
+}
+
+.dwin-mini .dwin-mini .dwin-title {
+  font-size: 11px;
+}
+
 /* ── Bento demo: the Tasks board building itself ─────────────────── */
 
-.board-demo,
-.review-demo {
+/* The board takes its bento window edge to edge — the frame IS the app's
+   Tasks view: header strip, toolbar, columns, and the right rail flush
+   against the frame's own edge. */
+.board-demo {
   display: flex;
   flex-direction: column;
   font-size: 12px;
+  margin: -20px -22px 0;
+  height: calc(100% + 20px);
+}
+
+.board-chrome {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.board-chrome-ic {
+  width: 13px;
+  height: 13px;
+  color: var(--dim);
+}
+
+.board-chrome-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-strong);
+}
+
+.board-chrome-panel {
+  margin-left: auto;
+  color: var(--subtle);
 }
 
 .board-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-bottom: 12px;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .board-project {
-  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--ink-strong);
+  margin-right: auto;
+  white-space: nowrap;
+}
+
+/* The project's color chip — the accent the real board carries. */
+.board-proj-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+/* List/Board segmented control, Board active. */
+.board-seg {
+  display: flex;
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--surface);
+  font-size: 10.5px;
+  color: var(--subtle);
+}
+
+.board-seg em {
+  font-style: normal;
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+
+.board-seg em.on {
+  background: var(--bg);
+  color: var(--ink-strong);
+  font-weight: 550;
+  box-shadow: var(--shadow-tile);
+}
+
+.board-refresh {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  color: var(--subtle);
+}
+
+/* One sweep while the cards land, then still. */
+.board-refresh.sweep {
+  animation: dm-rotate 0.9s var(--ease-standard) 1;
 }
 
 .board-new {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
+  font-weight: 550;
   padding: 4px 9px;
   border-radius: 6px;
   background: var(--ink);
   color: var(--bg);
+  white-space: nowrap;
+}
+
+.board-new-ic {
+  width: 11px;
+  height: 11px;
+}
+
+.board-main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 128px;
 }
 
 .board-cols {
@@ -2246,6 +2346,7 @@ code,
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   align-items: start;
+  padding: 12px 12px 0 14px;
 }
 
 .board-col {
@@ -2258,10 +2359,11 @@ code,
 .board-col-head {
   display: flex;
   gap: 5px;
-  align-items: baseline;
+  align-items: center;
   font-size: 10.5px;
   font-weight: 550;
   color: var(--dim);
+  white-space: nowrap;
 }
 
 .board-col-head em {
@@ -2269,13 +2371,34 @@ code,
   color: var(--subtle);
 }
 
+/* Per-column status glyphs; In Progress carries the app's warm dial. */
+.board-state {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  color: var(--subtle);
+}
+
+.board-state-doing {
+  color: var(--spark);
+}
+
+.board-col-add {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  margin-left: auto;
+  color: var(--subtle);
+  opacity: 0.8;
+}
+
 .board-card {
-  padding: 7px 8px;
+  padding: 7px 8px 6px;
   border-radius: 8px;
   background: var(--bg);
   box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--ink-strong) 8%, transparent),
-    0 1px 2px color-mix(in oklab, var(--ink-strong) 6%, transparent);
+    var(--ring),
+    var(--shadow-tile);
   line-height: 1.35;
   color: var(--ink);
   opacity: 1;
@@ -2294,7 +2417,8 @@ code,
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 9.5px;
+  font-family: var(--font-mono);
+  font-size: 9px;
   color: var(--subtle);
   margin-bottom: 3px;
   font-variant-numeric: tabular-nums;
@@ -2306,28 +2430,138 @@ code,
   color: var(--ok);
 }
 
-/* ── Bento demo: a diff landing, then Commit arming ──────────────── */
+.board-card-title {
+  display: block;
+}
+
+/* The priority bar chart every real card carries. */
+.board-pri {
+  display: block;
+  width: 11px;
+  height: 9px;
+  margin-top: 5px;
+  fill: var(--subtle);
+}
+
+/* The board's right rail: All tasks / Active counts and the Projects
+   list, hairlined off the columns like the real panel. */
+.board-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 12px 0 12px;
+  border-left: 1px solid var(--border-soft);
+  font-size: 11px;
+  min-width: 0;
+}
+
+.brail-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.brail-row strong {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brail-row em {
+  font-style: normal;
+  margin-left: auto;
+  color: var(--subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.brail-label {
+  margin-top: 10px;
+  padding: 0 6px 2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--subtle);
+}
+
+.brail-ghost {
+  color: var(--subtle);
+}
+
+.brail-ic {
+  flex: none;
+  width: 10px;
+  height: 10px;
+}
+
+.brail-note {
+  padding: 2px 6px;
+  color: var(--subtle);
+}
+
+@media (max-width: 700px) {
+  /* Narrow phones drop the rail, like the real app does. */
+  .board-main {
+    grid-template-columns: 1fr;
+  }
+
+  .board-rail {
+    display: none;
+  }
+}
+
+/* ── Bento demo: the Changes panel — files, gutter, Commit arming ── */
+
+.review-demo {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
 
 .review-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
   padding-bottom: 11px;
-  border-bottom: 1px solid var(--border-soft);
+}
+
+.review-scope {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--ink-strong);
+  margin-right: auto;
+}
+
+.review-chev {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  color: var(--subtle);
+}
+
+.review-fold-chev {
+  transform: rotate(180deg);
 }
 
 .review-file {
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: 11.5px;
   color: var(--ink-strong);
 }
 
 .review-count {
   display: flex;
-  gap: 7px;
+  gap: 6px;
   font-style: normal;
-  font-size: 12px;
+  font-size: 11.5px;
+  color: var(--subtle);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .review-count em {
@@ -2342,22 +2576,52 @@ code,
   color: var(--del, var(--warn));
 }
 
+/* Each touched file is its own card inside the panel, like the real
+   Changes list. */
+.review-file-card {
+  border-radius: var(--r-field);
+  background: var(--bg);
+  box-shadow: var(--ring), var(--shadow-tile);
+  overflow: hidden;
+}
+
+.review-file-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+}
+
+.review-file-head .review-count {
+  margin-left: auto;
+}
+
+/* The collapsed run of untouched lines above the hunk. */
+.review-fold {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px;
+  border-top: 1px solid var(--border-soft);
+  font-size: 10.5px;
+  color: var(--subtle);
+  background: var(--surface-1);
+}
+
 .review-hunk {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  padding-top: 11px;
+  padding: 6px 0 10px;
   font-family: var(--font-mono);
-  font-size: 11.5px;
-  line-height: 1.75;
+  font-size: 11px;
+  line-height: 1.8;
   overflow: hidden;
 }
 
 .review-line {
   display: flex;
-  gap: 8px;
-  padding-inline: 6px;
-  border-radius: 4px;
+  gap: 7px;
+  padding-right: 6px;
   white-space: nowrap;
   color: var(--dim);
   opacity: 1;
@@ -2372,31 +2636,47 @@ code,
   transform: translateX(-6px);
 }
 
+/* Gutter: line number, then the +/- sign column. */
+.review-no {
+  flex: none;
+  width: 26px;
+  padding-right: 6px;
+  text-align: right;
+  font-size: 10px;
+  color: var(--subtle);
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}
+
 .review-sign {
-  width: 7px;
+  width: 8px;
   flex: none;
   opacity: 0.7;
 }
 
 .review-line.is-add {
-  background: color-mix(in oklab, var(--add, var(--ok)) 12%, var(--bg));
+  background: color-mix(in oklab, var(--add, var(--ok)) 11%, var(--bg));
+  box-shadow: inset 2px 0 0 color-mix(in oklab, var(--add, var(--ok)) 55%, var(--bg));
   color: var(--ink);
+}
+
+.review-line.is-add .review-no {
+  color: var(--add, var(--ok));
 }
 
 .review-line.is-del {
-  background: color-mix(in oklab, var(--del, var(--warn)) 12%, var(--bg));
+  background: color-mix(in oklab, var(--del, var(--warn)) 10%, var(--bg));
+  box-shadow: inset 2px 0 0 color-mix(in oklab, var(--del, var(--warn)) 45%, var(--bg));
   color: var(--ink);
 }
 
-.review-foot {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  padding-bottom: 11px;
-  border-bottom: 1px solid var(--border-soft);
-  font-size: 11.5px;
-  color: var(--dim);
+.review-line.is-del .review-no {
+  color: var(--del, var(--warn));
+}
+
+/* The second file, collapsed, arriving at its beat. */
+.review-file2 {
+  margin-top: 8px;
   opacity: 1;
   transform: none;
   transition:
@@ -2404,22 +2684,19 @@ code,
     transform 0.45s var(--ease-out);
 }
 
-.review-demo .review-foot:not(.in) {
+.review-demo .review-file2:not(.in) {
   opacity: 0;
   transform: translateY(6px);
 }
 
-.review-ic {
-  width: 13px;
-  height: 13px;
-}
-
 .review-commit {
-  margin-left: auto;
+  flex: none;
   padding: 4px 11px;
   border-radius: 6px;
   background: var(--surface);
   color: var(--subtle);
+  font-size: 11.5px;
+  font-weight: 550;
   transition:
     background var(--duration-state) var(--ease-standard),
     color var(--duration-state) var(--ease-standard);
@@ -2430,7 +2707,7 @@ code,
   color: var(--bg);
 }
 
-/* ── Build: one prompt, three surfaces landing ───────────────────── */
+/* ── Build: one prompt, an Extensions window, a layered panel ────── */
 
 .build-demo {
   display: grid;
@@ -2447,27 +2724,75 @@ code,
   border-radius: var(--r-card);
   background: var(--bg);
   box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
+    var(--ring),
     var(--shadow-window);
 }
 
-/* The prompt reads like the app's composer, not a terminal. */
-.build-prompt {
-  display: flex;
-  align-items: baseline;
-  min-height: 62px;
-  padding: 13px 15px;
+/* The composer: prompt field + model row inside one ring, exactly the
+   app's composer grammar. */
+.build-composer {
   border-radius: var(--r-field);
   background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--border-soft);
-  font-size: 14px;
-  line-height: 1.45;
-  color: var(--ink);
   transition: box-shadow var(--duration-state) var(--ease-standard);
 }
 
-.build-prompt.sent {
+.build-composer.sent {
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ink-strong) 16%, transparent);
+}
+
+.build-prompt {
+  display: flex;
+  align-items: baseline;
+  min-height: 54px;
+  padding: 12px 14px 4px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.build-composer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 9px 9px 14px;
+}
+
+.build-model {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.build-model-ic {
+  width: 13px;
+  height: 13px;
+}
+
+/* The send affordance darkens once the prompt is away. */
+.build-send {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--subtle);
+  transition:
+    background var(--duration-state) var(--ease-standard),
+    color var(--duration-state) var(--ease-standard);
+}
+
+.build-send.sent {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.build-send-ic {
+  width: 13px;
+  height: 13px;
 }
 
 .build-typed {
@@ -2511,25 +2836,66 @@ code,
   animation: none;
 }
 
-/* The three surfaces the prompt produced, landing one after another. */
+/* The output side: the Extensions window with the built plugin, and the
+   Review-queue panel window layered over its corner (Dia's two-window
+   grammar). */
+.build-out {
+  position: relative;
+}
+
+.build-win {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: var(--r-card);
+  background: var(--bg);
+  box-shadow:
+    var(--ring),
+    var(--shadow-window);
+}
+
+.build-win-cta {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 550;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--bg);
+  white-space: nowrap;
+}
+
+.build-win-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px 16px;
+}
+
+.build-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--subtle);
+}
+
 .build-surfaces {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  justify-content: center;
+  gap: 10px;
 }
 
+/* Surface rows are tiles on the window's ground — one depth step below
+   the window itself. */
 .build-surface {
   display: flex;
   align-items: center;
   gap: 13px;
-  padding: 14px 16px;
-  border-radius: var(--r-card);
+  padding: 11px 13px;
+  border-radius: var(--r-field);
   background: var(--bg);
-  box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
-    var(--shadow-window);
+  box-shadow: var(--ring), var(--shadow-tile);
   opacity: 1;
   transform: none;
   transition:
@@ -2544,8 +2910,8 @@ code,
 
 .build-ic {
   flex: none;
-  width: 19px;
-  height: 19px;
+  width: 18px;
+  height: 18px;
   color: var(--dim);
 }
 
@@ -2557,24 +2923,91 @@ code,
 }
 
 .build-name {
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
   font-weight: 550;
   color: var(--ink-strong);
 }
 
-.build-detail {
+.build-name svg {
+  width: 13px;
+  height: 13px;
+}
+
+.build-name-mono {
+  font-family: var(--font-mono);
   font-size: 12.5px;
+}
+
+.build-detail {
+  font-size: 12px;
   color: var(--subtle);
 }
 
 .build-kind {
   margin-left: auto;
   flex: none;
-  font-size: 11.5px;
+  font-size: 11px;
   padding: 3px 9px;
   border-radius: 999px;
   background: var(--surface);
   color: var(--dim);
+}
+
+/* The layered panel-preview window: a real window one size down,
+   overlapping the Extensions frame's lower corner. */
+.build-peek {
+  position: absolute;
+  right: -16px;
+  bottom: -20px;
+  width: min(230px, 60%);
+  border-radius: var(--r-field);
+  background: var(--bg);
+  box-shadow:
+    var(--ring),
+    var(--shadow-window);
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.5s var(--ease-out),
+    transform 0.5s var(--ease-out);
+}
+
+.build-peek .dwin-bar {
+  border-radius: var(--r-field) var(--r-field) 0 0;
+}
+
+.build-demo .build-peek:not(.in) {
+  opacity: 0;
+  transform: translateY(12px) scale(0.97);
+}
+
+.build-peek-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 11px 12px;
+}
+
+.peek-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+.peek-row.peek-hot {
+  background: var(--state-hover);
+}
+
+.peek-bar {
+  height: 7px;
+  border-radius: 4px;
+  background: var(--surface-3);
 }
 
 @media (max-width: 900px) {
@@ -2583,7 +3016,7 @@ code,
   }
 
   .build-ask,
-  .build-surfaces {
+  .build-out {
     min-width: 0;
   }
 
@@ -2597,32 +3030,73 @@ code,
   .build-prompt {
     min-height: 0;
   }
+
+  /* The layered window tucks back into flow, still overlapping upward. */
+  .build-peek {
+    position: static;
+    width: min(240px, 80%);
+    margin: -26px 14px 0 auto;
+  }
 }
 
-/* ── The gang: threads working across projects, one open ─────────── */
+/* ── The gang: one window — sidebar rail and the open thread ─────── */
 
+/* The whole demo is a single product window: chrome bar on top, the
+   thread sidebar hairlined off the open transcript, the composer and
+   context row at the pane's foot — the real thread view's anatomy. */
 .gang-demo {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: clamp(16px, 2vw, 28px);
-  align-items: stretch;
-}
-
-.gang-side,
-.gang-thread {
+  display: flex;
+  flex-direction: column;
   border-radius: var(--r-card);
   background: var(--bg);
   box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
+    var(--ring),
     var(--shadow-window);
-  padding: 20px;
   font-size: 13.5px;
+}
+
+.gang-commit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 550;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--subtle);
+  transition:
+    background var(--duration-state) var(--ease-standard),
+    color var(--duration-state) var(--ease-standard);
+}
+
+.gang-commit.armed {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.gang-commit-chev {
+  flex: none;
+  width: 11px;
+  height: 11px;
+}
+
+.gang-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  min-height: 0;
 }
 
 .gang-side {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: 14px 12px 16px;
+  background: color-mix(in oklab, var(--ink-strong) 1.5%, var(--bg));
+  border-right: 1px solid var(--border-soft);
+  border-radius: 0 0 0 var(--r-card);
 }
 
 .gang-row {
@@ -2664,48 +3138,27 @@ code,
   border-radius: 0 8px 8px 0;
   transition:
     opacity 0.45s var(--ease-out),
-    transform 0.45s var(--ease-out),
-    max-height 0.45s var(--ease-out);
-  max-height: 40px;
+    transform 0.45s var(--ease-out);
 }
 
+/* Same rule as the spawn rows: the nested child reserves its line so the
+   section height never moves. */
 .gang-demo .gang-kid:not(.in) {
   opacity: 0;
   transform: translateY(-6px);
-  max-height: 0;
-  overflow: hidden;
+  pointer-events: none;
 }
 
 .gang-gap {
   margin-top: 14px;
 }
 
-/* The open thread: a compact transcript that accumulates. */
+/* The open thread: a compact transcript over the composer's anatomy. */
 .gang-thread {
   display: flex;
   flex-direction: column;
-}
-
-.gang-head {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.gang-title {
-  font-weight: 550;
-  color: var(--ink-strong);
-}
-
-.gang-badge {
-  margin-left: auto;
-  font-size: 11.5px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--dim);
+  padding: 16px 18px 16px;
+  min-width: 0;
 }
 
 .gang-feed {
@@ -2713,7 +3166,6 @@ code,
   display: flex;
   flex-direction: column;
   gap: 11px;
-  padding-top: 15px;
   min-height: 158px;
 }
 
@@ -2774,6 +3226,144 @@ code,
   .gang-feed {
     min-height: 0;
   }
+}
+
+/* ── Gang: the thread's footer stack, as the real thread has it ──── */
+
+/* Working-tree bar. */
+.gang-pr {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 8px 10px;
+  border-radius: var(--r-field, 10px);
+  background: var(--surface);
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.gang-pr-ic {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  color: var(--subtle);
+}
+
+.gang-pr-strong {
+  font-weight: 550;
+  color: var(--ink);
+}
+
+.gang-pr-dim {
+  color: var(--subtle);
+}
+
+.gang-commit-chev {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  color: var(--subtle);
+}
+
+/* The follow-up composer. */
+.gang-composer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 11px 12px;
+  border-radius: var(--r-field, 10px);
+  background: var(--bg);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink-strong) 9%, transparent);
+}
+
+.gang-ph {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--subtle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gang-send {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--ink);
+}
+
+.gang-send-ic {
+  width: 12px;
+  height: 12px;
+  color: var(--bg);
+}
+
+/* The context row under the composer: model, workspace, branch. */
+.gang-ctx {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 9px;
+  padding: 0 2px;
+  font-size: 11.5px;
+  color: var(--dim);
+  min-width: 0;
+}
+
+.gang-ctx-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.gang-ctx-ic {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  color: var(--subtle);
+}
+
+.gang-ctx-branch {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.gang-ctx-spin {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  margin-left: auto;
+  color: var(--subtle);
+  animation: dm-rotate 1.1s linear infinite;
+}
+
+/* Ask option text column. */
+.ask-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ask-label {
+  font-weight: 550;
+  color: var(--ink-strong);
+}
+
+/* A surface that is itself a plugin gets a touch more presence. */
+.build-plugin {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--ink-strong) 10%, transparent),
+    var(--shadow-window);
 }
 
 /* ── The spawn machine: three causes firing into one sidebar ─────── */
@@ -2920,6 +3510,13 @@ code,
 /* The sidebar the threads arrive into — the machine's output. Content is
    top-aligned like a real sidebar; min-height keeps the card steady while
    rows arrive instead of re-centering everything each beat. */
+.spawn-window-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 14px 0;
+}
+
 .spawn-window {
   border-radius: var(--r-card);
   background: var(--bg);
@@ -2934,25 +3531,27 @@ code,
   min-height: 316px;
 }
 
+.sub-gap {
+  margin-top: 14px;
+}
+
 .spawn-gap {
   margin-top: 14px;
 }
 
+/* Arriving rows keep their space reserved from the first frame — only
+   opacity and offset animate. Collapsing their height made the whole
+   section reflow on every loop. */
 .spawn-new {
-  max-height: 44px;
   transition:
     transform 0.55s var(--ease-out),
-    opacity 0.55s var(--ease-out),
-    max-height 0.55s var(--ease-out),
-    padding 0.55s var(--ease-out);
+    opacity 0.55s var(--ease-out);
 }
 
 .spawn-demo .spawn-new:not(.in) {
   opacity: 0;
   transform: translateY(-8px);
-  max-height: 0;
-  padding-block: 0;
-  overflow: hidden;
+  pointer-events: none;
 }
 
 .spawn-dot {
@@ -3205,7 +3804,13 @@ code,
   font-size: 14px;
   line-height: 1.5;
   color: var(--dim);
-  max-width: 46ch;
+  text-wrap: nowrap;
+}
+
+@media (max-width: 900px) {
+  .bento > li > p {
+    text-wrap: pretty;
+  }
 }
 
 /* The fragment: a real surface inset in the card, bleeding off the
@@ -3216,10 +3821,21 @@ code,
   min-height: 0;
   border-radius: 12px 12px 0 0;
   background: var(--bg);
-  box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent),
-    0 12px 32px -18px color-mix(in oklab, var(--ink-strong) 30%, transparent);
+  /* The ring is INSET: masking an element also clips anything it paints
+     outside its border box, so an outset ring loses its left and right
+     edges the moment the dissolve is applied. An inset ring is painted
+     inside the box and survives. */
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ink-strong) 8%, transparent);
   overflow: hidden;
+  /* The whole frame dissolves — ring included — so no hard bottom edge
+     survives the fade. The slate card behind it stays crisp. */
+  mask-image: linear-gradient(
+    to bottom,
+    black calc(100% - 72px),
+    rgb(0 0 0 / 0.45) calc(100% - 34px),
+    rgb(0 0 0 / 0.1) calc(100% - 12px),
+    transparent 100%
+  );
 }
 
 .bento-window img,
@@ -3258,21 +3874,6 @@ code,
   padding: 20px 22px 0;
 }
 
-/* Dia's device: the demo CONTENT dissolves at the bottom of the frame
-   while the frame itself stays a crisp object. The fade is eased — three
-   stops, not a linear two-stop ramp — so the dissolve reads as
-   atmosphere, not a wipe. The mask lives on the content, never on the
-   window (masking the window would eat its own ring). */
-.bento-component > * {
-  mask-image: linear-gradient(
-    to bottom,
-    black calc(100% - 72px),
-    rgb(0 0 0 / 0.45) calc(100% - 34px),
-    rgb(0 0 0 / 0.1) calc(100% - 12px),
-    transparent 100%
-  );
-}
-
 /* Every demo fills its window exactly, so the dissolve band above always
    lands just inside the frame; taller content crops by design. */
 .board-demo,
@@ -3283,11 +3884,86 @@ code,
   height: 100%;
 }
 
+/* The subagent demo is the app's two-pane shape: a thread rail beside the
+   open thread. Completing the rail/main split the pair scaffolded. */
 .sub-demo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.62fr);
+  gap: 14px;
+  font-size: 13.5px;
+  align-items: start;
+}
+
+.sub-rail {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 13.5px;
+  min-width: 0;
+}
+
+/* The rail's header row, as in the real sidebar: the new-thread action and
+   a search affordance sharing one line. */
+.sub-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px 10px;
+}
+
+.sub-newthread {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.sub-top-ic {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--dim);
+}
+
+.sub-search {
+  flex: none;
+}
+
+.sub-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The unread dot the real sidebar puts on quiet rows. */
+.sub-dot {
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--ink-strong) 28%, transparent);
+}
+
+/* The open thread beside the rail: real text is not the point here, so the
+   pane suggests a transcript with settled skeleton lines rather than
+   inventing content that competes with the rail. */
+.sub-main {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 14px 0 0 14px;
+  border-left: 1px solid var(--border-soft);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.sub-sk {
+  height: 7px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--ink-strong) 8%, transparent);
 }
 
 .sub-group {
@@ -3364,6 +4040,66 @@ code,
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+/* The waiting banner the real thread shows above an open question. */
+.ask-wait {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px 12px;
+  font-size: 12.5px;
+  color: var(--dim);
+  min-width: 0;
+}
+
+.ask-wait-ic {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--subtle);
+}
+
+.ask-wait strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ask-wait-q {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--subtle);
+  border-left: 1px solid var(--border);
+  padding-left: 9px;
+  margin-left: 1px;
+}
+
+/* The question itself sits on its own card, as in the product. */
+.ask-card {
+  padding: 15px 16px;
+  border-radius: var(--r-field, 10px);
+  background: var(--bg);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent);
+}
+
+/* Each option carries its keyboard hint on the right, like the real card. */
+.ask-num {
+  margin-left: auto;
+  flex: none;
+  align-self: flex-start;
+  font-size: 11.5px;
+  color: var(--subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.ask-desc {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--dim);
 }
 
 .ask-opt {
@@ -4095,7 +4831,6 @@ code,
 
   .mock.constructing,
   .mock.constructing .mock-bar,
-  .mock.constructing .mock-dots i,
   .mock.constructing .side > *,
   .mock.constructing .threads li,
   .mock.constructing .feed > *,

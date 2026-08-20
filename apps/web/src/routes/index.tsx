@@ -19,6 +19,8 @@ import {
   Mic02Icon,
   MoreHorizontalIcon,
   PlusMinusSquare01Icon,
+  PlusSignIcon,
+  RefreshIcon,
   Search01Icon,
   SentIcon,
   Settings01Icon,
@@ -497,6 +499,50 @@ const LaptopGlyph = ({ className }: IconProps) => (
 );
 const FileDiffIcon = ({ className }: IconProps) => (
   <HugeiconsIcon icon={PlusMinusSquare01Icon} className={className} />
+);
+const PlusGlyph = ({ className }: IconProps) => (
+  <HugeiconsIcon icon={PlusSignIcon} className={className} />
+);
+const RefreshGlyph = ({ className }: IconProps) => (
+  <HugeiconsIcon icon={RefreshIcon} className={className} />
+);
+
+// The Tasks board's per-column status glyphs, matching the real board:
+// a dashed circle for Backlog, a hollow circle for Todo, and a half-filled
+// dial for In Progress. Drawn by hand at the Hugeicons stroke weight
+// (the free set has no equivalents).
+const BacklogStateGlyph = ({ className }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
+    <circle
+      cx="12"
+      cy="12"
+      r="8.5"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeDasharray="0.5 5.4"
+    />
+  </svg>
+);
+const TodoStateGlyph = ({ className }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
+    <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="2" />
+  </svg>
+);
+const DoingStateGlyph = ({ className }: IconProps) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
+    <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="2" />
+    <path d="M12 6.5a5.5 5.5 0 0 1 0 11Z" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+/** The priority bar-chart glyph every real task card carries. */
+const PriorityGlyph = ({ level }: { level: 1 | 2 | 3 }) => (
+  <svg className="board-pri" viewBox="0 0 13 10" aria-hidden>
+    <rect x="0" y="6" width="3" height="4" rx="1" />
+    <rect x="5" y="3" width="3" height="7" rx="1" opacity={level >= 2 ? 1 : 0.35} />
+    <rect x="10" y="0" width="3" height="10" rx="1" opacity={level >= 3 ? 1 : 0.35} />
+  </svg>
 );
 
 type Status = "running" | "done" | "waiting";
@@ -1149,11 +1195,6 @@ function HeroAppMock() {
       >
         <div className="mock-bar">
           <div className="bar-left">
-            <span className="mock-dots" aria-hidden>
-              <i />
-              <i />
-              <i />
-            </span>
             <span className="bar-menu" aria-hidden>
               <PanelIcon className="ri bar-ic" />
             </span>
@@ -1489,51 +1530,17 @@ function AutomationsPanelMock() {
 }
 
 /* ────────────────────────────────────────────────
- * SUBAGENTS STORYBOARD (plays once per view entry)
+ * SUBAGENTS STORYBOARD (loops while in view)
  *
- *     0ms   parent row working (spinner)
- *   900ms   child row slides in, nested, working
- *  3200ms   child completes (check)
- *  4000ms   parent absorbs the report, completes
- *  rest     both settled — also the reduced-motion state
+ *      0ms   parent row working (spinner); the rail rests around it
+ *    900ms   child row slides in, nested, working
+ *   3200ms   child completes; "reported back" lands under it
+ *   4000ms   parent absorbs the report, completes
+ *  11500ms   loop restarts (the rail rests settled ~65% of the loop)
+ *   rest     both settled — also the reduced-motion state
  * ──────────────────────────────────────────────── */
-const SUB_TIMING = {
-  childIn: 900,
-  childDone: 3200,
-  parentDone: 4000,
-};
-
-function useViewStage(stages: number[]) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [stage, setStage] = useState(stages.length);
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-    const el = ref.current;
-    if (!el) return;
-    let timers: number[] = [];
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          observer.disconnect();
-          setStage(0);
-          timers = stages.map((at, i) =>
-            window.setTimeout(() => setStage(i + 1), at),
-          );
-        }
-      },
-      { rootMargin: "0px 0px -25% 0px" },
-    );
-    observer.observe(el);
-    return () => {
-      observer.disconnect();
-      timers.forEach(clearTimeout);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return { ref, stage };
-}
+const SUB_BEATS = [900, 3200, 4000];
+const SUB_RESET = 11500;
 
 function DemoSpinner() {
   return (
@@ -1551,107 +1558,142 @@ function DemoCheck() {
   );
 }
 
+/** The real sidebar's quiet rows end in a small unread dot. */
+function QuietRow({ title }: { title: string }) {
+  return (
+    <div className="sub-row sub-quiet">
+      <span className="sub-title">{title}</span>
+      <i className="sub-dot" />
+    </div>
+  );
+}
+
 function SubagentsDemo() {
-  const { ref, stage } = useViewStage([
-    SUB_TIMING.childIn,
-    SUB_TIMING.childDone,
-    SUB_TIMING.parentDone,
-  ]);
+  const { ref, stage } = useLoopStage(SUB_BEATS, SUB_RESET);
   return (
     <div className="sub-demo" ref={ref} aria-hidden>
-      <span className="sub-group">storefront</span>
-      <div className="sub-row">
-        <span className="sub-title">Expand README testing documentation</span>
-        {stage >= 3 ? <DemoCheck /> : <DemoSpinner />}
+      <div className="sub-rail">
+        <div className="sub-top">
+          <span className="sub-newthread">
+            <NewThreadIcon className="sub-top-ic" />
+            New thread
+          </span>
+          <SearchGlyph className="sub-top-ic sub-search" />
+        </div>
+        <span className="sub-group">storefront</span>
+        <div className="sub-row">
+          <span className="sub-title">Expand README testing documentation</span>
+          {stage >= 3 ? <DemoCheck /> : <DemoSpinner />}
+        </div>
+        <div
+          className={stage >= 1 ? "sub-row sub-child in" : "sub-row sub-child"}
+        >
+          <span className="sub-title">Identify missing promo edge cases</span>
+          {stage >= 2 ? <DemoCheck /> : <DemoSpinner />}
+        </div>
+        <span className={stage >= 2 ? "sub-report in" : "sub-report"}>
+          ↳ reported back to its parent
+        </span>
+        <QuietRow title="Trace order checkout flow" />
+        <QuietRow title="Summarize checkout cart integration" />
+        <QuietRow title="Audit promo test coverage gaps" />
+        <span className="sub-group sub-gap">checkout-api</span>
+        <QuietRow title="Explain orders error handling" />
+        <QuietRow title="Summarize service route" />
       </div>
-      <div className={stage >= 1 ? "sub-row sub-child in" : "sub-row sub-child"}>
-        <span className="sub-title">Identify missing promo edge cases</span>
-        {stage >= 2 ? <DemoCheck /> : <DemoSpinner />}
-      </div>
-      <span className={stage >= 2 ? "sub-report in" : "sub-report"}>
-        ↳ reported back to its parent
-      </span>
-      <div className="sub-row sub-quiet">
-        <span className="sub-title">Trace order checkout flow</span>
-      </div>
-      <div className="sub-row sub-quiet">
-        <span className="sub-title">Summarize checkout cart integration</span>
-      </div>
-      <div className="sub-row sub-quiet">
-        <span className="sub-title">Audit promo test coverage gaps</span>
-      </div>
-      <div className="sub-row sub-quiet">
-        <span className="sub-title">Explain promo code checkout impact</span>
+      <div className="sub-main">
+        <span className="sub-sk" style={{ width: "180%" }} />
+        <span className="sub-sk" style={{ width: "120%" }} />
+        <span className="sub-sk" style={{ width: "160%" }} />
       </div>
     </div>
   );
 }
 
 /* ────────────────────────────────────────────────
- * ASK STORYBOARD (plays once per view entry)
+ * ASK STORYBOARD (loops while in view)
  *
- *     0ms   question card resting, no selection
- *  1100ms   highlight lands on "Single code per cart"
- *  2100ms   radio fills — selected
- *  2900ms   Submit arms (primary)
- *  3800ms   submit presses; the card answers
- *  rest     answered, the follow-up work running past the frame's
- *           dissolve — also the reduced-motion state
+ *      0ms   question card resting, no selection
+ *   1100ms   highlight lands on "Single code per cart"
+ *   2100ms   radio fills — selected
+ *   2900ms   Submit arms (primary)
+ *   3800ms   submit presses; the card answers and the follow-up work
+ *            streams in past the frame's dissolve
+ *  12800ms   loop restarts (the card rests answered ~70% of the loop)
+ *   rest     answered — also the reduced-motion state
  * ──────────────────────────────────────────────── */
-const ASK_TIMING = {
-  highlight: 1100,
-  select: 2100,
-  arm: 2900,
-  answer: 3800,
-};
+const ASK_BEATS = [1100, 2100, 2900, 3800];
+const ASK_RESET = 12800;
 
+// The real AskUserQuestion card: option label + a one-line consequence,
+// a keyboard-shortcut numeral per row, and a trailing "Other…".
 const ASK_OPTIONS = [
-  "Single code per cart",
-  "Allow stacking",
-  "Depends on the campaign",
-];
+  {
+    label: "Single code per cart",
+    desc: "A new code replaces the applied one. Simplest to reason about.",
+  },
+  {
+    label: "Allow stacking",
+    desc: "Codes combine, with precedence rules and discount guards.",
+  },
+  {
+    label: "Depends on the campaign",
+    desc: "Stackability becomes a per-code attribute the engine enforces.",
+  },
+  { label: "Other…", desc: "" },
+] as const;
 
 function AskDemo() {
-  const { ref, stage } = useViewStage([
-    ASK_TIMING.highlight,
-    ASK_TIMING.select,
-    ASK_TIMING.arm,
-    ASK_TIMING.answer,
-  ]);
+  const { ref, stage } = useLoopStage(ASK_BEATS, ASK_RESET);
   const answered = stage >= 4;
   return (
     <div className="ask-demo" ref={ref} aria-hidden>
-      <p className="ask-q">
-        Should the promo engine support stacking codes, or one per cart?
+      <p className="ask-wait">
+        <MessageQuestionGlyph className="ask-wait-ic" />
+        <span>
+          Waiting for <strong>answer</strong>
+        </span>
+        <span className="ask-wait-q">
+          Should the promo engine support stacking codes…
+        </span>
       </p>
       {answered ? (
-        <>
+        <div className="ask-card">
           <div className="ask-answered">
             <DemoCheck />
             <span>
               Answered — <strong>Single code per cart</strong>
             </span>
           </div>
-          <p className="ask-after">
+          <p className="ask-after" style={{ animationDelay: "0.15s" }}>
             Enforcing one code per cart. The newest code replaces the one
             already applied, and the stacking branch comes out of the engine.
           </p>
-          <p className="ask-step">Edited applyPromo.ts</p>
-          <p className="ask-step">Added 4 tests</p>
-          <p className="ask-step">Ran 24 tests</p>
-          <p className="ask-after">
+          <p className="ask-step" style={{ animationDelay: "0.3s" }}>
+            Edited applyPromo.ts
+          </p>
+          <p className="ask-step" style={{ animationDelay: "0.45s" }}>
+            Added 4 tests
+          </p>
+          <p className="ask-step" style={{ animationDelay: "0.6s" }}>
+            Ran 24 tests
+          </p>
+          <p className="ask-after" style={{ animationDelay: "0.75s" }}>
             All green. The newest code now replaces the applied one.
           </p>
-        </>
+        </div>
       ) : (
-        <>
+        <div className="ask-card">
+          <p className="ask-q">
+            Should the promo engine support stacking codes, or one per cart?
+          </p>
           <ul>
             {ASK_OPTIONS.map((opt, i) => {
               const active = i === 0 && stage >= 1;
               const selected = i === 0 && stage >= 2;
               return (
                 <li
-                  key={opt}
+                  key={opt.label}
                   className={
                     selected
                       ? "ask-opt selected"
@@ -1661,7 +1703,13 @@ function AskDemo() {
                   }
                 >
                   <i className="ask-radio" />
-                  {opt}
+                  <span className="ask-text">
+                    <span className="ask-label">{opt.label}</span>
+                    {opt.desc ? (
+                      <span className="ask-desc">{opt.desc}</span>
+                    ) : null}
+                  </span>
+                  <span className="ask-num">{i + 1}</span>
                 </li>
               );
             })}
@@ -1672,7 +1720,7 @@ function AskDemo() {
               Submit answer
             </span>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
@@ -1681,9 +1729,10 @@ function AskDemo() {
 /* ────────────────────────────────────────────────
  * TASKS BOARD STORYBOARD (loops while in view)
  *
- *      0ms   the board's columns are empty
- *    300ms   cards land column by column, 90ms apart
- *   2600ms   the in-progress card ticks over to done
+ *      0ms   the chrome is up, the columns are empty
+ *    300ms   cards land column by column, 90ms apart; the toolbar's
+ *            refresh dial sweeps once while they arrive
+ *   2600ms   SF-1 ticks over to done; the rail's Active count follows
  *   9000ms   loop restarts (the board rests settled ~70% of the loop)
  *   rest     full board — also the reduced-motion state
  * ──────────────────────────────────────────────── */
@@ -1693,71 +1742,130 @@ const BOARD_RESET = 9000;
 const BOARD_COLUMNS = [
   {
     name: "Backlog",
+    state: "backlog",
     cards: [
-      { id: "SF-6", title: "Cut the 1.4 release notes" },
-      { id: "SF-9", title: "Retire the legacy cart cookie" },
-      { id: "SF-11", title: "Audit checkout analytics" },
-      { id: "SF-14", title: "Drop the unused address form" },
+      { id: "SF-6", title: "Cut the 1.4 release notes", pri: 1 },
+      { id: "SF-9", title: "Retire the legacy cart cookie", pri: 1 },
+      { id: "SF-11", title: "Audit checkout analytics", pri: 2 },
+      { id: "SF-14", title: "Drop the unused address form", pri: 1 },
     ],
   },
   {
     name: "Todo",
+    state: "todo",
     cards: [
-      { id: "SF-3", title: "Add Apple Pay to checkout" },
-      { id: "SF-4", title: "Write docs for the promo engine" },
-      { id: "SF-7", title: "Handle expired promo codes" },
-      { id: "SF-12", title: "Cover the empty-cart path" },
+      { id: "SF-3", title: "Add Apple Pay to checkout", pri: 3 },
+      { id: "SF-4", title: "Write docs for the promo engine", pri: 2 },
+      { id: "SF-7", title: "Handle expired promo codes", pri: 2 },
+      { id: "SF-12", title: "Cover the empty-cart path", pri: 1 },
     ],
   },
   {
-    name: "In progress",
+    name: "In Progress",
+    state: "doing",
     cards: [
-      { id: "SF-1", title: "Ship promo-code analytics" },
-      { id: "SF-2", title: "Port pricing to TypeScript" },
-      { id: "SF-8", title: "Split the order confirmation" },
-      { id: "SF-13", title: "Trace the checkout funnel" },
+      { id: "SF-1", title: "Ship promo-code analytics", pri: 3 },
+      { id: "SF-2", title: "Port pricing to TypeScript", pri: 2 },
+      { id: "SF-8", title: "Split the order confirmation", pri: 2 },
+      { id: "SF-13", title: "Trace the checkout funnel", pri: 1 },
     ],
   },
 ] as const;
+
+function BoardColGlyph({ state }: { state: string }) {
+  if (state === "backlog") {
+    return <BacklogStateGlyph className="board-state" />;
+  }
+  if (state === "todo") {
+    return <TodoStateGlyph className="board-state" />;
+  }
+  return <DoingStateGlyph className="board-state board-state-doing" />;
+}
 
 function TasksBoardDemo() {
   const { ref, stage } = useLoopStage(BOARD_BEATS, BOARD_RESET);
   const settled = stage >= BOARD_BEATS.length;
   const landed = stage >= 1 || settled;
+  const done = stage >= 2 || settled;
   let n = 0;
   return (
     <div className="board-demo" ref={ref} aria-hidden>
-      <div className="board-bar">
-        <span className="board-project">storefront 1.4</span>
-        <span className="board-new">+ New task</span>
+      <div className="board-chrome">
+        <ChecklistGlyph className="board-chrome-ic" />
+        <span className="board-chrome-title">Tasks</span>
+        <PanelRightIcon className="board-chrome-ic board-chrome-panel" />
       </div>
-      <div className="board-cols">
-        {BOARD_COLUMNS.map((col) => (
-          <div key={col.name} className="board-col">
-            <span className="board-col-head">
-              {col.name}
-              <em>{col.cards.length}</em>
-            </span>
-            {col.cards.map((card) => {
-              const delay = n++ * 90;
-              return (
-                <div
-                  key={card.id}
-                  className={landed ? "board-card in" : "board-card"}
-                  style={{ transitionDelay: `${delay}ms` }}
-                >
-                  <span className="board-id">
-                    {card.id}
-                    {card.id === "SF-1" && (stage >= 2 || settled) ? (
-                      <DemoCheck />
-                    ) : null}
-                  </span>
-                  {card.title}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+      <div className="board-bar">
+        <span className="board-project">
+          <i className="board-proj-dot" />
+          storefront 1.4
+        </span>
+        <span className="board-seg">
+          <em>List</em>
+          <em className="on">Board</em>
+        </span>
+        <RefreshGlyph
+          className={
+            landed && !settled ? "board-refresh sweep" : "board-refresh"
+          }
+        />
+        <span className="board-new">
+          <PlusGlyph className="board-new-ic" />
+          New task
+        </span>
+      </div>
+      <div className="board-main">
+        <div className="board-cols">
+          {BOARD_COLUMNS.map((col) => (
+            <div key={col.name} className="board-col">
+              <span className="board-col-head">
+                <BoardColGlyph state={col.state} />
+                {col.name}
+                <em>{col.cards.length}</em>
+                <PlusGlyph className="board-col-add" />
+              </span>
+              {col.cards.map((card) => {
+                const delay = n++ * 90;
+                return (
+                  <div
+                    key={card.id}
+                    className={landed ? "board-card in" : "board-card"}
+                    style={{ transitionDelay: `${delay}ms` }}
+                  >
+                    <span className="board-id">
+                      {card.id}
+                      {card.id === "SF-1" && done ? <DemoCheck /> : null}
+                    </span>
+                    <span className="board-card-title">{card.title}</span>
+                    <PriorityGlyph level={card.pri} />
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+        <aside className="board-rail">
+          <span className="brail-row">
+            <strong>All tasks</strong>
+            <em>12</em>
+          </span>
+          <span className="brail-row">
+            <strong>Active</strong>
+            <em>{done ? 3 : 4}</em>
+          </span>
+          <span className="brail-label">Projects</span>
+          <span className="brail-row">
+            <i className="board-proj-dot" />
+            <strong>storefront 1.4</strong>
+            <em>12</em>
+          </span>
+          <span className="brail-row brail-ghost">
+            <PlusGlyph className="brail-ic" />
+            New project
+          </span>
+          <span className="brail-label">Agent presets</span>
+          <span className="brail-note">No presets yet.</span>
+        </aside>
       </div>
     </div>
   );
@@ -1766,9 +1874,9 @@ function TasksBoardDemo() {
 /* ────────────────────────────────────────────────
  * REVIEW STORYBOARD (loops while in view)
  *
- *      0ms   the diff header, no hunks
- *    400ms   diff lines land, 70ms apart
- *   2400ms   the working-tree bar arrives
+ *      0ms   the changes header and the file card, no hunk
+ *    400ms   diff lines land, 70ms apart, gutter bars with them
+ *   2400ms   the second file card arrives below
  *   3400ms   Commit arms
  *  10000ms   loop restarts (the diff rests armed ~65% of the loop)
  *   rest     full diff, armed — also the reduced-motion state
@@ -1776,20 +1884,17 @@ function TasksBoardDemo() {
 const REVIEW_BEATS = [400, 2400, 3400];
 const REVIEW_RESET = 10000;
 
+// One hunk of applyPromo.ts, numbered like the real Changes panel: the
+// deleted line keeps its old number; the replacement lines take over.
 const REVIEW_LINES = [
-  { sign: " ", text: "export function applyPromo(cart, code) {" },
-  { sign: "-", text: "  const percent = PERCENT_CODES[code] ?? 0;" },
-  { sign: "+", text: "  const percent = Object.hasOwn(" },
-  { sign: "+", text: "    PERCENT_CODES, code," },
-  { sign: "+", text: "  ) ? PERCENT_CODES[code] : 0;" },
-  { sign: " ", text: "  const subtotal = cart.items.reduce(sum, 0);" },
-  { sign: " ", text: "  return round(subtotal * (1 - percent));" },
-  { sign: " ", text: "}" },
-  { sign: " ", text: "" },
-  { sign: "+", text: "it(\"ignores an unknown code\", () => {" },
-  { sign: "+", text: "  expect(applyPromo(cart, \"constructor\"))" },
-  { sign: "+", text: "    .toBeCloseTo(subtotal);" },
-  { sign: "+", text: "});" },
+  { sign: " ", no: "21", text: "export function applyPromo(cart, code) {" },
+  { sign: "-", no: "22", text: "  const percent = PERCENT_CODES[code] ?? 0;" },
+  { sign: "+", no: "22", text: "  const percent = Object.hasOwn(" },
+  { sign: "+", no: "23", text: "    PERCENT_CODES, code," },
+  { sign: "+", no: "24", text: "  ) ? PERCENT_CODES[code] : 0;" },
+  { sign: " ", no: "25", text: "  const subtotal = cart.items.reduce(sum, 0);" },
+  { sign: " ", no: "26", text: "  return round(subtotal * (1 - percent));" },
+  { sign: " ", no: "27", text: "}" },
 ] as const;
 
 function ReviewDemo() {
@@ -1799,33 +1904,67 @@ function ReviewDemo() {
   return (
     <div className="review-demo" ref={ref} aria-hidden>
       <div className="review-head">
-        <span className="review-file">applyPromo.ts</span>
+        <span className="review-scope">
+          All changes
+          <ChevronDown className="review-chev" />
+        </span>
         <span className="review-count">
-          <em className="review-add">+3</em>
+          2 files,
+          <em className="review-add">+7</em>
           <em className="review-del">-1</em>
         </span>
-      </div>
-      <div className={stage >= 2 || settled ? "review-foot in" : "review-foot"}>
-        <GitBranchIcon className="review-ic" />
-        <span>Uncommitted · 1 file</span>
-        <span className={stage >= 3 || settled ? "review-commit armed" : "review-commit"}>
+        <span
+          className={
+            stage >= 3 || settled ? "review-commit armed" : "review-commit"
+          }
+        >
           Commit
         </span>
       </div>
-      <div className="review-hunk">
-        {REVIEW_LINES.map((l, i) => (
-          <p
-            key={l.text}
-            className={
-              (landed ? "review-line in" : "review-line") +
-              (l.sign === "+" ? " is-add" : l.sign === "-" ? " is-del" : "")
-            }
-            style={{ transitionDelay: `${i * 70}ms` }}
-          >
-            <span className="review-sign">{l.sign}</span>
-            {l.text}
-          </p>
-        ))}
+      <div className="review-file-card">
+        <div className="review-file-head">
+          <ChevronDown className="review-chev" />
+          <span className="review-file">applyPromo.ts</span>
+          <span className="review-count">
+            <em className="review-add">+3</em>
+            <em className="review-del">-1</em>
+          </span>
+        </div>
+        <div className="review-fold">
+          <ChevronDown className="review-chev review-fold-chev" />
+          20 unmodified lines
+        </div>
+        <div className="review-hunk">
+          {REVIEW_LINES.map((l, i) => (
+            <p
+              key={`${l.no}-${l.sign}`}
+              className={
+                (landed ? "review-line in" : "review-line") +
+                (l.sign === "+" ? " is-add" : l.sign === "-" ? " is-del" : "")
+              }
+              style={{ transitionDelay: `${i * 70}ms` }}
+            >
+              <span className="review-no">{l.no}</span>
+              <span className="review-sign">{l.sign}</span>
+              {l.text}
+            </p>
+          ))}
+        </div>
+      </div>
+      <div
+        className={
+          stage >= 2 || settled
+            ? "review-file-card review-file2 in"
+            : "review-file-card review-file2"
+        }
+      >
+        <div className="review-file-head">
+          <ChevronRight className="review-chev" />
+          <span className="review-file">promo.test.ts</span>
+          <span className="review-count">
+            <em className="review-add">+4</em>
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -1834,27 +1973,22 @@ function ReviewDemo() {
 /* ────────────────────────────────────────────────
  * BUILD STORYBOARD (loops while in view)
  *
- *      0ms   an empty prompt, caret blinking
+ *      0ms   an empty composer, caret blinking
  *    300ms   the request types itself
  *   2100ms   sent; the agent starts working ("Scaffolded the plugin")
- *   2900ms   the panel surface lands
- *   3800ms   the command lands ("Registered the CLI" in the transcript)
+ *   2900ms   the plugin card lands in Extensions; the Review-queue
+ *            panel window layers in over the corner
+ *   3800ms   the command surface lands ("Registered the CLI")
  *   4700ms   the skill lands ("Wrote the skill")
  *   6200ms   the thread reports back
- *  12400ms   loop restarts (all three surfaces rest ~half the loop)
- *   rest     all three surfaces present — reduced-motion state
+ *  12400ms   loop restarts (all surfaces rest ~half the loop)
+ *   rest     everything present — also the reduced-motion state
  * ──────────────────────────────────────────────── */
 const BUILD_BEATS = [300, 2100, 2900, 3800, 4700, 6200];
 const BUILD_RESET = 12400;
 const BUILD_PROMPT = "Add a review queue panel";
 
 const BUILD_SURFACES = [
-  {
-    kind: "Panel",
-    name: "Review queue",
-    detail: "In the sidebar, above Tasks",
-    icon: PanelIcon,
-  },
   {
     kind: "Command",
     name: "bb review",
@@ -1869,20 +2003,64 @@ const BUILD_SURFACES = [
   },
 ] as const;
 
+/** The Review-queue panel the prompt produced, previewed in its own small
+ *  window layered over the Extensions page — skeleton rows, like the real
+ *  Extensions carousel previews its plugins. */
+function BuildPeek({ on }: { on: boolean }) {
+  return (
+    <div className={on ? "build-peek in" : "build-peek"}>
+      <div className="dwin-bar dwin-mini">
+        <span className="dwin-title">Review queue</span>
+      </div>
+      <div className="build-peek-body">
+        <div className="peek-row peek-hot">
+          <span className="peek-bar" style={{ width: "72%" }} />
+          <i className="sub-dot" />
+        </div>
+        <div className="peek-row">
+          <span className="peek-bar" style={{ width: "58%" }} />
+          <i className="sub-dot" />
+        </div>
+        <div className="peek-row">
+          <span className="peek-bar" style={{ width: "64%" }} />
+          <i className="sub-dot" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BuildDemo() {
   const { ref, stage } = useLoopStage(BUILD_BEATS, BUILD_RESET);
   const settled = stage >= BUILD_BEATS.length;
+  const sent = stage >= 2 || settled;
   return (
     <div className="build-demo" ref={ref} aria-hidden>
       <div className="build-ask">
-        <p className={stage >= 2 || settled ? "build-prompt sent" : "build-prompt"}>
-          <span className={stage >= 1 && !settled ? "build-typed typing" : "build-typed"}>
-            {BUILD_PROMPT}
-          </span>
-          <span className="build-caret" />
-        </p>
+        <div className={sent ? "build-composer sent" : "build-composer"}>
+          <p className="build-prompt">
+            <span
+              className={
+                stage >= 1 && !settled ? "build-typed typing" : "build-typed"
+              }
+            >
+              {BUILD_PROMPT}
+            </span>
+            <span className="build-caret" />
+          </p>
+          <div className="build-composer-row">
+            <span className="build-model">
+              <ClaudeIcon className="build-model-ic" />
+              Opus 4.8
+              <ChevronDown className="chev-sm" />
+            </span>
+            <span className={sent ? "build-send sent" : "build-send"}>
+              <SendIcon className="build-send-ic" />
+            </span>
+          </div>
+        </div>
         <div className="build-steps">
-          <p className={stage >= 2 || settled ? "gang-step in" : "gang-step out"}>
+          <p className={sent ? "gang-step in" : "gang-step out"}>
             Scaffolded the plugin
           </p>
           <p className={stage >= 4 || settled ? "gang-step in" : "gang-step out"}>
@@ -1896,22 +2074,64 @@ function BuildDemo() {
           </p>
         </div>
       </div>
-      <ul className="build-surfaces">
-        {BUILD_SURFACES.map((s, i) => {
-          const Icon = s.icon;
-          const on = settled || stage >= i + 3;
-          return (
-            <li key={s.kind} className={on ? "build-surface in" : "build-surface"}>
-              <Icon className="build-ic" />
+      <div className="build-out">
+        <div className="build-win">
+          <div className="dwin-bar">
+            <span className="dwin-title">Extensions</span>
+            <span className="build-win-cta">Create a plugin</span>
+          </div>
+          <div className="build-win-body">
+            <span className="build-label">Installed</span>
+            <div
+              className={
+                stage >= 3 || settled
+                  ? "build-surface build-plugin in"
+                  : "build-surface build-plugin"
+              }
+            >
+              <PanelIcon className="build-ic" />
               <div className="build-body">
-                <span className="build-name">{s.name}</span>
-                <span className="build-detail">{s.detail}</span>
+                <span className="build-name">
+                  Review queue
+                  <DemoCheck />
+                </span>
+                <span className="build-detail">
+                  Every thread waiting on you, one list. By: your agent
+                </span>
               </div>
-              <span className="build-kind">{s.kind}</span>
-            </li>
-          );
-        })}
-      </ul>
+              <span className="build-kind">Plugin</span>
+            </div>
+            <ul className="build-surfaces">
+              {BUILD_SURFACES.map((s, i) => {
+                const Icon = s.icon;
+                const on = settled || stage >= i + 4;
+                return (
+                  <li
+                    key={s.kind}
+                    className={on ? "build-surface in" : "build-surface"}
+                  >
+                    <Icon className="build-ic" />
+                    <div className="build-body">
+                      <span
+                        className={
+                          s.kind === "Command"
+                            ? "build-name build-name-mono"
+                            : "build-name"
+                        }
+                      >
+                        {s.name}
+                      </span>
+                      <span className="build-detail">{s.detail}</span>
+                    </div>
+                    <span className="build-kind">{s.kind}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+        <BuildPeek on={stage >= 3 || settled} />
+      </div>
     </div>
   );
 }
@@ -1988,7 +2208,26 @@ function GangDemo() {
   const shown = settled ? GANG_STEPS.length : Math.min(stage + 1, GANG_STEPS.length);
   return (
     <div className="gang-demo" ref={ref} aria-hidden>
+      <div className="dwin-bar">
+        <span className="dwin-title">Audit promo code coverage</span>
+        <span
+          className={
+            stage >= 5 || settled ? "gang-commit armed" : "gang-commit"
+          }
+        >
+          Commit
+          <ChevronDown className="gang-commit-chev" />
+        </span>
+      </div>
+      <div className="gang-body">
       <div className="gang-side">
+        <div className="sub-top">
+          <span className="sub-newthread">
+            <NewThreadIcon className="sub-top-ic" />
+            New thread
+          </span>
+          <SearchGlyph className="sub-top-ic sub-search" />
+        </div>
         <span className="sub-group">storefront</span>
         <div className="sub-row gang-row is-open">
           <OpenAiIcon className="gang-pv" />
@@ -2028,11 +2267,6 @@ function GangDemo() {
         </div>
       </div>
       <div className="gang-thread">
-        <div className="gang-head">
-          <OpenAiIcon className="gang-pv" />
-          <span className="gang-title">Audit promo code coverage</span>
-          <span className="gang-badge">Codex</span>
-        </div>
         <div className="gang-feed">
           {GANG_STEPS.slice(0, shown).map((s, i) => (
             <p
@@ -2044,10 +2278,38 @@ function GangDemo() {
             </p>
           ))}
         </div>
-        <div className="gang-tree">
-          <FolderGitIcon className="gang-tree-ic" />
-          Worktree · bb/audit-promo-coverage
+        <div className="gang-pr">
+          <GitMergeIcon className="gang-pr-ic" />
+          <span className="gang-pr-strong">Working tree</span>
+          <span className="gang-pr-dim">· Uncommitted · 1 file,</span>
+          <em className="review-add">+38</em>
+          <em className="review-del">-2</em>
+          <ChevronDown className="gang-commit-chev" />
         </div>
+        <div className="gang-composer">
+          <span className="gang-ph">Ask for a follow-up…</span>
+          <span className="gang-send">
+            <SendIcon className="gang-send-ic" />
+          </span>
+        </div>
+        <div className="gang-ctx">
+          <span className="gang-ctx-item">
+            <OpenAiIcon className="gang-ctx-ic" />
+            Codex
+            <ChevronDown className="gang-commit-chev" />
+          </span>
+          <span className="gang-ctx-item">
+            <FolderGitIcon className="gang-ctx-ic" />
+            Worktree
+            <ChevronDown className="gang-commit-chev" />
+          </span>
+          <span className="gang-ctx-item gang-ctx-branch">
+            <GitBranchIcon className="gang-ctx-ic" />
+            bb/audit-promo-coverage
+          </span>
+          {settled ? null : <Spinner className="gang-ctx-spin" />}
+        </div>
+      </div>
       </div>
     </div>
   );
@@ -2194,41 +2456,53 @@ function SpawnDemo() {
         </div>
       </div>
       <div className="spawn-window">
-        <span className="sub-group">storefront</span>
-        {[
-          { stage: cron, title: SPAWN_CAUSES[2].title },
-          { stage: tg, title: SPAWN_CAUSES[1].title },
-          { stage: cli, title: SPAWN_CAUSES[0].title },
-        ].map((row) => (
-          <div
-            key={row.title}
-            className={row.stage >= 2 ? "sub-row spawn-new in" : "sub-row spawn-new"}
-          >
-            <span className="sub-title">
-              <TextMorph
-                as="span"
-                duration={520}
-                ease="cubic-bezier(0.19, 1, 0.22, 1)"
-              >
-                {row.stage >= 3 ? row.title : "New thread"}
-              </TextMorph>
+        <div className="spawn-window-body">
+          <div className="sub-top">
+            <span className="sub-newthread">
+              <NewThreadIcon className="sub-top-ic" />
+              New thread
             </span>
-            {row.stage >= 4 ? (
-              <i className="spawn-dot" />
-            ) : row.stage >= 2 ? (
-              <DemoSpinner />
-            ) : null}
+            <SearchGlyph className="sub-top-ic sub-search" />
           </div>
-        ))}
-        <div className="sub-row sub-quiet">
-          <span className="sub-title">Summarize checkout cart integration</span>
-        </div>
-        <span className="sub-group spawn-gap">checkout-api</span>
-        <div className="sub-row sub-quiet">
-          <span className="sub-title">Describe order endpoint validation</span>
-        </div>
-        <div className="sub-row sub-quiet">
-          <span className="sub-title">Summarize service route</span>
+          <span className="sub-group">storefront</span>
+          {[
+            { stage: cron, title: SPAWN_CAUSES[2].title },
+            { stage: tg, title: SPAWN_CAUSES[1].title },
+            { stage: cli, title: SPAWN_CAUSES[0].title },
+          ].map((row) => (
+            <div
+              key={row.title}
+              className={row.stage >= 2 ? "sub-row spawn-new in" : "sub-row spawn-new"}
+            >
+              <span className="sub-title">
+                <TextMorph
+                  as="span"
+                  duration={520}
+                  ease="cubic-bezier(0.19, 1, 0.22, 1)"
+                >
+                  {row.stage >= 3 ? row.title : "New thread"}
+                </TextMorph>
+              </span>
+              {row.stage >= 4 ? (
+                <i className="spawn-dot" />
+              ) : row.stage >= 2 ? (
+                <DemoSpinner />
+              ) : null}
+            </div>
+          ))}
+          <div className="sub-row sub-quiet">
+            <span className="sub-title">Summarize checkout cart integration</span>
+            <i className="sub-dot" />
+          </div>
+          <span className="sub-group spawn-gap">checkout-api</span>
+          <div className="sub-row sub-quiet">
+            <span className="sub-title">Describe order endpoint validation</span>
+            <i className="sub-dot" />
+          </div>
+          <div className="sub-row sub-quiet">
+            <span className="sub-title">Summarize service route</span>
+            <i className="sub-dot" />
+          </div>
         </div>
       </div>
     </div>
@@ -2425,7 +2699,7 @@ function LandingPage() {
           <li>
             <h3>Built from one prompt</h3>
             <p>
-              An agent built the Tasks plugin: a panel, a CLI, and a skill.
+              One sentence became this board, a CLI, and a skill.
             </p>
             <div className="bento-window bento-component">
               <TasksBoardDemo />
@@ -2434,8 +2708,7 @@ function LandingPage() {
           <li>
             <h3>Review from the thread</h3>
             <p>
-              Working-tree diffs, commits, and PRs sit beside the
-              conversation.
+              Diffs, commits, and PRs beside the conversation.
             </p>
             <div className="bento-window bento-component">
               <ReviewDemo />
@@ -2444,7 +2717,7 @@ function LandingPage() {
           <li>
             <h3>Subagents</h3>
             <p>
-              Threads spawn threads, manage them, and take the report back.
+              Threads spawn threads and take the report back.
             </p>
             <div className="bento-window bento-component">
               <SubagentsDemo />
@@ -2453,7 +2726,7 @@ function LandingPage() {
           <li>
             <h3>Asks, not guesses</h3>
             <p>
-              Agents pause with a real question when they need your call.
+              They pause with a real question when they need you.
             </p>
             <div className="bento-window bento-component">
               <AskDemo />
