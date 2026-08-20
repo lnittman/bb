@@ -67,12 +67,20 @@
   --gutter: clamp(20px, 4vw, 48px);
   --act: 144px;
 
-  /* radius ladder: controls / fields + tiles / cards + windows / rooms.
+  /* Radius ladder: controls / fields / cards + windows / tiles / rooms.
      --r-field is the step between control and card: input boxes, terminal
-     pills, and cause tiles nested one level inside a card. */
+     pills, and cause tiles nested one level inside a card. --r-tile is the
+     page's own surfaces — bento cards, stat cards, the PR feed — which sit
+     a step above a product window because they hold one.
+
+     Two families live in this file and only one of them is this ladder.
+     Values inside a demo (6px rows, 7px cards, 12px frames) are the app's
+     own metrics, transcribed so the recreations match what ships. Those are
+     fidelity, not drift: change them only when the app changes. */
   --r-control: 8px;
   --r-field: 10px;
   --r-card: 14px;
+  --r-tile: 20px;
   --r-room: 28px;
 
   /* layered window shadow — one recipe for every elevated product frame */
@@ -1263,7 +1271,7 @@ code,
   text-align: left;
   font: inherit;
   color: var(--dim);
-  transition: background 0.14s ease;
+  transition: background var(--duration-hover) var(--ease-standard);
 }
 
 .trow:hover {
@@ -1482,7 +1490,7 @@ code,
   background: none;
   text-align: left;
   cursor: pointer;
-  transition: background 0.14s ease;
+  transition: background var(--duration-hover) var(--ease-standard);
 }
 
 .askq-opt:hover {
@@ -3539,7 +3547,7 @@ code,
   flex-direction: column;
   height: 440px;
   padding: 26px 26px 0;
-  border-radius: 20px;
+  border-radius: var(--r-tile);
   background: color-mix(in oklab, var(--ink-strong) 6%, var(--canvas));
   overflow: hidden;
   transform: translateY(12px);
@@ -4120,7 +4128,7 @@ button.sub-row:focus-visible {
   justify-content: center;
   gap: 8px;
   padding: 34px 16px 30px;
-  border-radius: 20px;
+  border-radius: var(--r-tile);
   background: color-mix(in oklab, var(--ink-strong) 6%, var(--canvas));
   box-shadow: inset 0 1px 0 color-mix(in oklab, var(--bg) 65%, transparent);
 }
@@ -4147,7 +4155,7 @@ button.sub-row:focus-visible {
    marquee (two copies, one translate loop). Rest = the static list. */
 .pr-feed {
   margin-top: clamp(14px, 1.6vw, 22px);
-  border-radius: 20px;
+  border-radius: var(--r-tile);
   background: color-mix(in oklab, var(--ink-strong) 6%, var(--canvas));
   padding: 10px 0;
   height: 348px;
