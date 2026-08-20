@@ -210,7 +210,11 @@ function RunCommandButton({ placement }: { placement: CtaPlacement }) {
           : "btn btn-ghost btn-install cmd-btn"
       }
       onClick={copy}
-      aria-label={`Copy browser install command: ${CLI_COMMAND}`}
+      aria-label={
+        copied
+          ? "Install command copied"
+          : `Copy browser install command: ${CLI_COMMAND}`
+      }
     >
       <span className="cmd-dollar">$</span>
       <span className="cmd-text">{CLI_COMMAND}</span>
@@ -219,6 +223,11 @@ function RunCommandButton({ placement }: { placement: CtaPlacement }) {
           <CopyGlyph className={copied ? "cmd-glyph-out" : "cmd-glyph-in"} />
           <CheckGlyph className={copied ? "cmd-glyph-in" : "cmd-glyph-out"} />
         </span>
+      </span>
+      {/* The checkmark is the sighted confirmation; this is its equivalent.
+          A label change alone is not reliably announced mid-interaction. */}
+      <span className="sr-only" aria-live="polite">
+        {copied ? "Install command copied." : ""}
       </span>
     </button>
   );
@@ -2758,7 +2767,14 @@ function PRFeed() {
                     tabIndex={copy === 1 ? -1 : undefined}
                   >
                     {url ? (
-                      <img src={url} alt="" width={22} height={22} />
+                      <img
+                        src={url}
+                        alt=""
+                        width={22}
+                        height={22}
+                        loading="lazy"
+                        decoding="async"
+                      />
                     ) : (
                       <span className="pr-avatar-fallback" aria-hidden>
                         {pr.login.slice(0, 1)}
@@ -2780,10 +2796,16 @@ function PRFeed() {
   );
 }
 
-/** A stat numeral that rolls to its value with a character morph (torph)
- *  the first time it scrolls into view. Prerendered HTML carries the real
- *  value; the roll starts from 0 only after hydration, and reduced motion
- *  never leaves the real value. */
+/** A stat numeral that rolls up to its value with a character morph (torph)
+ *  the first time it scrolls into view.
+ *
+ *  The numeral holds its REAL value at every moment except the ~600ms of the
+ *  roll itself. An earlier version zeroed the number at hydration and waited
+ *  for the reader, which meant a stat card could read "0" for seconds while
+ *  scrolled out of view — long enough for a full-page capture, a crawler, or
+ *  a social preview to record a false statement about the project. These are
+ *  the page's proof; they are never allowed to lie while waiting to be seen.
+ *  So the roll is armed on intersection and starts from 0 only then. */
 function StatNumber({ value }: { value: string }) {
   const [text, setText] = useState(value);
   const ref = useRef<HTMLElement>(null);
@@ -2795,36 +2817,23 @@ function StatNumber({ value }: { value: string }) {
     if (!el) return;
     // Already on screen (deep link, short page): keep the real value.
     if (el.getBoundingClientRect().top < window.innerHeight) return;
-    setText("0");
     let done = false;
-    const reveal = () => {
+    let frame = 0;
+    const roll = () => {
       if (done) return;
       done = true;
-      setText(value);
       observer.disconnect();
-      window.removeEventListener("scroll", onScroll);
-      window.clearTimeout(hold);
+      setText("0");
+      // One frame at 0, then morph to the truth. torph animates the change.
+      frame = window.requestAnimationFrame(() => setText(value));
     };
-    // Rendering law: a zeroed numeral is a false statement. The roll waits
-    // for the reader, but never holds the real value hostage — after the
-    // hold it reveals regardless, so any capture, crawler, or slow scroll
-    // sees the truth.
-    const hold = window.setTimeout(reveal, 5000);
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry?.isIntersecting) reveal();
+      if (entry?.isIntersecting) roll();
     });
-    // Fast programmatic scrolls can leapfrog the observer between frames;
-    // a passive scroll check guarantees the roll still lands.
-    const onScroll = () => {
-      const r = el.getBoundingClientRect();
-      if (r.top < window.innerHeight && r.bottom > 0) reveal();
-    };
     observer.observe(el);
-    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       observer.disconnect();
-      window.removeEventListener("scroll", onScroll);
-      window.clearTimeout(hold);
+      window.cancelAnimationFrame(frame);
     };
   }, [value]);
   return (
@@ -2967,13 +2976,12 @@ function LandingPage() {
           <h2>Ask for a feature. Watch it appear.</h2>
           <div className="act-lead">
             <p>
-              Almost anything in bb can be changed in a single prompt. Ask for a
-              task tracker and one appears as a panel, a <code>bb tasks</code>{" "}
-              command, and a skill.
+              Ask for a review queue. bb scaffolds the plugin, registers{" "}
+              <code>bb review</code>, writes the skill, and adds the panel to
+              your sidebar.
             </p>
             <p className="act-claim">
-              The Extensions page ships with bb: browse plugins others built, or
-              describe your own.
+              The result is a normal plugin you can read, change, and commit.
             </p>
           </div>
         </div>

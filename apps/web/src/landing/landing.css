@@ -136,6 +136,20 @@ html {
   scrollbar-gutter: stable both-edges;
 }
 
+/* Announced, never drawn. Used for live confirmations whose sighted
+   equivalent is a glyph change. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 body {
   background: var(--canvas);
   color: var(--ink);
@@ -233,16 +247,18 @@ code,
   align-items: center;
   justify-content: space-between;
   padding: 18px 0;
-  animation: hdr-down 0.55s var(--ease-out) both;
+  animation: hdr-down var(--duration-enter) var(--ease-out) both;
 }
 
-/* The header drops in first, then the hero copy rises in below it. */
+/* The header drops in first, then the hero copy rises in below it. Like the
+   hero, it moves rather than materialises — nav links are navigation, and a
+   frame without them is a frame the visitor cannot use. */
 @keyframes hdr-down {
   from {
-    opacity: 0;
+    transform: translateY(-6px);
   }
   to {
-    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -560,43 +576,34 @@ code,
   }
 }
 
-/* Staggered entrance for hero content — rises in just after the nav, matching
-   the app mock's rise so the whole header reads as one entrance. */
+/* Staggered entrance for hero content, matching the app mock's rise so the
+   whole header reads as one entrance.
+
+   Transform only, and the headline carries no delay. The page's claim must
+   be painted and sharp on the first frame: an opacity or blur ramp here
+   would mean a frame — and a screenshot, and the LCP element — in which
+   "The IDE that builds itself" does not exist. Motion moves the hero into
+   place; it never decides whether the hero is there. */
 @keyframes fade-up {
   from {
-    opacity: 0;
-    transform: translateY(16px);
-    filter: blur(6px);
+    transform: translateY(14px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }
 
 .hero > * {
-  animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: 0.12s;
+  animation: fade-up var(--duration-enter) var(--ease-out) both;
+  animation-delay: 0ms;
 }
 
-.hero > :nth-child(2) {
-  animation-delay: 0.21s;
+.hero > :is(:nth-child(2), :nth-child(3)) {
+  animation-delay: 70ms;
 }
 
-.hero > :nth-child(3) {
-  animation-delay: 0.3s;
-}
-
-.hero > :nth-child(4) {
-  animation-delay: 0.39s;
-}
-
-.hero > :nth-child(5) {
-  animation-delay: 0.48s;
-}
-
-.hero > :nth-child(6) {
-  animation-delay: 0.57s;
+.hero > :is(:nth-child(4), :nth-child(5), :nth-child(6)) {
+  animation-delay: 140ms;
 }
 
 .updates-callout {
@@ -622,7 +629,6 @@ code,
 .updates-callout:hover {
   background: var(--state-hover);
   border-color: color-mix(in oklab, var(--ink) 22%, var(--bg));
-  transform: translateY(-1px);
 }
 
 .updates-label {
@@ -724,9 +730,9 @@ code,
     transform 0.15s ease;
 }
 
+/* Provider marks are not controls; a lift reads as ornament. Ink alone. */
 .plogo:hover {
   color: var(--ink);
-  transform: translateY(-1px);
 }
 
 /* Collapsed "+N more" for the mobile provider row; desktop shows every logo. */
@@ -809,23 +815,18 @@ code,
   font-size: 14px;
   font-weight: 500;
   color: var(--dim);
-  opacity: 0.55;
-  filter: grayscale(1);
-  transition:
-    opacity var(--duration-hover) var(--ease-standard),
-    filter var(--duration-hover) var(--ease-standard);
   white-space: nowrap;
 }
 
-.company-proof-company:hover {
-  opacity: 1;
-  filter: none;
-}
-
+/* Fade the mark, not the name. Dropping the whole item to 55% took the 14px
+   label down with it, which read as unavailable content rather than quiet
+   proof — and these are not links, so nothing here reacts to hover. */
 .company-proof-company img {
   width: 20px;
   height: 20px;
   object-fit: contain;
+  opacity: 0.62;
+  filter: grayscale(1);
 }
 
 @media (max-width: 768px) {
@@ -2814,13 +2815,6 @@ code,
   animation: none;
 }
 
-@media (max-width: 900px) {
-  .build-demo {
-    grid-template-columns: 1fr;
-  }
-
-        }
-
 /* ── The gang: one window — sidebar rail and the open thread ─────── */
 
 /* The whole demo is a single product window: chrome bar on top, the
@@ -3011,7 +3005,8 @@ code,
     min-width: 0;
   }
 
-  .gang-demo {
+  /* The grid is on .gang-body; the demo root is a flex column. */
+  .gang-body {
     grid-template-columns: 1fr;
   }
 
@@ -3214,19 +3209,10 @@ code,
 }
 
 @media (max-width: 900px) {
-  .spawn-demo {
+  .spawn-demo .gang-body {
     grid-template-columns: 1fr;
-    gap: 18px;
   }
-
-        .spawn-cmd,
-  .spawn-cmd.typing {
-    max-width: none;
-    white-space: normal;
-    animation: none;
-  }
-
-  }
+}
 
 /* ── Mock plugin panels (hero sidebar IA views) ──────────────────── */
 
@@ -4009,8 +3995,17 @@ button.sub-row:focus-visible {
   animation: pr-scroll 46s linear infinite;
 }
 
-.pr-feed:hover .pr-feed-track {
+.pr-feed:hover .pr-feed-track,
+.pr-feed:focus-within .pr-feed-track {
   animation-play-state: paused;
+}
+
+/* The feed's rows are real links; a keyboard reader must be able to stop the
+   track and see where they are. */
+.pr-feed li a:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ink-strong) 45%, transparent);
+  outline-offset: -2px;
+  border-radius: var(--r-control);
 }
 
 @keyframes pr-scroll {
@@ -4135,7 +4130,10 @@ button.sub-row:focus-visible {
     grid-template-columns: 1fr;
   }
 
+  /* The desktop card is a fixed 440px. Setting only min-height left that
+     height in force, so the intended mobile reduction never happened. */
   .bento > li {
+    height: auto;
     min-height: 360px;
   }
 
@@ -4508,7 +4506,9 @@ button.sub-row:focus-visible {
     animation: none;
   }
 
-  .dm-spin {
+  .dm-spin,
+  .ctx-spin,
+  .gang-ctx-spin {
     animation: none;
   }
 
