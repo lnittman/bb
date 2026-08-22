@@ -3149,23 +3149,28 @@ function AgentChat() {
               <span className="tg-time">9:41</span>
             </span>
           </div>
-          {/* Telegram shows the bot typing while it works, so the reply does
-              not simply appear. The indicator occupies the same row the reply
-              lands in and hands off to it, rather than the two stacking. */}
-          <div className="tg-msg tg-in tg-typing" aria-hidden>
-            <span className="tg-bubble">
-              <span className="tg-dots">
-                <i />
-                <i />
-                <i />
+          {/* Telegram shows the bot typing while it works. The indicator and
+              the reply it becomes are stacked in one grid cell rather than
+              being two rows, so the handoff is a cross-fade in place. An
+              earlier version collapsed the indicator's height on a keyframe,
+              which reflowed everything under it — the reply visibly dropped
+              and then snapped back once the animation ended. */}
+          <div className="tg-swap">
+            <div className="tg-msg tg-in tg-typing" aria-hidden>
+              <span className="tg-bubble">
+                <span className="tg-dots">
+                  <i />
+                  <i />
+                  <i />
+                </span>
               </span>
-            </span>
-          </div>
-          <div className="tg-msg tg-in" style={{ animationDelay: "1.9s" }}>
-            <span className="tg-bubble">
-              On it. Spawning a worker thread.
-              <span className="tg-cmd mono">bb thread spawn</span>
-            </span>
+            </div>
+            <div className="tg-msg tg-in" style={{ animationDelay: "1.9s" }}>
+              <span className="tg-bubble">
+                On it. Spawning a worker thread.
+                <span className="tg-cmd mono">bb thread spawn</span>
+              </span>
+            </div>
           </div>
           <div className="tg-msg tg-in" style={{ animationDelay: "2.9s" }}>
             <div className="tg-thread">
@@ -4508,9 +4513,7 @@ function LandingPage() {
         <div className="cg-shell rail">
           <div className="cg-card">
             <div className="cg-panel">
-              <div className="cg-inner">
-                <PlateLocal />
-              </div>
+              <PlateLocal />
             </div>
             <h3>Stays on your machine</h3>
             <p>
@@ -4521,9 +4524,7 @@ function LandingPage() {
 
           <div className="cg-card">
             <div className="cg-panel">
-              <div className="cg-inner">
-                <PlateStack />
-              </div>
+              <PlateStack />
             </div>
             <h3>Every thread compounds</h3>
             <p>
@@ -4534,9 +4535,7 @@ function LandingPage() {
 
           <div className="cg-card">
             <div className="cg-panel">
-              <div className="cg-inner">
-                <PlateFleet />
-              </div>
+              <PlateFleet />
             </div>
             <h3>A fleet from one prompt</h3>
             <p>

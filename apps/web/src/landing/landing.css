@@ -1550,8 +1550,10 @@ code,
 .feed {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
+  /* Not a scroll area. The fixture is sized to the window; letting it scroll
+     invited a reader to drag a transcript that has no more to give and, on a
+     trackpad, captured the page scroll on the way past. */
+  overflow: hidden;
   padding: 22px 24px;
   display: flex;
   flex-direction: column;
@@ -2150,8 +2152,8 @@ code,
 .diff-body {
   flex: 1;
   min-height: 0;
-  overflow: auto;
-  overscroll-behavior: contain;
+  /* Same as the feed: a picture of the panel, not a scroller to fight. */
+  overflow: hidden;
   padding: 8px 0;
   font-family: var(--font-mono);
   font-size: 11.5px;
@@ -4993,7 +4995,12 @@ code,
   grid-template-columns: minmax(0, 1fr) minmax(0, 0.62fr);
   gap: 14px;
   font-size: 13.5px;
-  align-items: start;
+  /* `stretch`, not `start`. The divider is `.sub-main`'s left border, so its
+     height was whatever that pane's content happened to be — and switching
+     threads changed the content, which changed the rule's length. It read as
+     the border moving. Stretched, both panes are the row's full height and
+     the rule is a fixed edge between them. */
+  align-items: stretch;
 }
 
 /* Phones get one column: a 148px rail beside a 92px pane is two
@@ -5669,11 +5676,8 @@ button.sub-row:focus-visible {
   gap: 20px;
   padding: 28px;
   border-radius: 28px;
-  /* A step you can actually see. At 6% the shell was invisible and each
-     card's title and description read as loose text on the page rather than
-     as part of the card they belong to; the reference's shell is a clear
-     light grey against white and that legibility is the point of it. This
-     still re-tints with the theme — it is the plates inside that cannot. */
+  /* The shell does re-tint with the theme — it is only the plate grounds
+     inside it that have to stay literal. */
   background: color-mix(in oklab, var(--ink-strong) 13%, var(--canvas));
   text-align: left;
 }
@@ -5688,32 +5692,29 @@ button.sub-row:focus-visible {
    ground with light strokes and dark fills; derived from `--canvas` it would
    go pale in light mode and the plates' depth ordering would invert. Same
    exception `--tg-card` takes for Telegram's own surface colour. */
+/* One box per plate. The reference nests a slate shell around a near-black
+   panel around a softer inner panel; three borders deep reads as packaging,
+   so the outer two are gone and the softer ground is the card itself, at the
+   full height the three of them used to share.
+
+   The literal stays: this artwork is drawn with light strokes and near-black
+   fills, and derived from `--canvas` it would go pale in light mode and lose
+   its depth ordering. Same exception `--tg-card` takes for Telegram. */
 .cg-panel {
-  height: 420px;
+  height: 460px;
   flex: none;
-  padding: 24px;
+  padding: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 22px;
-  background: #0b0b0b;
-  overflow: clip;
-}
-
-.cg-inner {
-  height: 100%;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 14px;
   background: #111;
   overflow: clip;
 }
 
 .cg-plate {
-  width: 240px;
-  height: 240px;
+  width: 270px;
+  height: 270px;
   flex: none;
   /* The drop shadows in the artwork reach past the viewBox. */
   overflow: visible;
@@ -5789,7 +5790,7 @@ button.sub-row:focus-visible {
   }
 
   .cg-panel {
-    height: 300px;
+    height: 320px;
   }
 
   .cg-plate {
@@ -6689,6 +6690,24 @@ button.sub-row:focus-visible {
   align-self: flex-start;
 }
 
+/* The typing indicator and the reply it turns into occupy one grid cell, so
+   the handoff is a cross-fade in place and nothing below either of them
+   moves. Stacking them as two rows and collapsing the first was what made the
+   reply drop and snap back. */
+.tg-swap {
+  display: grid;
+}
+
+.tg-swap > * {
+  grid-area: 1 / 1;
+}
+
+/* The reply defines the cell's height; the indicator is smaller and simply
+   sits in it. */
+.tg-swap > .tg-typing {
+  align-self: start;
+}
+
 /* The bot typing. Three dots on a stagger inside a bubble the same shape as
    the reply that replaces it, so the reply reads as that message resolving
    rather than a second one arriving. It runs once per loop and then leaves —
@@ -6711,9 +6730,6 @@ button.sub-row:focus-visible {
   36%,
   100% {
     opacity: 0;
-    height: 0;
-    margin: 0;
-    overflow: hidden;
   }
 }
 
