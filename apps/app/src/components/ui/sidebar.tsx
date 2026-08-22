@@ -122,12 +122,9 @@ function getSidebarMobileMotionNodes(): {
   };
 }
 
-function getSidebarMobilePanelTranslate(
-  progress: number,
-  side: "left" | "right",
-): string {
+function getSidebarMobilePanelTranslate(progress: number): string {
   const hiddenPercent = (1 - progress) * 100;
-  return side === "left" ? `-${hiddenPercent}%` : `${hiddenPercent}%`;
+  return `-${hiddenPercent}%`;
 }
 
 function applySidebarMobileDragStyles({
@@ -138,11 +135,10 @@ function applySidebarMobileDragStyles({
   settling: boolean;
 }) {
   const { panel, backdrop } = getSidebarMobileMotionNodes();
-  const side = panel?.dataset.side === "right" ? "right" : "left";
 
   if (panel !== null) {
     panel.setAttribute("data-vaul-animate", "false");
-    panel.style.translate = getSidebarMobilePanelTranslate(progress, side);
+    panel.style.translate = getSidebarMobilePanelTranslate(progress);
     panel.style.transition = settling
       ? SIDEBAR_MOBILE_PANEL_SETTLE_TRANSITION
       : "none";
@@ -471,6 +467,17 @@ type SidebarContext = {
 const SidebarContext = React.createContext<SidebarContext | null>(null);
 
 /**
+ * The desktop sidebar width, as a CSS length. Its own context (not a field of
+ * {@link SidebarContext}) because a resize drag updates it on every animation
+ * frame, and only {@link Sidebar} needs to re-render for that. `Sidebar` writes
+ * it as `--sidebar-width` directly on the two elements that consume it, never
+ * on an ancestor: `--sidebar-width` is registered as non-inherited in
+ * theme.css, so a per-frame change restyles those two elements instead of the
+ * whole app subtree.
+ */
+const SidebarWidthContext = React.createContext<string>(SIDEBAR_WIDTH);
+
+/**
  * "Is the sidebar visible" as its own boolean context. The full
  * {@link SidebarContext} value changes on every provider commit (the mobile
  * close flips the closing flag, then four states), and its readers include
@@ -536,6 +543,8 @@ const SidebarProvider = React.forwardRef<
     defaultOpen?: boolean;
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
+    /** Desktop sidebar width as a CSS length. Defaults to 16rem. */
+    width?: string;
   }
 >(
   (
@@ -543,6 +552,7 @@ const SidebarProvider = React.forwardRef<
       defaultOpen = true,
       open: openProp,
       onOpenChange: setOpenProp,
+      width = SIDEBAR_WIDTH,
       className,
       style,
       children,
@@ -753,33 +763,34 @@ const SidebarProvider = React.forwardRef<
     return (
       <SidebarContext.Provider value={contextValue}>
         <SidebarShowingContext.Provider value={isSidebarShowing}>
-          {/* Match the agent message action bar's tooltip timing (300ms open
+          <SidebarWidthContext.Provider value={width}>
+            {/* Match the agent message action bar's tooltip timing (300ms open
             delay + Radix's default skip window) so sidebar icon tooltips feel
             the same instead of flashing instantly on hover. disableHoverableContent
             dismisses the tooltip the moment the pointer leaves the trigger, so it
             never lingers/floats while the mouse moves on. */}
-          <TooltipProvider delayDuration={300} disableHoverableContent>
-            <div
-              style={
-                {
-                  "--sidebar-width": SIDEBAR_WIDTH,
-                  "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
-                  ...style,
-                } as React.CSSProperties
-              }
-              className={cn(
-                // Fill the app root instead of re-measuring the viewport here.
-                // app.css owns the browser-mode-specific root height, while fixed
-                // sidebar panels read the shared --bb-shell-height override.
-                "group/sidebar-wrapper flex h-full min-h-0 w-full has-[[data-variant=inset]]:bg-sidebar",
-                className,
-              )}
-              ref={ref}
-              {...props}
-            >
-              {children}
-            </div>
-          </TooltipProvider>
+            <TooltipProvider delayDuration={300} disableHoverableContent>
+              <div
+                style={
+                  {
+                    "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+                    ...style,
+                  } as React.CSSProperties
+                }
+                className={cn(
+                  // Fill the app root instead of re-measuring the viewport here.
+                  // app.css owns the browser-mode-specific root height, while fixed
+                  // sidebar panels read the shared --bb-shell-height override.
+                  "group/sidebar-wrapper flex h-full min-h-0 w-full has-[[data-variant=inset]]:bg-sidebar",
+                  className,
+                )}
+                ref={ref}
+                {...props}
+              >
+                {children}
+              </div>
+            </TooltipProvider>
+          </SidebarWidthContext.Provider>
         </SidebarShowingContext.Provider>
       </SidebarContext.Provider>
     );
@@ -787,26 +798,8 @@ const SidebarProvider = React.forwardRef<
 );
 SidebarProvider.displayName = "SidebarProvider";
 
-const Sidebar = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<"div"> & {
-    side?: "left" | "right";
-    variant?: "sidebar" | "floating" | "inset";
-    collapsible?: "offcanvas" | "icon" | "none";
-  }
->(
-  (
-    {
-      side = "left",
-      variant = "sidebar",
-      collapsible = "offcanvas",
-      className,
-      style,
-      children,
-      ...props
-    },
-    ref,
-  ) => {
+const Sidebar = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
+  ({ className, style, children, ...props }, ref) => {
     const {
       isCompactViewport,
       state,
@@ -819,6 +812,9 @@ const Sidebar = React.forwardRef<
       suppressMobileCloseAnimation,
       setSuppressMobileCloseAnimation,
     } = useSidebar();
+    const width = React.useContext(SidebarWidthContext);
+    // Written on the consuming elements themselves (see SidebarWidthContext).
+    const widthStyle = { "--sidebar-width": width } as React.CSSProperties;
     const handleOpenMobileChange = React.useCallback(
       (nextOpen: boolean) => {
         if (nextOpen) {
@@ -841,13 +837,13 @@ const Sidebar = React.forwardRef<
     >(() => {
       if (shouldSuppressMobileCloseAnimation) {
         return {
-          translate: side === "left" ? "-100%" : "100%",
+          translate: "-100%",
           transition: "none",
         };
       }
 
       return undefined;
-    }, [shouldSuppressMobileCloseAnimation, side]);
+    }, [shouldSuppressMobileCloseAnimation]);
     const mobileBackdropStyle = React.useMemo<
       React.CSSProperties | undefined
     >(() => {
@@ -862,22 +858,6 @@ const Sidebar = React.forwardRef<
       return undefined;
     }, [shouldSuppressMobileCloseAnimation]);
 
-    if (collapsible === "none") {
-      return (
-        <div
-          className={cn(
-            "flex h-full w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground",
-            className,
-          )}
-          ref={ref}
-          style={style}
-          {...props}
-        >
-          {children}
-        </div>
-      );
-    }
-
     if (isCompactViewport) {
       // The mobile drawer stays mounted across open/close (#1261). Closing
       // translates the panel off-screen instead of unmounting it, so a
@@ -889,8 +869,6 @@ const Sidebar = React.forwardRef<
       return (
         <SidebarMobilePanel
           ref={ref}
-          side={side}
-          variant={variant}
           open={openMobile}
           onOpenChange={handleOpenMobileChange}
           onDismiss={closeMobileSidebar}
@@ -911,20 +889,19 @@ const Sidebar = React.forwardRef<
         ref={ref}
         className="group peer text-sidebar-foreground"
         data-state={state}
-        data-collapsible={state === "collapsed" ? collapsible : ""}
-        data-variant={variant}
-        data-side={side}
+        data-collapsible={state === "collapsed" ? "offcanvas" : ""}
+        data-variant="sidebar"
+        data-side="left"
       >
         {/* This is what handles the sidebar gap on desktop */}
         <div
           data-sidebar="gap"
+          style={widthStyle}
           className={cn(
             "relative hidden h-full w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear md:block",
             "group-data-[collapsible=offcanvas]:w-0",
             "group-data-[side=right]:rotate-180",
-            variant === "floating" || variant === "inset"
-              ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-              : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)",
+            "group-data-[collapsible=icon]:w-(--sidebar-width-icon)",
           )}
         />
         <div
@@ -935,18 +912,13 @@ const Sidebar = React.forwardRef<
             // The visibility leg hides the fully collapsed offcanvas panel
             // after the slide-out so its mounted rows stop painting (#1261);
             // the zero delay on expand shows it again immediately.
-            "fixed inset-y-0 z-10 flex h-(--bb-shell-height) w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground [transition:left_200ms_linear,right_200ms_linear,width_200ms_linear,visibility_0s_linear_0s]",
+            "fixed inset-y-0 z-10 flex h-(--bb-shell-height) w-(--sidebar-width) select-none flex-col bg-sidebar text-sidebar-foreground [transition:left_200ms_linear,right_200ms_linear,width_200ms_linear,visibility_0s_linear_0s]",
             "group-data-[collapsible=offcanvas]:invisible group-data-[collapsible=offcanvas]:[transition:left_200ms_linear,right_200ms_linear,width_200ms_linear,visibility_0s_linear_200ms]",
-            side === "left"
-              ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-              : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-            // Adjust the padding for floating and inset variants.
-            variant === "floating" || variant === "inset"
-              ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
-              : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) border-border-seam group-data-[side=left]:border-r group-data-[side=right]:border-l",
+            "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]",
+            "group-data-[collapsible=icon]:w-(--sidebar-width-icon) border-border-seam group-data-[side=left]:border-r group-data-[side=right]:border-l",
             className,
           )}
-          style={style}
+          style={{ ...widthStyle, ...style }}
           {...props}
         >
           <div
@@ -994,8 +966,6 @@ function suppressNextSidebarPanelDragClick() {
 }
 
 interface SidebarMobilePanelProps extends React.ComponentProps<"div"> {
-  side: "left" | "right";
-  variant: "sidebar" | "floating" | "inset";
   open: boolean;
   onOpenChange: (open: boolean) => void;
   // Deferred close: starts the slide-out transition immediately and flips the
@@ -1059,8 +1029,6 @@ const SidebarMobilePanel = React.forwardRef<
 >(
   (
     {
-      side,
-      variant,
       open,
       onOpenChange,
       onDismiss,
@@ -1244,7 +1212,7 @@ const SidebarMobilePanel = React.forwardRef<
 
       const deltaX = clientX - session.startX;
       const deltaY = clientY - session.startY;
-      const closeDelta = side === "left" ? -deltaX : deltaX;
+      const closeDelta = -deltaX;
       const absDeltaX = Math.abs(deltaX);
       const absDeltaY = Math.abs(deltaY);
 
@@ -1309,8 +1277,7 @@ const SidebarMobilePanel = React.forwardRef<
       }
       suppressNextSidebarPanelDragClick();
 
-      const closeVelocity =
-        side === "left" ? -session.velocityX : session.velocityX;
+      const closeVelocity = -session.velocityX;
       const shouldClose =
         session.lastProgress <= 1 - SIDEBAR_MOBILE_DRAG_CLOSE_RATIO ||
         (session.lastProgress <=
@@ -1542,24 +1509,20 @@ const SidebarMobilePanel = React.forwardRef<
           data-sidebar-state={open ? "expanded" : "collapsed"}
           data-state={open ? "open" : "closed"}
           data-collapsible=""
-          data-variant={variant}
-          data-side={side}
+          data-variant="sidebar"
+          data-side="left"
           // Kept although vaul is gone: SidebarInset's swipe helpers and the
           // swipe-target guards select the mobile panel by this attribute.
-          data-vaul-drawer-direction={side}
+          data-vaul-drawer-direction="left"
           className={cn(
             // Fixed: a percentage height would resolve against the short
             // initial containing block, so it reads the shell unit directly.
             // touch-pan-y hands horizontal touch moves to the drag-to-close
             // handler while leaving vertical list scrolling native.
-            "group fixed inset-y-0 z-40 flex h-(--bb-shell-height) w-(--sidebar-width-mobile) touch-pan-y flex-col bg-sidebar text-sidebar-foreground outline-none will-change-[translate]",
+            "group fixed inset-y-0 z-40 flex h-(--bb-shell-height) w-(--sidebar-width-mobile) touch-pan-y select-none flex-col bg-sidebar text-sidebar-foreground outline-none will-change-[translate]",
             SIDEBAR_MOBILE_PANEL_TRANSITION_CLASS,
-            side === "left"
-              ? "left-0 data-[state=closed]:-translate-x-full"
-              : "right-0 data-[state=closed]:translate-x-full",
-            variant === "floating" || variant === "inset"
-              ? "p-2"
-              : "border-border-seam data-[side=left]:border-r data-[side=right]:border-l",
+            "left-0 data-[state=closed]:-translate-x-full",
+            "border-border-seam data-[side=left]:border-r data-[side=right]:border-l",
             className,
           )}
           style={
@@ -1599,7 +1562,11 @@ const SidebarTrigger = React.forwardRef<
       data-sidebar="trigger"
       variant="ghost"
       size="icon"
-      className={cn(COARSE_POINTER_HEADER_ICON_BUTTON_CLASS, className)}
+      className={cn(
+        COARSE_POINTER_HEADER_ICON_BUTTON_CLASS,
+        "select-none",
+        className,
+      )}
       aria-expanded={ariaExpanded ?? (isCompactViewport ? openMobile : open)}
       onClick={(event) => {
         onClick?.(event);
@@ -2196,7 +2163,7 @@ const SidebarContent = React.forwardRef<
 });
 SidebarContent.displayName = "SidebarContent";
 
-export type SidebarStickyTierKind = "label" | "project" | "parent";
+type SidebarStickyTierKind = "label" | "project" | "parent";
 
 type SidebarStickyStackProps = React.ComponentProps<"div">;
 
@@ -2259,9 +2226,7 @@ const SidebarStickyTier = React.forwardRef<
 });
 SidebarStickyTier.displayName = "SidebarStickyTier";
 
-interface SidebarStickyGroupProps extends React.ComponentProps<"div"> {
-  asChild?: boolean;
-}
+type SidebarStickyGroupProps = React.ComponentProps<"div">;
 
 /**
  * The containing block for one sticky group: a sticky header tier plus its
@@ -2271,17 +2236,13 @@ interface SidebarStickyGroupProps extends React.ComponentProps<"div"> {
  * overlap instead. Every nesting level (section/label, project, parent thread,
  * worktree) wraps its header + body in one of these so the shove-out behavior
  * is structural, not per-tier boilerplate that a new tier can forget.
- *
- * Pass `asChild` to project the wrapper onto a caller-owned element (e.g. the
- * project tier's `<li>` SidebarMenuItem) instead of emitting a `<div>`.
  */
 const SidebarStickyGroup = React.forwardRef<
   HTMLDivElement,
   SidebarStickyGroupProps
->(({ asChild = false, className, ...props }, ref) => {
-  const Comp = asChild ? Slot : "div";
+>(({ className, ...props }, ref) => {
   return (
-    <Comp
+    <div
       ref={ref}
       data-sidebar-sticky-group=""
       className={cn(className)}
@@ -2337,7 +2298,7 @@ const SidebarMenuButton = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<"button"> & {
     asChild?: boolean;
-    tooltip?: string | React.ComponentProps<typeof TooltipContent>;
+    tooltip?: React.ComponentProps<typeof TooltipContent>;
   }
 >(({ asChild = false, tooltip, className, ...props }, ref) => {
   const Comp = asChild ? Slot : "button";
@@ -2356,12 +2317,6 @@ const SidebarMenuButton = React.forwardRef<
     return button;
   }
 
-  if (typeof tooltip === "string") {
-    tooltip = {
-      children: tooltip,
-    };
-  }
-
   return (
     <Tooltip>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
@@ -2378,10 +2333,8 @@ SidebarMenuButton.displayName = "SidebarMenuButton";
 
 const SidebarMenuSkeleton = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div"> & {
-    showIcon?: boolean;
-  }
->(({ className, showIcon = false, ...props }, ref) => {
+  React.ComponentProps<"div">
+>(({ className, ...props }, ref) => {
   const skeletonId = React.useId();
 
   // Stable varied width between 50 to 90%.
@@ -2400,12 +2353,6 @@ const SidebarMenuSkeleton = React.forwardRef<
       className={cn("rounded-md h-8 flex gap-2 px-2 items-center", className)}
       {...props}
     >
-      {showIcon && (
-        <Skeleton
-          className="size-4 rounded-md"
-          data-sidebar="menu-skeleton-icon"
-        />
-      )}
       <Skeleton
         className="h-4 flex-1 max-w-[--skeleton-width]"
         data-sidebar="menu-skeleton-text"

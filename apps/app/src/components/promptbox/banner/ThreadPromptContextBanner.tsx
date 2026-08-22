@@ -20,7 +20,7 @@ import {
 import {
   activityIconClass,
   activityRowClass,
-} from "@/components/ui/activity-row-styles";
+} from "@bb/shared-ui/activity-row-styles";
 import { WorkspaceChangesList } from "@/components/thread/WorkspaceChangesList";
 import {
   formatChangeSummary,
@@ -33,6 +33,7 @@ import { cn } from "@bb/shared-ui/lib/utils";
 import { Icon, type IconName } from "@bb/shared-ui/icon";
 import {
   getPullRequestAttentionDisplay,
+  getPullRequestGithubCheckStatus,
   PULL_REQUEST_STATE_DISPLAY,
 } from "@/lib/pull-request-display";
 import { PullRequestStatusPill } from "@/components/pull-request/PullRequestStatusPill";
@@ -79,7 +80,7 @@ export interface ThreadPromptParentThreadSection {
  * caller is responsible for filtering down to active children — the banner
  * just renders what it's given.
  */
-export interface ThreadPromptChildThreadItem {
+interface ThreadPromptChildThreadItem {
   id: string;
   title: string;
   href: string;
@@ -159,7 +160,7 @@ export type ThreadPromptContextBannerExpandedSection =
 export const THREAD_PROMPT_CONTEXT_BANNER_ROW_HEIGHT =
   PROMPT_STACK_CARD_ROW_HEIGHT;
 
-export interface ThreadPromptContextBannerProps {
+interface ThreadPromptContextBannerProps {
   gitSection: ThreadPromptGitSection | null;
   /**
    * True while the workspace status query for this thread is in flight. Holds
@@ -634,9 +635,12 @@ function PullRequestBannerLink({
       className={cn(
         "flex items-center gap-1.5 text-xs text-muted-foreground no-underline transition-colors hover:bg-state-hover hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
         PROMPT_STACK_INLAY_SEGMENT_CLASS,
-        // Preserve the checked status pill (min-w-9) plus the inlay's px-2.
-        // Labels may still truncate, but the two status glyphs must not clip.
-        "min-w-13 overflow-hidden",
+        // Preserve the status pill plus the inlay's px-2. Open/draft PRs with
+        // checks need two glyphs; terminal/no-check PRs need only one.
+        getPullRequestGithubCheckStatus(pullRequest) !== null
+          ? "min-w-13"
+          : "min-w-8",
+        "overflow-hidden",
       )}
     >
       <PullRequestStatusPill pullRequest={pullRequest} className="h-4" />

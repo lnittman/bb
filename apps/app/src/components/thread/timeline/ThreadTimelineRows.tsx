@@ -10,6 +10,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import type { ReactNode } from "react";
+import { useComposedRefs } from "@radix-ui/react-compose-refs";
 import { useLocation } from "react-router-dom";
 import {
   isBackgroundAgentTaskType,
@@ -44,12 +45,13 @@ import {
   type TimelineViewWorkRow,
 } from "@bb/thread-view";
 import { cn } from "@bb/shared-ui/lib/utils";
+import { useIsCompactViewport } from "@bb/shared-ui/hooks/use-compact-viewport";
 import {
   collectTimelineAutoExpansionRowIds,
   isNonExpandableSummary,
   isRowExpandable,
-} from "./timeline-auto-expand.js";
-import { isRunningThreadRuntimeDisplayStatus } from "./thread-runtime-status.js";
+} from "@bb/client-core";
+import { isRunningThreadRuntimeDisplayStatus } from "@bb/client-core";
 import type {
   ThreadTimelineAddToChatHandler,
   ThreadTimelineEditMessageHandler,
@@ -62,7 +64,6 @@ import type {
   ThreadTimelineImageViewSrcResolver,
   ThreadTimelineConsumerMessageAction,
   ThreadTimelinePluginMessageAction,
-  ThreadTimelineTheme,
   ThreadTimelineUnreadDividerPlacement,
   UserAttachmentImageSrcResolver,
 } from "./types.js";
@@ -85,7 +86,10 @@ import { Button } from "@bb/shared-ui/button";
 import { AutoHeightContainer } from "../../ui/height-transition.js";
 import { Icon, type IconName } from "@bb/shared-ui/icon";
 import type { PromptMentionLinkResolver } from "@/components/promptbox/editor/prompt-mention-link";
-import { useBottomAnchoredScroll } from "@/components/ui/bottom-anchored-scroll-body.js";
+import {
+  TimelineScrollRestoreRowIdContext,
+  useBottomAnchoredScroll,
+} from "@/components/ui/bottom-anchored-scroll-body.js";
 import {
   collectSearchedMessageAncestorRowIds,
   readSearchMessageTarget,
@@ -95,7 +99,7 @@ import {
   joinSignatureParts,
   timelineRowRenderSignature,
   timelineRowsSignature,
-} from "./timelineRowSignatures.js";
+} from "@bb/client-core";
 import {
   TOP_LEVEL_TIMELINE_ROW_INTRINSIC_SIZE_CLASS_NAME,
   timelineRowContainmentStyle,
@@ -121,8 +125,16 @@ import {
   buildMessageDirectiveRegistry,
   MessageDirectiveRegistryProvider,
 } from "@/components/ui/markdown-message-directives.js";
+import {
+  TimelineWindowedItemsLoader,
+  TimelineWindowingMeasurementsContext,
+  TimelineWindowingScrollRootContext,
+  type TimelineWindowedItemRenderState,
+} from "./TimelineWindowedItemsLoader.js";
 
 export interface ThreadTimelineRowsProps {
+  /** Enable the opt-in timeline row virtualizer. */
+  timelineWindowingEnabled?: boolean;
   /**
    * Row ids to start expanded on first render. Non-recursive: an id only
    * applies to the row it names — bundle/step/turn children are unaffected.
@@ -186,8 +198,9 @@ export interface ThreadTimelineRowsProps {
   hasOlderTimelineRows?: boolean;
   isLoadingOlderTimelineRows?: boolean;
   onLoadOlderRows?: () => Promise<void> | void;
-  themeType?: ThreadTimelineTheme;
   timelineRows: TimelineRow[];
+  /** Outline destination kept mounted while timeline windowing is enabled. */
+  timelineNavigationTargetRowId?: string | null;
   threadId?: string;
   threadRuntimeDisplayStatus: ThreadRuntimeDisplayStatus;
   /** Omit for standalone initial-unread rendering, pass false for live updates. */
@@ -250,7 +263,6 @@ interface TimelineRendererStaticContextValue {
   resolveMentionLink: PromptMentionLinkResolver | undefined;
   resolveSegmentLinkHref: TimelineTitleLinkResolver | undefined;
   resolveUserAttachmentImageSrc: UserAttachmentImageSrcResolver | undefined;
-  themeType: ThreadTimelineTheme;
   threadId: string | undefined;
   workspaceRootPath: string | undefined;
 }
@@ -270,6 +282,7 @@ interface TimelineRowsListProps {
   compactActivityIntents: boolean;
   hasOlderTimelineRows?: boolean;
   isLoadingOlderTimelineRows?: boolean;
+  navigationTargetRowId?: string | null;
   onLoadOlderRows?: () => Promise<void> | void;
   rows: readonly ThreadTimelineViewRow[];
   scopeActive: boolean;
@@ -352,10 +365,7 @@ interface ActiveSummaryTreatmentArgs {
 
 interface TimelineRowTitleRenderStateArgs extends ActiveSummaryTreatmentArgs {
   compactActivityIntents: boolean;
-  spacing: TimelineRowsListSpacing;
 }
-
-interface TimelineRowTitleOptionsArgs extends ActiveSummaryTreatmentArgs {}
 
 interface TimelineRowTitleRenderStateCache {
   key: string;
@@ -447,6 +457,8 @@ const StreamingAssistantMessageIdContext = createContext<string | null>(null);
 const EMPTY_ROW_ID_SET: ReadonlySet<string> = new Set<string>();
 const TimelineSearchExpansionContext =
   createContext<ReadonlySet<string>>(EMPTY_ROW_ID_SET);
+const TimelineWindowingEnabledContext = createContext(false);
+const TIMELINE_TERMINAL_EXPANSION_RETENTION = 24;
 const SKILL_FILE_NAME = "SKILL.md";
 
 function useTimelineRendererStaticContext(): TimelineRendererStaticContextValue {
@@ -495,7 +507,6 @@ function buildTimelineRowTitleRenderState({
   compactActivityIntents,
   row,
   scopeActive,
-  spacing,
 }: TimelineRowTitleRenderStateArgs): TimelineRowTitleRenderState {
   if (compactActivityIntents && shouldRenderCompactActivityIntentRows(row)) {
     const titles = buildTimelineActivityIntentTitles(row);
@@ -722,7 +733,7 @@ function timelineRowTitleOptions({
   activeLatestBundleId,
   row,
   scopeActive,
-}: TimelineRowTitleOptionsArgs): BuildTimelineRowTitleOptions {
+}: ActiveSummaryTreatmentArgs): BuildTimelineRowTitleOptions {
   const useActiveBundleLabel = isActiveLatestBundleSummary({
     activeLatestBundleId,
     row,
@@ -807,7 +818,7 @@ function isForkSeedAnchorRow(row: TimelineConversationViewRow): boolean {
  * timeline. Completed turn details and delegated-agent output intentionally do
  * not expose message actions, so they cannot claim the mobile inline footer.
  */
-export function findLastActionableAssistantMessageId(
+function findLastActionableAssistantMessageId(
   rows: readonly ThreadTimelineViewRow[],
 ): string | null {
   let lastMessageId: string | null = null;
@@ -875,7 +886,7 @@ export function findStreamingAssistantMessageId(
 }
 
 /** Finds the final regular user-authored message with a mobile action footer. */
-export function findLastActionableUserMessageId(
+function findLastActionableUserMessageId(
   rows: readonly ThreadTimelineViewRow[],
   canAddAttachments: boolean,
 ): string | null {
@@ -1220,12 +1231,9 @@ const ConversationRowContent = memo(function ConversationRowContent({
       showActions={showAssistantMessageActions}
       mobileActionDisplay={mobileActionDisplay}
       streaming={streaming}
-      sourceSeqEnd={row.sourceSeqEnd}
-      sourceSeqStart={row.sourceSeqStart}
       text={row.text}
       threadId={row.threadId}
       turnId={row.turnId}
-      turnRequest={row.turnRequest}
       workspaceRootPath={workspaceRootPath}
     />
   );
@@ -1306,7 +1314,6 @@ function TimelineExpandableBody({
     onOpenLocalFileLink,
     projectId,
     resolveUserAttachmentImageSrc,
-    themeType,
     workspaceRootPath,
     resolveImageViewSrc,
   } = useTimelineRendererStaticContext();
@@ -1399,12 +1406,9 @@ function TimelineExpandableBody({
                   showActions={false}
                   mobileActionDisplay="overflow"
                   streaming={delegationActive}
-                  sourceSeqEnd={row.sourceSeqEnd}
-                  sourceSeqStart={row.sourceSeqStart}
                   text={row.output}
                   threadId={row.threadId}
                   turnId={row.turnId}
-                  turnRequest={null}
                   workspaceRootPath={workspaceRootPath}
                 />
               ) : null}
@@ -1416,7 +1420,6 @@ function TimelineExpandableBody({
         <WorkRowBody
           row={row}
           resolveImageViewSrc={resolveImageViewSrc}
-          themeType={themeType}
           workspaceRootPath={workspaceRootPath}
         />
       );
@@ -1762,7 +1765,6 @@ function TimelineRowView({
     compactActivityIntents,
     row,
     scopeActive,
-    spacing,
   });
 
   if (row.kind === "conversation") {
@@ -1987,31 +1989,76 @@ function buildTimelineRowsListItems({
  * `useArmTopLevelTimelineRowContainment`) and the per-row intrinsic size
  * estimate.
  */
-function TopLevelTimelineRowWrapper({
+function TimelineRowItemWrapper({
   children,
   row,
+  spacing,
+  windowedState,
 }: {
   children: ReactNode;
   row: ThreadTimelineViewRow;
+  spacing: TimelineRowsListSpacing;
+  windowedState: TimelineWindowedItemRenderState;
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
-  useArmTopLevelTimelineRowContainment(wrapperRef);
+  const composedRef = useComposedRefs(wrapperRef, windowedState.itemRef);
+  const isTopLevel = spacing === "top-level";
+  useArmTopLevelTimelineRowContainment(
+    wrapperRef,
+    isTopLevel && !windowedState.windowingEnabled,
+  );
   return (
     <div
-      ref={wrapperRef}
+      ref={composedRef}
       data-timeline-row-id={row.id}
-      className={TOP_LEVEL_TIMELINE_ROW_INTRINSIC_SIZE_CLASS_NAME}
-      style={timelineRowContainmentStyle(row)}
+      data-timeline-window-key={row.id}
+      data-index={windowedState.itemIndex}
+      data-timeline-windowed-realized={
+        windowedState.windowingEnabled
+          ? String(windowedState.isRealized)
+          : undefined
+      }
+      className={
+        isTopLevel && !windowedState.windowingEnabled
+          ? TOP_LEVEL_TIMELINE_ROW_INTRINSIC_SIZE_CLASS_NAME
+          : undefined
+      }
+      style={
+        windowedState.itemStyle ??
+        (isTopLevel && !windowedState.windowingEnabled
+          ? timelineRowContainmentStyle(row)
+          : undefined)
+      }
     >
       {children}
     </div>
   );
 }
 
+function estimateTimelineWindowedRowHeight(
+  row: ThreadTimelineViewRow,
+  spacing: TimelineRowsListSpacing,
+): number {
+  if (row.kind !== "conversation") {
+    return spacing === "top-level" ? 20 : spacing === "bundle" ? 24 : 28;
+  }
+  // Estimates only seed never-realized placeholders. ResizeObserver replaces
+  // them with exact stable-id measurements as soon as a row enters overscan.
+  const charsPerLine =
+    spacing === "top-level" ? (row.role === "user" ? 76 : 95) : 64;
+  let lineCount = Math.max(1, Math.ceil(row.text.length / charsPerLine));
+  if (row.role === "user") {
+    lineCount = Math.min(lineCount, 15);
+    return 50 + lineCount * 23;
+  }
+  return 20 + lineCount * 23;
+}
+
 function TimelineRowsList({
   compactActivityIntents,
   hasOlderTimelineRows,
   isLoadingOlderTimelineRows,
+  navigationTargetRowId,
   onLoadOlderRows,
   rows,
   scopeActive,
@@ -2022,6 +2069,16 @@ function TimelineRowsList({
   unreadDividerPlacement,
 }: TimelineRowsListProps) {
   const { threadId } = useTimelineRendererStaticContext();
+  const isCompactViewport = useIsCompactViewport();
+  const bottomAnchor = useBottomAnchoredScroll();
+  const scrollRestoreRowId = useContext(TimelineScrollRestoreRowIdContext);
+  const detailScrollRoot = useContext(TimelineWindowingScrollRootContext);
+  const timelineWindowingEnabled = useContext(TimelineWindowingEnabledContext);
+  const inheritedMeasurements = useContext(
+    TimelineWindowingMeasurementsContext,
+  );
+  const [standaloneMeasurements] = useState(() => new Map<string, number>());
+  const measurements = inheritedMeasurements ?? standaloneMeasurements;
   const searchExpandedRowIds = useTimelineSearchExpansionRowIds(rows);
   const stableSearchExpandedRowIds = useStableReadonlySet(searchExpandedRowIds);
   useScrollToSearchedMessage(rows, threadId, {
@@ -2037,6 +2094,51 @@ function TimelineRowsList({
     () => buildTimelineRowsListItems({ rows, unreadDividerPlacement }),
     [rows, unreadDividerPlacement],
   );
+  const itemKeys = useMemo(
+    () =>
+      items.map((item) =>
+        item.kind === "row" ? item.row.id : `divider:${item.id}`,
+      ),
+    [items],
+  );
+  const alwaysMountedKeys = useMemo(() => {
+    const keys = new Set<string>();
+    const lastRow = rows.at(-1);
+    if (lastRow !== undefined) {
+      keys.add(lastRow.id);
+    }
+    for (const item of items) {
+      if (item.kind === "unread-divider") {
+        keys.add(`divider:${item.id}`);
+      }
+    }
+    for (const rowId of stableSearchExpandedRowIds) {
+      keys.add(rowId);
+    }
+    if (spacing === "top-level" && scrollRestoreRowId !== null) {
+      keys.add(scrollRestoreRowId);
+    }
+    if (
+      spacing === "top-level" &&
+      timelineWindowingEnabled &&
+      navigationTargetRowId != null
+    ) {
+      keys.add(navigationTargetRowId);
+    }
+    return keys;
+  }, [
+    items,
+    rows,
+    scrollRestoreRowId,
+    spacing,
+    stableSearchExpandedRowIds,
+    navigationTargetRowId,
+    timelineWindowingEnabled,
+  ]);
+  const getWindowingScrollElement =
+    detailScrollRoot?.getScrollElement ??
+    bottomAnchor?.getScrollElement ??
+    null;
   return (
     <TimelineSearchExpansionContext.Provider value={stableSearchExpandedRowIds}>
       <div
@@ -2047,39 +2149,70 @@ function TimelineRowsList({
         )}
         data-timeline-row-list={spacing}
       >
-        {items.map((item) => {
-          if (item.kind === "unread-divider") {
-            return (
-              <TimelineUnreadDivider
-                key={item.id}
-                autoScroll={unreadDividerAutoScroll}
-              />
-            );
+        <TimelineWindowedItemsLoader
+          enabled={timelineWindowingEnabled}
+          alwaysMountedKeys={alwaysMountedKeys}
+          estimateItemHeight={(index) => {
+            const item = items[index];
+            return item?.kind === "row"
+              ? estimateTimelineWindowedRowHeight(item.row, spacing)
+              : 28;
+          }}
+          gap={spacing === "bundle" ? 0 : 8}
+          getScrollElement={getWindowingScrollElement}
+          itemKeys={itemKeys}
+          measurements={measurements}
+          minItemCount={
+            spacing === "top-level" ? (isCompactViewport ? 40 : 60) : 20
           }
-
-          const rowView = (
-            <MemoizedTimelineRowView
-              activeLatestBundleId={activeLatestBundleId}
-              row={item.row}
-              scopeActive={scopeActive}
-              showAssistantMessageActions={showAssistantMessageActions}
-              spacing={spacing}
-              compactActivityIntents={compactActivityIntents}
-            />
-          );
-          if (spacing === "top-level") {
+          renderItem={(index, windowedState) => {
+            const item = items[index];
+            if (item === undefined) {
+              return null;
+            }
+            if (item.kind === "unread-divider") {
+              return (
+                <div
+                  key={item.id}
+                  ref={windowedState.itemRef}
+                  data-index={windowedState.itemIndex}
+                  data-timeline-window-key={`divider:${item.id}`}
+                  data-timeline-windowed-realized={
+                    windowedState.windowingEnabled
+                      ? String(windowedState.isRealized)
+                      : undefined
+                  }
+                  style={windowedState.itemStyle}
+                >
+                  {windowedState.isRealized ? (
+                    <TimelineUnreadDivider
+                      autoScroll={unreadDividerAutoScroll}
+                    />
+                  ) : null}
+                </div>
+              );
+            }
             return (
-              <TopLevelTimelineRowWrapper key={item.row.id} row={item.row}>
-                {rowView}
-              </TopLevelTimelineRowWrapper>
+              <TimelineRowItemWrapper
+                key={item.row.id}
+                row={item.row}
+                spacing={spacing}
+                windowedState={windowedState}
+              >
+                {windowedState.isRealized ? (
+                  <MemoizedTimelineRowView
+                    activeLatestBundleId={activeLatestBundleId}
+                    row={item.row}
+                    scopeActive={scopeActive}
+                    showAssistantMessageActions={showAssistantMessageActions}
+                    spacing={spacing}
+                    compactActivityIntents={compactActivityIntents}
+                  />
+                ) : null}
+              </TimelineRowItemWrapper>
             );
-          }
-          return (
-            <div key={item.row.id} data-timeline-row-id={item.row.id}>
-              {rowView}
-            </div>
-          );
-        })}
+          }}
+        />
       </div>
     </TimelineSearchExpansionContext.Provider>
   );
@@ -2095,6 +2228,7 @@ function ThreadTimelineRowsComponent(props: ThreadTimelineRowsProps) {
 
 function ThreadTimelineRowsForTimelineView(props: ThreadTimelineRowsProps) {
   const getViewRows = useTimelineViewRowsCache();
+  const [windowingMeasurements] = useState(() => new Map<string, number>());
   const rows = useMemo(
     () => getViewRows(props.timelineRows),
     [getViewRows, props.timelineRows],
@@ -2120,7 +2254,6 @@ function ThreadTimelineRowsForTimelineView(props: ThreadTimelineRowsProps) {
     () => (scopeActive ? findStreamingAssistantMessageId(rows) : null),
     [rows, scopeActive],
   );
-  const themeType = props.themeType ?? "light";
   const computedAutoExpansionRowIds = useMemo(
     () => collectTimelineAutoExpansionRowIds({ rows, scopeActive }),
     [rows, scopeActive],
@@ -2128,8 +2261,27 @@ function ThreadTimelineRowsForTimelineView(props: ThreadTimelineRowsProps) {
   const liveAutoExpandedRowIds = useStableReadonlySet(
     computedAutoExpansionRowIds.liveFrontierRowIds,
   );
+  // Terminal expansion is a one-shot latch stored in an individual row. Keep
+  // a bounded recent set at the owner so windowed eviction cannot immediately
+  // erase it without growing state forever in a long-lived streaming client.
+  const accumulatedTerminalRowIdsRef = useRef(new Set<string>());
+  const accumulatedTerminalRowIds = useMemo(() => {
+    const accumulated = accumulatedTerminalRowIdsRef.current;
+    for (const id of computedAutoExpansionRowIds.terminalFrontierRowIds) {
+      accumulated.delete(id);
+      accumulated.add(id);
+    }
+    while (accumulated.size > TIMELINE_TERMINAL_EXPANSION_RETENTION) {
+      const oldestId = accumulated.values().next().value;
+      if (oldestId === undefined) {
+        break;
+      }
+      accumulated.delete(oldestId);
+    }
+    return new Set(accumulated);
+  }, [computedAutoExpansionRowIds.terminalFrontierRowIds]);
   const terminalAutoExpandedRowIds = useStableReadonlySet(
-    computedAutoExpansionRowIds.terminalFrontierRowIds,
+    accumulatedTerminalRowIds,
   );
   const initialAutoExpandedRowIds = useStableReadonlySet(
     props.initialExpanded ?? EMPTY_ROW_ID_SET,
@@ -2281,7 +2433,6 @@ function ThreadTimelineRowsForTimelineView(props: ThreadTimelineRowsProps) {
       resolveMentionLink: props.resolveMentionLink,
       resolveSegmentLinkHref,
       resolveUserAttachmentImageSrc: props.resolveUserAttachmentImageSrc,
-      themeType,
       threadId: props.threadId,
       workspaceRootPath: props.workspaceRootPath,
     }),
@@ -2311,7 +2462,6 @@ function ThreadTimelineRowsForTimelineView(props: ThreadTimelineRowsProps) {
       props.resolveUserAttachmentImageSrc,
       props.threadId,
       props.workspaceRootPath,
-      themeType,
     ],
   );
   const turnStateContextValue = useMemo<TimelineTurnStateContextValue>(
@@ -2343,26 +2493,37 @@ function ThreadTimelineRowsForTimelineView(props: ThreadTimelineRowsProps) {
                 <TimelineTurnStateContext.Provider
                   value={turnStateContextValue}
                 >
-                  <AutoHeightContainer snapRevision={heightSnapRevision}>
-                    <TimelineRowsList
-                      hasOlderTimelineRows={props.hasOlderTimelineRows}
-                      isLoadingOlderTimelineRows={
-                        props.isLoadingOlderTimelineRows
-                      }
-                      onLoadOlderRows={props.onLoadOlderRows}
-                      rows={rows}
-                      scopeActive={scopeActive}
-                      showAssistantMessageActions={true}
-                      compactActivityIntents={false}
-                      spacing="top-level"
-                      unreadDividerAutoScroll={
-                        props.unreadDividerAutoScroll ?? true
-                      }
-                      unreadDividerPlacement={
-                        props.unreadDividerPlacement ?? null
-                      }
-                    />
-                  </AutoHeightContainer>
+                  <TimelineWindowingMeasurementsContext.Provider
+                    value={windowingMeasurements}
+                  >
+                    <TimelineWindowingEnabledContext.Provider
+                      value={props.timelineWindowingEnabled ?? false}
+                    >
+                      <AutoHeightContainer snapRevision={heightSnapRevision}>
+                        <TimelineRowsList
+                          hasOlderTimelineRows={props.hasOlderTimelineRows}
+                          isLoadingOlderTimelineRows={
+                            props.isLoadingOlderTimelineRows
+                          }
+                          navigationTargetRowId={
+                            props.timelineNavigationTargetRowId
+                          }
+                          onLoadOlderRows={props.onLoadOlderRows}
+                          rows={rows}
+                          scopeActive={scopeActive}
+                          showAssistantMessageActions={true}
+                          compactActivityIntents={false}
+                          spacing="top-level"
+                          unreadDividerAutoScroll={
+                            props.unreadDividerAutoScroll ?? true
+                          }
+                          unreadDividerPlacement={
+                            props.unreadDividerPlacement ?? null
+                          }
+                        />
+                      </AutoHeightContainer>
+                    </TimelineWindowingEnabledContext.Provider>
+                  </TimelineWindowingMeasurementsContext.Provider>
                   {hasSelectionActions ? (
                     <TimelineSelectionMenu
                       selection={activeSelection?.selection ?? null}

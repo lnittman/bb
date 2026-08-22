@@ -25,15 +25,12 @@ import {
   PERMISSION_LABELS,
   PERMISSION_MODES,
   PresetDialog,
+  describeError,
   describePresetEnvironment,
   savePresetDraft,
   type PresetDraft,
 } from "./preset-dialog.js";
 import { ColorSwatchPicker, DEFAULT_COLOR } from "./shared.js";
-
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 // ---------------------------------------------------------------------------
 // Labels
@@ -256,7 +253,6 @@ function LabelsSection() {
             : "This label isn't used by any tasks."
         }
         confirmLabel="Delete label"
-        destructive
         onConfirm={() => {
           const target = confirmDelete;
           if (target) {
@@ -316,6 +312,7 @@ function PresetsSection() {
               <th className="px-3 py-2 font-medium">Provider</th>
               <th className="px-3 py-2 font-medium">Model</th>
               <th className="px-3 py-2 font-medium">Reasoning</th>
+              <th className="px-3 py-2 font-medium">Tier</th>
               <th className="px-3 py-2 font-medium">Permissions</th>
               <th className="px-3 py-2 font-medium">Environment</th>
               <th className="px-3 py-2 font-medium">Instructions</th>
@@ -346,6 +343,9 @@ function PresetsSection() {
                   </td>
                   <td className="px-3 py-2 text-muted-foreground">
                     {preset.reasoningLevel}
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground">
+                    {preset.serviceTier ?? "—"}
                   </td>
                   <td className="px-3 py-2 text-muted-foreground">
                     {permission
@@ -651,7 +651,6 @@ function FoldersSection() {
         title={`Delete folder “${confirmDelete?.name ?? ""}”?`}
         description={confirmDelete ? describeDeleteImpact(confirmDelete) : ""}
         confirmLabel="Delete folder"
-        destructive
         confirmDisabled={!impactReady}
         onConfirm={() => {
           const target = confirmDelete;

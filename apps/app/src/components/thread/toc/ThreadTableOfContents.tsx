@@ -38,6 +38,8 @@ interface ThreadTableOfContentsProps {
   hasOlderTimelineRows: boolean;
   /** Loads the next older timeline page; awaited while jumping to an unloaded row. */
   loadOlderTimelineRows: () => void | Promise<void>;
+  /** Lets timeline windowing mount an offscreen destination before scrolling. */
+  onNavigateToRow?: (rowId: string) => void;
 }
 
 // Matches `@container scroll-overlay (min-width: 56rem)` in app.css.
@@ -100,6 +102,20 @@ function outlineItemToTocItem(item: ThreadConversationOutlineItem): TocItem {
     label: item.preview || toAttachmentSummaryLabel(item.attachmentSummary),
     role: item.role,
   };
+}
+
+function mergeLiveTocItems(
+  outlineItems: readonly TocItem[],
+  timelineItems: readonly TocItem[],
+): TocItem[] {
+  const timelineItemsById = new Map(
+    timelineItems.map((item) => [item.id, item]),
+  );
+  const outlineItemIds = new Set(outlineItems.map((item) => item.id));
+  return [
+    ...outlineItems.map((item) => timelineItemsById.get(item.id) ?? item),
+    ...timelineItems.filter((item) => !outlineItemIds.has(item.id)),
+  ];
 }
 
 export function selectTocRailItems({
@@ -224,9 +240,10 @@ function TocItemPreview({
 
 /**
  * Builds the user/agent item lists for the minimap. Prefers the full
- * conversation outline (the whole thread, independent of pagination); falls
- * back to the loaded timeline window so the minimap still renders on first
- * paint and in environments without the outline endpoint (e.g. stories).
+ * conversation outline (the whole thread, independent of pagination), then
+ * overlays the loaded timeline window so the current turn stays live between
+ * full-outline refreshes. Falls back to the timeline alone on first paint and
+ * in environments without the outline endpoint (e.g. stories).
  */
 function useConversationTocItems({
   outlineItems,
@@ -270,7 +287,19 @@ function useConversationTocItems({
     return { agentItems, userItems };
   }, [timelineRows]);
 
-  return outlineTocItems ?? timelineTocItems;
+  return useMemo(() => {
+    if (!outlineTocItems) return timelineTocItems;
+    return {
+      agentItems: mergeLiveTocItems(
+        outlineTocItems.agentItems,
+        timelineTocItems.agentItems,
+      ),
+      userItems: mergeLiveTocItems(
+        outlineTocItems.userItems,
+        timelineTocItems.userItems,
+      ),
+    };
+  }, [outlineTocItems, timelineTocItems]);
 }
 
 /**
@@ -505,6 +534,7 @@ export function ThreadTableOfContents({
   timelineRows,
   hasOlderTimelineRows,
   loadOlderTimelineRows,
+  onNavigateToRow,
 }: ThreadTableOfContentsProps) {
   const bottomAnchor = useBottomAnchoredScroll();
   const [rootElement, setRootElement] = useState<HTMLElement | null>(null);
@@ -641,6 +671,7 @@ export function ThreadTableOfContents({
           options: { block: "start", inline: "nearest" },
         });
       };
+      onNavigateToRow?.(id);
 
       let row = findTimelineRowElement(getScrollElement(), id);
       if (row) {
@@ -687,7 +718,7 @@ export function ThreadTableOfContents({
         setPendingJumpId(null);
       }
     },
-    [bottomAnchor],
+    [bottomAnchor, onNavigateToRow],
   );
 
   if (userItems.length < TOC_MIN_USER_MESSAGES) {

@@ -33,6 +33,8 @@ const EXPECTED_RUNNING_BUILTIN_PLUGINS = [
   "custom-instructions",
   "inline-vis",
   "keep-awake",
+  "pdf-preview",
+  "provider-retry",
   "secrets",
 ];
 // The smoke drives every bridge as a canonical Provider Bridge Protocol

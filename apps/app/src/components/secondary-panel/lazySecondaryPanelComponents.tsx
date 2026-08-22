@@ -35,6 +35,7 @@ type ThreadTerminalPanelModule =
 type BrowserTabDeckModule = typeof import("./BrowserTabDeck");
 type NewTabPageModule = typeof import("./NewTabPage");
 type FilePreviewModule = typeof import("./FilePreview");
+type ThreadStorageFileTreeModule = typeof import("./ThreadStorageFileTree");
 
 const ThreadSecondaryPanelChunk = lazy(() =>
   import("./ThreadSecondaryPanel").then(({ ThreadSecondaryPanel }) => ({
@@ -59,6 +60,11 @@ const FilePreviewChunk = lazy(() =>
     default: FilePreview,
   })),
 );
+const ThreadStorageFileTreeChunk = lazy(() =>
+  import("./ThreadStorageFileTree").then(({ ThreadStorageFileTree }) => ({
+    default: ThreadStorageFileTree,
+  })),
+);
 const WorkspaceFilePreviewTabContentChunk = lazy(() =>
   import("./ThreadSecondaryPanelTabContent").then(
     ({ WorkspaceFilePreviewTabContent }) => ({
@@ -70,6 +76,13 @@ const HostFilePreviewTabContentChunk = lazy(() =>
   import("./ThreadSecondaryPanelTabContent").then(
     ({ HostFilePreviewTabContent }) => ({
       default: HostFilePreviewTabContent,
+    }),
+  ),
+);
+const HostScopedFilePreviewTabContentChunk = lazy(() =>
+  import("./ThreadSecondaryPanelTabContent").then(
+    ({ HostScopedFilePreviewTabContent }) => ({
+      default: HostScopedFilePreviewTabContent,
     }),
   ),
 );
@@ -89,7 +102,7 @@ const ThreadStorageFilePreviewTabContentChunk = lazy(() =>
 );
 
 /** Generic "content is on its way" body for a panel tab. */
-export function SecondaryPanelContentSkeleton() {
+function SecondaryPanelContentSkeleton() {
   return (
     <div
       className="space-y-2 px-4 py-4"
@@ -157,7 +170,7 @@ function ThreadSecondaryPanelInlinePlaceholder({
   );
 }
 
-export type LazyThreadSecondaryPanelProps = ComponentProps<
+type LazyThreadSecondaryPanelProps = ComponentProps<
   ThreadSecondaryPanelModule["ThreadSecondaryPanel"]
 > & {
   /**
@@ -228,6 +241,25 @@ export function LazyFilePreview(
   );
 }
 
+/**
+ * The storage browser's `@pierre/trees` tree. Its model comes from the same
+ * chunk (`useThreadStorageBrowser` imports it to build the model), so by the
+ * time a caller has a model to render the chunk is already loaded and the
+ * fallback shows for at most one commit.
+ */
+export function LazyThreadStorageFileTree({
+  fallback,
+  ...props
+}: ComponentProps<ThreadStorageFileTreeModule["ThreadStorageFileTree"]> & {
+  fallback: ReactNode;
+}) {
+  return (
+    <Suspense fallback={fallback}>
+      <ThreadStorageFileTreeChunk {...props} />
+    </Suspense>
+  );
+}
+
 export function LazyWorkspaceFilePreviewTabContent(
   props: ComponentProps<
     ThreadSecondaryPanelTabContentModule["WorkspaceFilePreviewTabContent"]
@@ -248,6 +280,18 @@ export function LazyHostFilePreviewTabContent(
   return (
     <Suspense fallback={<SecondaryPanelContentSkeleton />}>
       <HostFilePreviewTabContentChunk {...props} />
+    </Suspense>
+  );
+}
+
+export function LazyHostScopedFilePreviewTabContent(
+  props: ComponentProps<
+    ThreadSecondaryPanelTabContentModule["HostScopedFilePreviewTabContent"]
+  >,
+) {
+  return (
+    <Suspense fallback={<SecondaryPanelContentSkeleton />}>
+      <HostScopedFilePreviewTabContentChunk {...props} />
     </Suspense>
   );
 }

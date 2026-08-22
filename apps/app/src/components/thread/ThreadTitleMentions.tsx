@@ -26,7 +26,7 @@ import { sdk } from "@/lib/sdk";
 import { getThreadDisplayTitle } from "@/lib/thread-title";
 
 /** The slice of a thread a title mention needs: its label and route. */
-export type ThreadTitleMentionThread = Pick<
+type ThreadTitleMentionThread = Pick<
   ThreadListEntry,
   "id" | "projectId" | "title" | "titleFallback"
 >;
@@ -187,7 +187,7 @@ export function useSidebarThreadTitleMentionResources(
     navigation: ThreadTitleMentionNavigationSource | undefined;
     resources: ThreadTitleMentionResources;
   } | null>(null);
-  /* eslint-disable react-hooks/refs -- render-time cache, see above */
+  /* oxlint-disable react/refs -- render-time cache, see above */
   const cached = cacheRef.current;
   if (cached !== null && cached.navigation === navigation) {
     return cached.resources;
@@ -197,7 +197,7 @@ export function useSidebarThreadTitleMentionResources(
     cached?.resources ?? EMPTY_TITLE_MENTION_RESOURCES,
   );
   cacheRef.current = { navigation, resources };
-  /* eslint-enable react-hooks/refs */
+  /* oxlint-enable react/refs */
   return resources;
 }
 
@@ -318,18 +318,13 @@ function RawThreadMentionResolverProvider({
   );
 }
 
-interface RawThreadMentionBatchContextValue {
-  register: (threadId: string) => void;
-  resourceById: ReadonlyMap<string, PromptMentionResource>;
-}
-
-const EMPTY_RAW_THREAD_MENTION_BATCH: RawThreadMentionBatchContextValue = {
+const EMPTY_RAW_THREAD_MENTION_BATCH: RawThreadMentionResolverContextValue = {
   register: () => {},
   resourceById: new Map(),
 };
 
 const RawThreadMentionBatchContext =
-  createContext<RawThreadMentionBatchContextValue>(
+  createContext<RawThreadMentionResolverContextValue>(
     EMPTY_RAW_THREAD_MENTION_BATCH,
   );
 
@@ -417,19 +412,19 @@ export function ThreadTitleMentionResourcesProvider({
   );
 }
 
-function isMentionBoundary(text: string, index: number): boolean {
+export function isMentionBoundary(text: string, index: number): boolean {
   const previous = text[index - 1];
   return previous === undefined || !/[\p{L}\p{N}_.+-]/u.test(previous);
 }
 
-function isRawThreadIdBoundary(text: string, index: number): boolean {
+export function isRawThreadIdBoundary(text: string, index: number): boolean {
   const previous = text[index - 1];
   return (
     previous !== "/" && previous !== "\\" && isMentionBoundary(text, index)
   );
 }
 
-function isMentionEndBoundary(text: string, index: number): boolean {
+export function isMentionEndBoundary(text: string, index: number): boolean {
   const next = text[index];
   if (next === undefined) return true;
   if (next === ".") {
@@ -439,7 +434,7 @@ function isMentionEndBoundary(text: string, index: number): boolean {
   return !/[\p{L}\p{N}_.+\/-]/u.test(next);
 }
 
-function isRawThreadIdEndBoundary(text: string, index: number): boolean {
+export function isRawThreadIdEndBoundary(text: string, index: number): boolean {
   return text[index] !== "\\" && isMentionEndBoundary(text, index);
 }
 

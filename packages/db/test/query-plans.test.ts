@@ -17,11 +17,12 @@ import {
   hasParentedEventCrossingSequence,
   insertEvents,
   listActiveBackgroundTaskCountsByThreadIds,
-  listLatestGoalEventRowsByThreadIds,
+  listLatestThreadStateEventRowsByThreadIds,
   listLatestOpenBackgroundTaskStateRowsForThread,
   listStoredConversationOutlineEventRows,
   listStoredEventRows,
   listStoredEventRowsByParentToolCallIds,
+  listTodoSnapshotEventRowsForThread,
   pruneContextWindowUsageEventsBeforeSequence,
   pruneResolvedItemDeltas,
 } from "../src/data/events.js";
@@ -430,7 +431,6 @@ describe("slow query index plans", () => {
       "system/thread/interrupted",
       "system/error",
       "provider/error",
-      "system/userQuestion/lifecycle",
       "item/agentMessage/delta",
       "item/plan/delta",
       thread.id,
@@ -463,6 +463,34 @@ describe("slow query index plans", () => {
       /USING COVERING INDEX events_background_task_thread_type_item_sequence_idx/u,
     );
     expect(details).not.toMatch(/SCAN events/u);
+
+    db.$client.close();
+  });
+
+  it("loads todo tool calls through the generated tool-name index", () => {
+    const { db, thread } = setup();
+
+    const captured = captureStatements(db, () => {
+      expect(
+        listTodoSnapshotEventRowsForThread(db, { threadId: thread.id }),
+      ).toEqual([]);
+    });
+    const query = captured.find((entry) => entry.sql.includes('"tool_name"'));
+    if (!query) {
+      throw new Error("Expected the todo snapshot SQL");
+    }
+    expect(query.sql).not.toContain("json_extract");
+    expect(query.params).toEqual([
+      thread.id,
+      "TodoWrite",
+      "TaskCreate",
+      "TaskUpdate",
+      "TaskList",
+      "TaskGet",
+    ]);
+    expect(
+      queryPlanDetails({ db, params: query.params, sql: query.sql }),
+    ).toContain("events_todo_tool_call_thread_tool_sequence_idx");
 
     db.$client.close();
   });
@@ -511,7 +539,7 @@ describe("slow query index plans", () => {
   it("uses the closed-session prune index for emitted delete SQL", () => {
     const { db, host, logger } = setup();
     const now = Date.now();
-    const staleSession = openSession(db, noopNotifier, {
+    const staleSession = openSession(db, {
       hostId: host.id,
       instanceId: "closed-prune-query-plan",
       hostName: "query-plan-host",
@@ -794,8 +822,8 @@ describe("slow query index plans", () => {
     db.$client.close();
   });
 
-  it("uses the consolidated turn/item event index for resolved delta pruning", () => {
-    const { db, thread } = setup();
+  it("uses materialized parent ids and the consolidated index for delta pruning", () => {
+    const { db, logger, thread } = setup();
     const turnId = "turn_resolved_delta_query_plan";
     const itemId = "call_resolved_delta_query_plan";
     insertEvents(db, noopNotifier, [
@@ -837,8 +865,17 @@ describe("slow query index plans", () => {
         type: "item/completed",
       },
     ]);
+    logger.clear();
 
     expect(pruneResolvedItemDeltas(db, { threadId: thread.id })).toBe(1);
+    const pruneQuery = findOnlyDebugLog({
+      logger,
+      predicate: (fields) =>
+        fields.operation === "run" &&
+        fields.sql.startsWith("DELETE FROM events"),
+    });
+    expect(pruneQuery.fields.sql).toContain("parent_tool_call_id IS");
+    expect(pruneQuery.fields.sql).not.toContain("json_extract");
 
     const completedLookupPlan = queryPlanDetails({
       db,
@@ -883,7 +920,7 @@ describe("slow query index plans", () => {
     db.$client.close();
   });
 
-  it("pins the latest-goal lookup to the partial goal index with no temp sort", () => {
+  it("pins the latest-thread-state lookup to the partial index with no temp sort", () => {
     const { db, thread } = setup();
     insertEvents(db, noopNotifier, [
       {
@@ -900,14 +937,17 @@ describe("slow query index plans", () => {
 
     const captured = captureStatements(db, () => {
       expect(
-        listLatestGoalEventRowsByThreadIds(db, { threadIds: [thread.id] }),
+        listLatestThreadStateEventRowsByThreadIds(db, {
+          threadIds: [thread.id],
+          kind: "provider-codex/goal",
+        }),
       ).toHaveLength(1);
     });
     const statement = captured.find((entry) =>
-      entry.sql.includes("latest_goal"),
+      entry.sql.includes("latest_state"),
     );
     if (!statement) {
-      throw new Error("Expected the latest-goal lookup SQL");
+      throw new Error("Expected the latest-thread-state lookup SQL");
     }
 
     // The #1131 cold stall: with an ORDER BY present, the stats-less planner
@@ -920,7 +960,9 @@ describe("slow query index plans", () => {
       params: statement.params,
       sql: statement.sql,
     });
-    expect(details.match(/events_goal_thread_sequence_idx/gu)).toHaveLength(2);
+    expect(
+      details.match(/events_thread_state_thread_sequence_idx/gu),
+    ).toHaveLength(2);
     expect(details).not.toContain("USING INDEX events_thread_sequence_idx");
     expect(details).not.toContain("USE TEMP B-TREE");
 

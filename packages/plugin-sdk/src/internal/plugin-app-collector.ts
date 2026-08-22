@@ -2,8 +2,10 @@ import type {
   ComposerCustomization,
   PluginAppDefinition,
   PluginContentScriptRegistration,
+  PluginDiffRendererRegistration,
   PluginFileOpenerRegistration,
   PluginHomepageSectionRegistration,
+  PluginCommandPaletteActionRegistration,
   PluginMessageActionRegistration,
   PluginMessageDirectiveRegistration,
   PluginNavPanelRegistration,
@@ -12,6 +14,7 @@ import type {
   PluginProviderIconRegistration,
   PluginSettingsSectionRegistration,
   PluginSidebarFooterActionRegistration,
+  PluginSourceCodeRendererRegistration,
   PluginThreadHeaderActionRegistration,
   PluginThreadListRegistration,
   PluginThreadPanelActionRegistration,
@@ -45,8 +48,11 @@ export interface CollectedPluginAppRegistrations {
   threadLists: PluginThreadListRegistration[];
   threadHeaderActions: PluginThreadHeaderActionRegistration[];
   fileOpeners: PluginFileOpenerRegistration[];
+  sourceCodeRenderers: PluginSourceCodeRendererRegistration[];
+  diffRenderers: PluginDiffRendererRegistration[];
   messageDirectives: PluginMessageDirectiveRegistration[];
   messageActions: PluginMessageActionRegistration[];
+  commandPaletteActions: PluginCommandPaletteActionRegistration[];
   providerIcons: PluginProviderIconRegistration[];
   contentScripts: PluginContentScriptRegistration[];
 }
@@ -74,8 +80,11 @@ export function collectPluginAppRegistrations(
     threadLists: [],
     threadHeaderActions: [],
     fileOpeners: [],
+    sourceCodeRenderers: [],
+    diffRenderers: [],
     messageDirectives: [],
     messageActions: [],
+    commandPaletteActions: [],
     providerIcons: [],
     contentScripts: [],
   };
@@ -91,8 +100,11 @@ export function collectPluginAppRegistrations(
     threadList: new Set<string>(),
     threadHeaderAction: new Set<string>(),
     fileOpener: new Set<string>(),
+    sourceCodeRenderer: new Set<string>(),
+    diffRenderer: new Set<string>(),
     messageDirective: new Set<string>(),
     messageAction: new Set<string>(),
+    commandPaletteAction: new Set<string>(),
     providerIcon: new Set<string>(),
     contentScript: new Set<string>(),
   };
@@ -130,6 +142,7 @@ export function collectPluginAppRegistrations(
         const kind = "slots.navPanel";
         const id = requireSlotId(kind, registration?.id);
         requireUniqueId(kind, seenIds.navPanel, id);
+        const panelId = id;
         const path = requireNonEmptyString(kind, "path", registration.path);
         if (!PLUGIN_SLOT_ID_PATTERN.test(path)) {
           throw new Error(
@@ -176,8 +189,31 @@ export function collectPluginAppRegistrations(
                   `${fixedTabKind}: "layout" must be "padded" or "flush" when set`,
                 );
               }
+              const fixedTabPanelId = requireNonEmptyString(
+                fixedTabKind,
+                "panelId",
+                fixedTab?.panelId,
+              );
+              if (fixedTabPanelId !== panelId) {
+                throw new Error(
+                  `${fixedTabKind}: "panelId" must match its containing navPanel id ${JSON.stringify(panelId)}`,
+                );
+              }
+              const experimentalTarget = fixedTab?.experimental_target;
+              if (
+                experimentalTarget !== undefined &&
+                (typeof experimentalTarget !== "object" ||
+                  experimentalTarget === null ||
+                  typeof Reflect.get(experimentalTarget, "validate") !==
+                    "function")
+              ) {
+                throw new Error(
+                  `${fixedTabKind}: "experimental_target.validate" must be a function when set`,
+                );
+              }
               return {
                 id,
+                panelId: fixedTabPanelId,
                 title: requireNonEmptyString(
                   fixedTabKind,
                   "title",
@@ -192,6 +228,12 @@ export function collectPluginAppRegistrations(
                   PluginNavPanelFixedTabRegistration["component"]
                 >(fixedTabKind, fixedTab?.component),
                 ...(layout === undefined ? {} : { layout }),
+                ...(experimentalTarget === undefined
+                  ? {}
+                  : {
+                      experimental_target:
+                        experimentalTarget as PluginNavPanelFixedTabRegistration["experimental_target"],
+                    }),
               };
             });
           })();
@@ -353,6 +395,38 @@ export function collectPluginAppRegistrations(
           component: requireComponent(kind, registration.component),
         });
       },
+      experimental_sourceCodeRenderer(registration) {
+        const kind = "slots.experimental_sourceCodeRenderer";
+        const id = requireSlotId(kind, registration?.id);
+        requireUniqueId(kind, seenIds.sourceCodeRenderer, id);
+        const description = requireOptionalString(
+          kind,
+          "description",
+          registration.description,
+        );
+        collected.sourceCodeRenderers.push({
+          id,
+          title: requireNonEmptyString(kind, "title", registration.title),
+          ...(description !== undefined ? { description } : {}),
+          component: requireComponent(kind, registration.component),
+        });
+      },
+      experimental_diffRenderer(registration) {
+        const kind = "slots.experimental_diffRenderer";
+        const id = requireSlotId(kind, registration?.id);
+        requireUniqueId(kind, seenIds.diffRenderer, id);
+        const description = requireOptionalString(
+          kind,
+          "description",
+          registration.description,
+        );
+        collected.diffRenderers.push({
+          id,
+          title: requireNonEmptyString(kind, "title", registration.title),
+          ...(description !== undefined ? { description } : {}),
+          component: requireComponent(kind, registration.component),
+        });
+      },
       messageDirective(registration) {
         const kind = "slots.messageDirective";
         const id = requireMessageDirectiveId(kind, registration?.id);
@@ -376,6 +450,28 @@ export function collectPluginAppRegistrations(
             ? {
                 icon: requireNonEmptyString(kind, "icon", registration.icon),
               }
+            : {}),
+          run: registration.run,
+        });
+      },
+      commandPaletteAction(registration) {
+        const kind = "slots.commandPaletteAction";
+        const id = requireSlotId(kind, registration?.id);
+        requireUniqueId(kind, seenIds.commandPaletteAction, id);
+        if (typeof registration.run !== "function") {
+          throw new Error(`${kind}: "run" must be a function`);
+        }
+        if (
+          registration.isAvailable !== undefined &&
+          typeof registration.isAvailable !== "function"
+        ) {
+          throw new Error(`${kind}: "isAvailable" must be a function`);
+        }
+        collected.commandPaletteActions.push({
+          id,
+          title: requireNonEmptyString(kind, "title", registration.title),
+          ...(registration.isAvailable !== undefined
+            ? { isAvailable: registration.isAvailable }
             : {}),
           run: registration.run,
         });

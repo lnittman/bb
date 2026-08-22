@@ -623,20 +623,47 @@ function permissionGrantLifecycleEvent({
 }
 
 function userQuestionLifecycleEvent({
+  interactionId = "pi-user-question",
+  questionPrompt,
+  resolution = null,
   seq,
-  ...args
+  status = "pending",
+  statusReason = null,
 }: UserQuestionLifecycleEventArgs): ThreadEventWithMeta {
-  const [event] = fromRows([
-    createTimelineEventFactory({ threadId: "thread-1" }).userQuestionLifecycle({
-      ...args,
+  return {
+    event: {
+      type: "system/userQuestion/lifecycle",
+      threadId: "thread-1",
+      scope: turnScope("turn-1"),
+      interactionId,
+      providerId: "claude-code",
+      providerRequestId: "request-user-question",
+      status,
+      resolution,
+      statusReason,
+      payload: {
+        kind: "user_question",
+        questions: [
+          {
+            id: "question-1",
+            prompt: questionPrompt ?? "Which deployment target should I use?",
+            shortLabel: "Target",
+            multiSelect: false,
+            options: [
+              { value: "staging", label: "Staging" },
+              { value: "production", label: "Production" },
+            ],
+            allowFreeText: true,
+          },
+        ],
+      },
+    },
+    meta: {
       id: `event-${seq}`,
       seq,
-    }),
-  ]);
-  if (!event) {
-    throw new Error("Expected a decoded user-question lifecycle event");
-  }
-  return event;
+      createdAt: seq,
+    },
+  };
 }
 
 function buildContextWindowUsage(
@@ -647,7 +674,6 @@ function buildContextWindowUsage(
     contextWindowEvents,
     events: [],
     options: {
-      includeDebugRawEvents: false,
       includeNestedRows: false,
       includeProviderUnhandledOperations: false,
       isLatestPage: true,
@@ -669,7 +695,6 @@ function buildTimelineRows(
     contextWindowEvents: [],
     events,
     options: {
-      includeDebugRawEvents: false,
       includeNestedRows: true,
       includeProviderUnhandledOperations: false,
       isLatestPage: true,
@@ -693,7 +718,6 @@ function buildTimelineRowsWithAcceptedContext(
     contextWindowEvents: [],
     events,
     options: {
-      includeDebugRawEvents: false,
       includeNestedRows: true,
       includeProviderUnhandledOperations: false,
       isLatestPage: true,
@@ -717,7 +741,6 @@ function buildTimelineRowsWithRejectedContext(
     contextWindowEvents: [],
     events,
     options: {
-      includeDebugRawEvents: false,
       includeNestedRows: true,
       includeProviderUnhandledOperations: false,
       isLatestPage: true,
@@ -921,6 +944,28 @@ function fileChangeRowIdByPath(
 }
 
 describe("buildThreadTimelineFromEvents", () => {
+  it("renders one turn when daemon retry history contains duplicate turn starts", () => {
+    const rows = buildTimelineRows([
+      turnStartedEvent({ seq: 1 }),
+      turnStartedEvent({ seq: 2 }),
+      toolCallItemEvent({
+        seq: 3,
+        tool: "read",
+        type: "item/started",
+      }),
+      toolCallItemEvent({
+        result: "ok",
+        seq: 4,
+        tool: "read",
+        type: "item/completed",
+      }),
+      turnCompletedEvent({ seq: 5 }),
+    ]);
+
+    expect(rows.filter((row) => row.kind === "turn")).toHaveLength(1);
+    expect(collectToolRows(rows)).toHaveLength(1);
+  });
+
   const lowercaseStructuredToolCases: LowercaseStructuredToolCase[] = [
     {
       expectedIntent: {
@@ -1107,7 +1152,6 @@ describe("buildThreadTimelineFromEvents", () => {
         event.inputAccepted({ clientRequestId: requestId }),
       ]),
       options: {
-        includeDebugRawEvents: false,
         includeNestedRows: true,
         includeProviderUnhandledOperations: false,
         isLatestPage: true,
@@ -1144,7 +1188,6 @@ describe("buildThreadTimelineFromEvents", () => {
         event.inputAccepted({ clientRequestId: requestId }),
       ]),
       options: {
-        includeDebugRawEvents: false,
         includeNestedRows: true,
         includeProviderUnhandledOperations: false,
         isLatestPage: true,
@@ -1180,7 +1223,6 @@ describe("buildThreadTimelineFromEvents", () => {
         event.inputAccepted({ clientRequestId: requestId }),
       ]),
       options: {
-        includeDebugRawEvents: false,
         includeNestedRows: true,
         includeProviderUnhandledOperations: false,
         isLatestPage: true,
@@ -1214,7 +1256,6 @@ describe("buildThreadTimelineFromEvents", () => {
         event.turnCompleted(),
       ]),
       options: {
-        includeDebugRawEvents: false,
         includeNestedRows: true,
         includeProviderUnhandledOperations: false,
         isLatestPage: true,
@@ -1325,7 +1366,6 @@ describe("buildThreadTimelineFromEvents", () => {
       contextWindowEvents: [],
       events,
       options: {
-        includeDebugRawEvents: false,
         includeNestedRows: true,
         includeProviderUnhandledOperations: false,
         isLatestPage: true,

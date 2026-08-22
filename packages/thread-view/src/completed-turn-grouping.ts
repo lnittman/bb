@@ -7,12 +7,10 @@ import { getMessageStartedAt } from "./format-helpers.js";
 import {
   findLastTerminalTimelineMessage,
   isSingletonContextManagementOperation,
-  isTimelineTerminalMessage,
-  isMidTurnUserInputBoundaryMessage,
   isTimelineUngroupableMessage,
 } from "./timeline-message-helpers.js";
 
-export interface CompletedTurnSummaryGroup {
+interface CompletedTurnSummaryGroup {
   kind: "summary";
   startedAt: number;
   completedAt: number | null;
@@ -21,7 +19,7 @@ export interface CompletedTurnSummaryGroup {
   summaryCount: number;
 }
 
-export interface CompletedTurnUngroupedMessage {
+interface CompletedTurnUngroupedMessage {
   kind: "ungrouped-message";
   message: EventProjectionMessage;
 }
@@ -144,13 +142,55 @@ function splitCompletedTurnMessages(
   };
 }
 
+function isAssistantResponseMessage(
+  message: EventProjectionMessage | undefined,
+): boolean {
+  return (
+    message?.kind === "assistant-text" && message.isLegacyUserMessage !== true
+  );
+}
+
+/**
+ * Assistant text that the provider followed directly with more assistant
+ * text, with no work in between, was a complete response, not narration about
+ * upcoming tool activity. Providers re-query the model after it stops without
+ * telling bb why (a Claude Code Stop hook injects its reason as a synthetic
+ * user message that never becomes a thread event), so the turn carries two
+ * answers and only the last one is the terminal message. The earlier answer
+ * must stay visible at rest instead of being folded into the collapsed work
+ * summary. Text followed by work keeps the existing collapse.
+ */
+function findVisibleResponseMessageIds(
+  summaryMessages: readonly EventProjectionMessage[],
+  terminalMessage: EventProjectionMessage | undefined,
+): Set<string> {
+  const visibleIds = new Set<string>();
+  for (let index = 0; index < summaryMessages.length; index += 1) {
+    const message = summaryMessages[index];
+    const nextMessage = summaryMessages[index + 1] ?? terminalMessage;
+    if (
+      isAssistantResponseMessage(message) &&
+      isAssistantResponseMessage(nextMessage)
+    ) {
+      visibleIds.add(message.id);
+    }
+  }
+  return visibleIds;
+}
+
 function groupCompletedTurnSummaryMessages(
   turn: EventProjectionTurn,
   summaryMessages: EventProjectionMessage[],
+  terminalMessage: EventProjectionMessage | undefined,
 ): CompletedTurnSummaryItem[] {
   const externalBoundarySeqs = turn.externalUserBoundarySeqs ?? [];
+  const visibleResponseIds = findVisibleResponseMessageIds(
+    summaryMessages,
+    terminalMessage,
+  );
   if (
     externalBoundarySeqs.length === 0 &&
+    visibleResponseIds.size === 0 &&
     !summaryMessages.some(isTimelineUngroupableMessage)
   ) {
     return [
@@ -169,9 +209,6 @@ function groupCompletedTurnSummaryMessages(
   let groupedMessages: EventProjectionMessage[] = [];
   let segmentIndex = 0;
   let externalBoundaryIndex = 0;
-  let preserveNextTerminalMessage = false;
-  let sawMidTurnUserInput = false;
-  const phase = { sawTurnOutput: false };
 
   function appendSummaryGroup(sourceMessages: EventProjectionMessage[]): void {
     if (sourceMessages.length === 0) {
@@ -195,14 +232,9 @@ function groupCompletedTurnSummaryMessages(
       return;
     }
 
-    // Mid-turn human follow-ups split one provider turn into multiple visible
-    // exchange segments. Keep each segment's last assistant/error message
-    // beside the user row instead of burying it inside that segment's
-    // collapsed summary. The first assistant/error message after mid-turn user
-    // input is kept too — it is the direct reply the user already read while
-    // the turn was streaming. Initial user rows (before any output) must not
-    // trigger any of this, or every ordinary turn would surface its interim
-    // messages.
+    // Human follow-ups split one provider turn into multiple visible exchange
+    // segments. Keep each segment's last assistant/error message beside the
+    // user row instead of burying it inside that segment's collapsed summary.
     const sourceMessages = groupedMessages;
     groupedMessages = [];
     const terminalMessage = preserveLastTerminalMessage
@@ -232,40 +264,27 @@ function groupCompletedTurnSummaryMessages(
     ) {
       flushGroupedMessages(true);
       externalBoundaryIndex += 1;
-      preserveNextTerminalMessage = true;
-      sawMidTurnUserInput = true;
     }
   }
 
   for (const message of summaryMessages) {
     flushExternalBoundariesBefore(message);
-    if (isTimelineUngroupableMessage(message)) {
-      const isMidTurnUserInput = isMidTurnUserInputBoundaryMessage(
-        message,
-        phase,
-      );
-      flushGroupedMessages(isMidTurnUserInput);
-      items.push({
-        kind: "ungrouped-message",
-        message,
-      });
-      if (isMidTurnUserInput) {
-        preserveNextTerminalMessage = true;
-        sawMidTurnUserInput = true;
-        // An answered question is provider output too; a user request that
-        // follows it is a mid-turn follow-up even with no assistant text yet.
-        phase.sawTurnOutput = true;
-      }
-      continue;
-    }
-    phase.sawTurnOutput = true;
-    if (preserveNextTerminalMessage && isTimelineTerminalMessage(message)) {
+    if (visibleResponseIds.has(message.id)) {
       flushGroupedMessages();
       items.push({
         kind: "ungrouped-message",
         message,
       });
-      preserveNextTerminalMessage = false;
+      continue;
+    }
+    if (isTimelineUngroupableMessage(message)) {
+      flushGroupedMessages(
+        message.kind === "user" && message.initiator === "user",
+      );
+      items.push({
+        kind: "ungrouped-message",
+        message,
+      });
       continue;
     }
     groupedMessages.push(message);
@@ -275,7 +294,7 @@ function groupCompletedTurnSummaryMessages(
     flushGroupedMessages(true);
     externalBoundaryIndex += 1;
   }
-  flushGroupedMessages(sawMidTurnUserInput);
+  flushGroupedMessages();
   return applySingleSummaryTurnBounds(turn, items);
 }
 
@@ -287,7 +306,11 @@ export function groupCompletedTurnMessages(
     splitCompletedTurnMessages(messages, turn.terminalMessage);
   return {
     summaryItems: unwrapSingletonContextManagementGroups(
-      groupCompletedTurnSummaryMessages(turn, summaryMessages),
+      groupCompletedTurnSummaryMessages(
+        turn,
+        summaryMessages,
+        terminalMessages[0],
+      ),
     ),
     terminalMessages,
     trailingMessages,

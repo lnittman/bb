@@ -1,9 +1,11 @@
 import { useSyncExternalStore } from "react";
 import type {
   ComposerCustomization,
+  PluginDiffRendererRegistration,
   PluginPendingInteractionRegistration,
   PluginFileOpenerRegistration,
   PluginHomepageSectionRegistration,
+  PluginCommandPaletteActionRegistration,
   PluginMessageActionRegistration,
   PluginMessageDirectiveRegistration,
   PluginNavPanelRegistration,
@@ -11,6 +13,7 @@ import type {
   PluginProviderIconRegistration,
   PluginSettingsSectionRegistration,
   PluginSidebarFooterActionRegistration,
+  PluginSourceCodeRendererRegistration,
   PluginThreadHeaderActionRegistration,
   PluginThreadListRegistration,
   PluginThreadPanelActionRegistration,
@@ -42,8 +45,17 @@ export interface PluginRegistrationSet {
   /** Optional for the same reason as `threadLists`: bundles built earlier. */
   threadHeaderActions?: readonly PluginThreadHeaderActionRegistration[];
   fileOpeners: readonly PluginFileOpenerRegistration[];
+  /**
+   * Optional for the same reason as `threadLists`: bundles built before the
+   * exclusive code-rendering slots existed never call them.
+   */
+  sourceCodeRenderers?: readonly PluginSourceCodeRendererRegistration[];
+  /** Optional for the same reason as `sourceCodeRenderers`. */
+  diffRenderers?: readonly PluginDiffRendererRegistration[];
   messageDirectives: readonly PluginMessageDirectiveRegistration[];
   messageActions?: readonly PluginMessageActionRegistration[];
+  /** Optional for the same reason as `threadLists`: bundles built earlier. */
+  commandPaletteActions?: readonly PluginCommandPaletteActionRegistration[];
   /** Optional for the same reason as `threadLists`: bundles built earlier. */
   providerIcons?: readonly PluginProviderIconRegistration[];
 }
@@ -77,15 +89,21 @@ export interface PluginSidebarFooterActionSlot
   extends PluginSidebarFooterActionRegistration, PluginSlotBase {}
 export interface PluginThreadListSlot
   extends PluginThreadListRegistration, PluginSlotBase {}
-export interface PluginThreadHeaderActionSlot
+interface PluginThreadHeaderActionSlot
   extends PluginThreadHeaderActionRegistration, PluginSlotBase {}
 export interface PluginFileOpenerSlot
   extends PluginFileOpenerRegistration, PluginSlotBase {}
+export interface PluginSourceCodeRendererSlot
+  extends PluginSourceCodeRendererRegistration, PluginSlotBase {}
+export interface PluginDiffRendererSlot
+  extends PluginDiffRendererRegistration, PluginSlotBase {}
 export interface PluginMessageDirectiveSlot
   extends PluginMessageDirectiveRegistration, PluginSlotBase {}
 export interface PluginMessageActionSlot
   extends PluginMessageActionRegistration, PluginSlotBase {}
-export interface PluginProviderIconSlot
+export interface PluginCommandPaletteActionSlot
+  extends PluginCommandPaletteActionRegistration, PluginSlotBase {}
+interface PluginProviderIconSlot
   extends PluginProviderIconRegistration, PluginSlotBase {}
 
 /** Flattened view across plugins, ordered by plugin id (deterministic). */
@@ -101,8 +119,11 @@ export interface PluginSlotSnapshot {
   threadLists: readonly PluginThreadListSlot[];
   threadHeaderActions: readonly PluginThreadHeaderActionSlot[];
   fileOpeners: readonly PluginFileOpenerSlot[];
+  sourceCodeRenderers: readonly PluginSourceCodeRendererSlot[];
+  diffRenderers: readonly PluginDiffRendererSlot[];
   messageDirectives: readonly PluginMessageDirectiveSlot[];
   messageActions: readonly PluginMessageActionSlot[];
+  commandPaletteActions: readonly PluginCommandPaletteActionSlot[];
   providerIcons: readonly PluginProviderIconSlot[];
 }
 
@@ -118,8 +139,11 @@ export const EMPTY_PLUGIN_SLOT_SNAPSHOT: PluginSlotSnapshot = {
   threadLists: [],
   threadHeaderActions: [],
   fileOpeners: [],
+  sourceCodeRenderers: [],
+  diffRenderers: [],
   messageDirectives: [],
   messageActions: [],
+  commandPaletteActions: [],
   providerIcons: [],
 };
 
@@ -142,8 +166,11 @@ const SLOT_KINDS: readonly SlotKind[] = [
   "threadLists",
   "threadHeaderActions",
   "fileOpeners",
+  "sourceCodeRenderers",
+  "diffRenderers",
   "messageDirectives",
   "messageActions",
+  "commandPaletteActions",
   "providerIcons",
 ];
 
@@ -187,8 +214,11 @@ function flattenRegistrations(
     threadLists: stamp(set.threadLists),
     threadHeaderActions: stamp(set.threadHeaderActions),
     fileOpeners: stamp(set.fileOpeners),
+    sourceCodeRenderers: stamp(set.sourceCodeRenderers),
+    diffRenderers: stamp(set.diffRenderers),
     messageDirectives: stamp(set.messageDirectives),
     messageActions: stamp(set.messageActions),
+    commandPaletteActions: stamp(set.commandPaletteActions),
     providerIcons: stamp(set.providerIcons),
   };
 }

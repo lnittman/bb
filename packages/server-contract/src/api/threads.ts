@@ -86,9 +86,6 @@ export type ExistingThreadExecutionInputSources = z.infer<
 // first message), mirroring the `client/turn/requested` event whose
 // `senderThreadId` is non-null only for agent/system starts.
 export const startedOnBehalfOfInitiatorSchema = z.enum(["agent", "system"]);
-export type StartedOnBehalfOfInitiator = z.infer<
-  typeof startedOnBehalfOfInitiatorSchema
->;
 
 export const startedOnBehalfOfSchema = z.object({
   initiator: startedOnBehalfOfInitiatorSchema,
@@ -170,6 +167,12 @@ const agentOnlyPromptInputSchema = promptInputSchema.and(
 export const forkThreadRequestSchema = z
   .object({
     sourceThreadId: z.string().min(1),
+    /**
+     * Anchor the fork on the completed source turn containing this sequence:
+     * the cloned provider session and the inherited timeline both end with
+     * that turn (a user message row anchors before its own turn). Absent
+     * forks the session tip and inherits every completed turn.
+     */
     sourceSeqEnd: z.number().int().nonnegative().optional(),
     input: z.array(promptInputSchema).min(1).optional(),
     /** Context persisted on the fork start but hidden from user-facing output. */
@@ -307,9 +310,6 @@ export const threadMentionResolutionSchema = z
     label: z.string().min(1),
   })
   .strict();
-export type ThreadMentionResolution = z.infer<
-  typeof threadMentionResolutionSchema
->;
 
 export const resolveThreadMentionsResponseSchema = z.array(
   threadMentionResolutionSchema,
@@ -771,6 +771,16 @@ export type ThreadStorageContentQuery = z.infer<
   typeof threadStorageContentQuerySchema
 >;
 
+export const threadStorageLocationResponseSchema = z
+  .object({
+    hostId: z.string().min(1),
+    storageRootPath: z.string().min(1),
+  })
+  .strict();
+export type ThreadStorageLocationResponse = z.infer<
+  typeof threadStorageLocationResponseSchema
+>;
+
 export const threadHostFileContentQuerySchema = z.object({
   path: z.string().min(1),
 });
@@ -789,9 +799,6 @@ export const timelineTurnSummaryDetailsRequestSchema = z.object({
   sourceSeqStart: z.number().int().nonnegative(),
   sourceSeqEnd: z.number().int().nonnegative(),
 });
-export type TimelineTurnSummaryDetailsRequest = z.infer<
-  typeof timelineTurnSummaryDetailsRequestSchema
->;
 
 export const timelineTurnSummaryDetailsResponseSchema = z.object({
   rows: z.array(timelineRowSchema),

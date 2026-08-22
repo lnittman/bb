@@ -17,7 +17,6 @@ import {
 } from "@/hooks/queries/thread-terminal-queries";
 import {
   useActiveFixedRightTerminalId,
-  useCloseFixedSecondaryPanel,
   useRemoveFixedRightTerminalTab,
   useSetFixedRightTerminalActiveTerminal,
 } from "@/lib/fixed-panel-tabs";
@@ -47,6 +46,8 @@ export interface ThreadTerminalControllerArgs {
   isPanelOpen: boolean;
   isPanelPersistedOpen: boolean;
   panelStateId?: string;
+  /** Pins this controller to one pane-owned terminal without changing global tab selection. */
+  preferredTerminalId?: string;
   /** Thread whose tabs are server-synced; null for local-only panel state. */
   syncThreadId: string | null;
   fixedPanelTarget?: TerminalCreateTarget;
@@ -56,21 +57,15 @@ export interface ThreadTerminalControllerArgs {
 
 export interface ThreadTerminalController {
   activeSession: TerminalSession | null;
-  activeTerminalId: string | null;
   canCreateTerminal: boolean;
-  closingTerminalId: string | null;
-  emptyTerminalMessage: string;
   handleActiveTerminalSessionChange: (session: TerminalSession) => void;
   handleActiveTerminalTitleChange: ThreadTerminalTitleChangeHandler;
   handleActiveTerminalUserInput: ThreadTerminalActionHandler;
-  handleClosePanel: ThreadTerminalActionHandler;
-  handleCloseTerminal: ThreadTerminalIdHandler;
   handleCreateTerminal: ThreadTerminalActionHandler;
   handleSelectTerminal: ThreadTerminalIdHandler;
   hasTerminalQueryError: boolean;
   isCreateTerminalPending: boolean;
   isPanelOpen: boolean;
-  isTerminalQueryLoading: boolean;
   /**
    * Whether the terminal UI (xterm + its socket) should be mounted right now.
    * True while the panel is open, and — once the panel has been opened on this
@@ -79,10 +74,8 @@ export interface ThreadTerminalController {
    * avoids re-creating xterm/WebGL and replaying the scrollback on every open.
    */
   shouldMountTerminalView: boolean;
-  showTerminalPlaceholders: boolean;
   shouldRetainActiveTerminalView: boolean;
   terminalBodyMessage: string;
-  visibleSessions: readonly TerminalSession[];
 }
 
 interface TerminalTitleRenameRequest {
@@ -91,8 +84,8 @@ interface TerminalTitleRenameRequest {
 }
 
 type ThreadTerminalActionHandler = () => void;
-export type ThreadTerminalIdHandler = (terminalId: string) => void;
-export type ThreadTerminalTitleChangeHandler = (title: string) => void;
+type ThreadTerminalIdHandler = (terminalId: string) => void;
+type ThreadTerminalTitleChangeHandler = (title: string) => void;
 type TerminalTitleRenameTimeout = number;
 type TerminalCloseMode = "force" | "if-clean";
 
@@ -187,24 +180,12 @@ export function pickActiveTerminalId(
   return sessions[0]?.id ?? null;
 }
 
-export function terminalStatusLabel(session: TerminalSession): string {
-  switch (session.status) {
-    case "starting":
-      return "starting";
-    case "running":
-      return "running";
-    case "disconnected":
-      return "disconnected";
-    case "exited":
-      return "exited";
-  }
-}
-
 export function useThreadTerminalController({
   canCreateTerminal,
   isPanelOpen,
   isPanelPersistedOpen,
   panelStateId,
+  preferredTerminalId,
   syncThreadId,
   fixedPanelTarget,
   fixedTerminalId,
@@ -223,10 +204,6 @@ export function useThreadTerminalController({
     target.kind === "environment" ? target.environmentId : "";
   const fixedPanelStateId = panelStateId ?? terminalTargetId;
   const activeFixedTerminalId = useActiveFixedRightTerminalId(
-    fixedPanelStateId,
-    syncThreadId,
-  );
-  const closeFixedSecondaryPanel = useCloseFixedSecondaryPanel(
     fixedPanelStateId,
     syncThreadId,
   );
@@ -343,10 +320,15 @@ export function useThreadTerminalController({
     () =>
       pickActiveTerminalId(
         visibleSessions,
-        activeFixedTerminalId,
+        preferredTerminalId ?? activeFixedTerminalId,
         fixedTerminalId,
       ),
-    [activeFixedTerminalId, fixedTerminalId, visibleSessions],
+    [
+      activeFixedTerminalId,
+      fixedTerminalId,
+      preferredTerminalId,
+      visibleSessions,
+    ],
   );
   const activeSession =
     visibleSessions.find((session) => session.id === activeTerminalId) ?? null;
@@ -381,7 +363,10 @@ export function useThreadTerminalController({
     if (!isPanelOpen || terminalsQuery.isLoading || terminalsQuery.error) {
       return;
     }
-    if (activeFixedTerminalId === activeTerminalId) {
+    if (
+      preferredTerminalId !== undefined ||
+      activeFixedTerminalId === activeTerminalId
+    ) {
       return;
     }
     setActiveFixedTerminal(activeTerminalId);
@@ -389,6 +374,7 @@ export function useThreadTerminalController({
     activeFixedTerminalId,
     activeTerminalId,
     isPanelOpen,
+    preferredTerminalId,
     setActiveFixedTerminal,
     terminalsQuery.error,
     terminalsQuery.isLoading,
@@ -622,22 +608,6 @@ export function useThreadTerminalController({
     [setActiveFixedTerminal],
   );
 
-  const handleCloseTerminal = useCallback(
-    (terminalId: string) => {
-      closeTerminal({
-        mode: "force",
-        terminalId,
-        onSuccess: () => {
-          uiCreatedTerminalIdsRef.current.delete(terminalId);
-          dirtyTerminalIdsRef.current.delete(terminalId);
-          closingCleanTerminalIdsRef.current.delete(terminalId);
-          removeFixedTerminalTab(terminalId);
-        },
-      });
-    },
-    [closeTerminal, removeFixedTerminalTab],
-  );
-
   const handleActiveTerminalSessionChange = useCallback(
     (session: TerminalSession) => {
       if (session.status === "exited") {
@@ -741,19 +711,11 @@ export function useThreadTerminalController({
       ],
     );
 
-  const handleClosePanel = useCallback(() => {
-    closeFixedSecondaryPanel();
-  }, [closeFixedSecondaryPanel]);
-
   const terminalIsReplacing =
     activeSession?.status === "disconnected" &&
     isCloseTerminalPending &&
     closingTerminalVariables?.terminalId === activeSession.id;
   const terminalIsStarting = isCreateTerminalPending || terminalIsReplacing;
-
-  const emptyTerminalMessage = terminalIsStarting
-    ? "Starting terminal..."
-    : "No terminals";
 
   const inactiveTerminalBodyMessage = canCreateTerminal
     ? "Starting terminal..."
@@ -763,36 +725,19 @@ export function useThreadTerminalController({
     ? inactiveTerminalBodyMessage
     : "No terminals";
 
-  const showTerminalPlaceholders =
-    terminalsQuery.isLoading ||
-    (visibleSessions.length === 0 && terminalIsStarting);
-
-  const closingTerminalId =
-    isCloseTerminalPending && closingTerminalVariables
-      ? closingTerminalVariables.terminalId
-      : null;
-
   return {
     activeSession,
-    activeTerminalId,
     canCreateTerminal,
-    closingTerminalId,
-    emptyTerminalMessage,
     handleActiveTerminalSessionChange,
     handleActiveTerminalTitleChange,
     handleActiveTerminalUserInput,
-    handleClosePanel,
-    handleCloseTerminal,
     handleCreateTerminal,
     handleSelectTerminal,
     hasTerminalQueryError: terminalsQuery.error !== null,
     isCreateTerminalPending,
     isPanelOpen,
-    isTerminalQueryLoading: terminalsQuery.isLoading,
     shouldMountTerminalView,
-    showTerminalPlaceholders,
     shouldRetainActiveTerminalView,
     terminalBodyMessage,
-    visibleSessions,
   };
 }

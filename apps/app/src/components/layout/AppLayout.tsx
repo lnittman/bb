@@ -1,11 +1,11 @@
 import {
-  type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   type Ref,
   type ReactNode,
 } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAtom, useStore } from "jotai";
+import { flushSync } from "react-dom";
+import { atom, useAtom, useAtomValue, useStore } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import { Link, matchPath, useLocation, useNavigate } from "react-router-dom";
 import type { ProjectResponse } from "@bb/server-contract";
@@ -21,6 +21,7 @@ import {
   useSidebarThreadTitleMentionResources,
 } from "@/components/thread/ThreadTitleMentions";
 import { AppCommandShortcutHint } from "@/components/commands/AppCommandShortcutHint";
+import { CommandPalette } from "@/components/commands/CommandPalette";
 import {
   resolveAutomationBreadcrumbs,
   resolveToolsAreaHeaderMeta,
@@ -40,7 +41,6 @@ import {
 } from "@/hooks/queries/thread-queries";
 import { useRouteState } from "@/hooks/useRouteState";
 import { getThreadDisplayTitle } from "@/lib/thread-title";
-import { applyResizeCursor, clearResizeCursor } from "@/lib/resizeCursor";
 import { cn } from "@bb/shared-ui/lib/utils";
 import { ProjectPathDialog } from "@/components/dialogs/ProjectPathDialog";
 import { ProjectActionsMenu } from "@/components/project/ProjectActionsMenu";
@@ -97,7 +97,6 @@ import { wsManager } from "@/lib/ws";
 import { splitLayoutAtom } from "@/lib/split-layout/atoms";
 import { findPaneByThread } from "@/lib/split-layout";
 import { applyThreadOpenToLayout } from "@/views/thread-detail/splitThreadNavigation";
-import { useThreadSplitsEnabled } from "@/hooks/useThreadSplitsEnabled";
 import { useAppSettingsRouteMemory } from "@/hooks/useAppSettingsRouteMemory";
 import { useSetRootComposeProjectId } from "@/lib/root-compose-selection";
 
@@ -130,6 +129,13 @@ const sidebarWidthAtom = atomWithStorage<number>(
   sidebarWidthStorage,
   { getOnInit: true },
 );
+// The in-flight width while the resize handle is dragged, or null at rest.
+// Written from the drag's animation-frame callback and read only by the
+// bridge below, so a frame of dragging re-renders the bridge and the
+// `Sidebar` element (which writes `--sidebar-width` on the two elements that
+// use it) and nothing else: not AppLayout, not the route subtree, and no
+// ancestor of the thread timeline changes style.
+const sidebarLiveWidthAtom = atom<number | null>(null);
 
 // Held in jotai (rather than as `useState` inside AppLayout) so that toggling
 // the sidebar does not re-render AppLayout — only the small bridge below
@@ -152,26 +158,20 @@ const sidebarOpenAtom = atomWithStorage<boolean>(
 );
 
 interface SidebarStateBridgeProps {
-  className?: string;
   providerRef: Ref<HTMLDivElement>;
-  style: CSSProperties;
   children: ReactNode;
 }
 
 type SidebarResizeMouseEvent = ReactMouseEvent<HTMLDivElement>;
 type SidebarOpenChangeHandler = (open: boolean) => void;
 
-type SidebarProviderStyle = CSSProperties & {
-  "--sidebar-width": string;
-};
-
 function SidebarStateBridge({
-  className,
   providerRef,
-  style,
   children,
 }: SidebarStateBridgeProps) {
   const [open, setOpen] = useAtom(sidebarOpenAtom);
+  const sidebarWidth = useAtomValue(sidebarWidthAtom);
+  const sidebarLiveWidth = useAtomValue(sidebarLiveWidthAtom);
   const handleOpenChange = useCallback<SidebarOpenChangeHandler>(
     (nextOpen) => {
       setOpen(nextOpen);
@@ -186,8 +186,7 @@ function SidebarStateBridge({
   return (
     <SidebarProvider
       ref={providerRef}
-      style={style}
-      className={className}
+      width={`${sidebarLiveWidth ?? sidebarWidth}px`}
       data-testid="app-layout-root"
       open={open}
       onOpenChange={handleOpenChange}
@@ -199,8 +198,6 @@ function SidebarStateBridge({
 
 function resetSidebarResizeDocumentState(): void {
   document.body.classList.remove("sidebar-resizing");
-  clearResizeCursor();
-  document.body.style.userSelect = "";
 }
 
 interface SidebarTriggerOverlayProps {
@@ -283,16 +280,14 @@ function SidebarTriggerOverlay({
   );
 }
 
-const routeTitles: Record<string, { title: string; subtitle?: string }> = {
+const routeTitles: Record<string, { title: string }> = {
   "/": { title: "bb" },
   "/settings": { title: "Settings" },
   "/automations": { title: "Automations" },
   "/skills": { title: "Skills" },
 };
 
-function resolveRouteTitle(
-  pathname: string,
-): { title: string; subtitle?: string } | undefined {
+function resolveRouteTitle(pathname: string): { title: string } | undefined {
   // The global settings page owns /settings/:section. Legacy plugin settings
   // links still match briefly before AppRoutes redirects them to Tools.
   if (matchPath(`${SETTINGS_ROUTE_PATH}/*`, pathname)) {
@@ -321,7 +316,6 @@ interface AppHeaderProps {
   pluginPanelSubPath?: string;
   meta: {
     title: string;
-    subtitle?: string;
     breadcrumbs?: Array<{ label: string; to?: string }>;
   };
 }
@@ -341,10 +335,7 @@ function AppHeader({
   const headerTitle =
     headerBreadcrumbs || usesProjectChromeStyle ? undefined : meta.title;
 
-  const hasCenterContent =
-    Boolean(headerBreadcrumbs) ||
-    Boolean(headerTitle) ||
-    Boolean(meta.subtitle);
+  const hasCenterContent = Boolean(headerBreadcrumbs) || Boolean(headerTitle);
 
   const center = headerBreadcrumbs ? (
     <div className="min-w-0 flex-1">
@@ -359,11 +350,6 @@ function AppHeader({
     <div className="min-w-0 flex-1">
       {headerTitle ? (
         <p className="truncate text-sm font-semibold">{headerTitle}</p>
-      ) : null}
-      {meta.subtitle ? (
-        <p className="truncate text-xs text-muted-foreground">
-          {meta.subtitle}
-        </p>
       ) : null}
     </div>
   ) : null;
@@ -410,7 +396,6 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const quickCreateProject = useQuickCreateProjectController();
   const isCompactViewport = useIsCompactViewport();
-  const threadSplitsEnabled = useThreadSplitsEnabled();
   const store = useStore();
   const contentShellRef = useRef<HTMLDivElement>(null);
   const providerRef = useRef<HTMLDivElement>(null);
@@ -477,10 +462,6 @@ export function AppLayout({ children }: AppLayoutProps) {
           projectId: signal.projectId,
           threadId: signal.threadId,
         });
-        if (!threadSplitsEnabled) {
-          void navigate(route);
-          return;
-        }
         const current = store.get(splitLayoutAtom);
         const alreadyOpen =
           current !== null &&
@@ -496,7 +477,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         }
         void navigate(route, alreadyOpen ? { replace: true } : undefined);
       }),
-    [isCompactViewport, navigate, store, threadSplitsEnabled],
+    [isCompactViewport, navigate, store],
   );
   useAppCommandHandler("thread.new", () => {
     if (projectId !== undefined) {
@@ -564,11 +545,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   });
   const hasThreadDetailBootstrapSettled =
     threadDetailBootstrapQuery.isSuccess || threadDetailBootstrapQuery.isError;
-  const [sidebarWidth, setSidebarWidth] = useAtom(sidebarWidthAtom);
+  // The committed width is read and written through the store, not
+  // subscribed to: AppLayout must not re-render when a resize commits.
   const [isSidebarResizing, setIsSidebarResizing] = useState(false);
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
-  const liveWidthRef = useRef(sidebarWidth);
+  const liveWidthRef = useRef(0);
   const animationFrameRef = useRef<number | null>(null);
   // Plugin pages own the same page header + secondary-panel frame whether they
   // render alone or in a split. Avoid drawing the global header above it.
@@ -580,10 +562,6 @@ export function AppLayout({ children }: AppLayoutProps) {
     desktopInfo,
     windowState: desktopWindowState,
   });
-  const sidebarProviderStyle: SidebarProviderStyle = {
-    "--sidebar-width": `${sidebarWidth}px`,
-  };
-
   const project = projectId
     ? projects?.find((candidate) => candidate.id === projectId)
     : undefined;
@@ -623,29 +601,21 @@ export function AppLayout({ children }: AppLayoutProps) {
   const documentTitleBreadcrumbs = toolsBreadcrumbs ?? automationBreadcrumbs;
   const toolsAreaHeaderMeta = resolveToolsAreaHeaderMeta(
     location.pathname,
-    // Extensions graduated from experiments (#1360): the hub is always on.
-    true,
     resourceRouteLabel,
     location.search,
   );
-  const meta = isThreadView
-    ? {
-        title: thread ? getThreadDisplayTitle(thread) : "Thread",
-        subtitle: undefined,
-      }
-    : toolsAreaHeaderMeta?.kind === "extensions-title"
-      ? { title: toolsAreaHeaderMeta.title, subtitle: undefined }
+  const meta =
+    toolsAreaHeaderMeta?.kind === "extensions-title"
+      ? { title: toolsAreaHeaderMeta.title }
       : toolsAreaHeaderMeta?.kind === "breadcrumbs"
         ? {
             title: "",
-            subtitle: undefined,
             breadcrumbs: toolsAreaHeaderMeta.breadcrumbs,
           }
         : isArchivedView && projectId
           ? isProjectlessProjectId(projectId)
             ? {
                 title: "",
-                subtitle: undefined,
                 breadcrumbs: [
                   { label: "Threads", to: getRootComposeRoutePath() },
                   ...(archivedSectionName
@@ -656,7 +626,6 @@ export function AppLayout({ children }: AppLayoutProps) {
               }
             : {
                 title: "",
-                subtitle: undefined,
                 breadcrumbs: [
                   {
                     label: projectLabel ?? projectId,
@@ -668,7 +637,6 @@ export function AppLayout({ children }: AppLayoutProps) {
           : isSettingsView && projectId
             ? {
                 title: "",
-                subtitle: undefined,
                 breadcrumbs: [
                   {
                     label: projectLabel ?? projectId,
@@ -680,7 +648,6 @@ export function AppLayout({ children }: AppLayoutProps) {
             : projectId
               ? {
                   title: projectLabel ?? projectId,
-                  subtitle: undefined,
                 }
               : (resolveRouteTitle(location.pathname) ?? { title: "" });
 
@@ -738,17 +705,24 @@ export function AppLayout({ children }: AppLayoutProps) {
     : "none";
   useFaviconBadge(faviconBadge);
 
+  // Drag-time document state is deliberately minimal: only the
+  // `sidebar-resizing` body class (matched by selector, so its invalidation is
+  // scoped to `[data-sidebar]` elements). `preventDefault` on the mousedown
+  // stops a text selection from starting, and the drag-guard overlay (the
+  // pointer target for the whole drag) carries the resize cursor. Setting
+  // `user-select` or `cursor` on `body` instead would change an inherited
+  // property on the document root and restyle every element on mousedown and
+  // again on mouseup.
   const handleResizeMouseDown = useCallback(
     (event: SidebarResizeMouseEvent) => {
       event.preventDefault();
       setIsSidebarResizing(true);
       startXRef.current = event.clientX;
-      startWidthRef.current = liveWidthRef.current;
+      startWidthRef.current = store.get(sidebarWidthAtom);
+      liveWidthRef.current = startWidthRef.current;
       document.body.classList.add("sidebar-resizing");
-      applyResizeCursor("horizontal");
-      document.body.style.userSelect = "none";
     },
-    [],
+    [store],
   );
 
   const finishSidebarResize = useCallback(() => {
@@ -756,25 +730,27 @@ export function AppLayout({ children }: AppLayoutProps) {
       window.cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
-    providerRef.current?.style.setProperty(
-      "--sidebar-width",
-      `${liveWidthRef.current}px`,
-    );
+    // flushSync so the sidebar is at its final width in the DOM before the
+    // bounds sync below measures it.
+    flushSync(() => {
+      store.set(sidebarWidthAtom, liveWidthRef.current);
+      store.set(sidebarLiveWidthAtom, null);
+    });
     dispatchBrowserViewBoundsSync();
-    setSidebarWidth(liveWidthRef.current);
     setIsSidebarResizing(false);
     resetSidebarResizeDocumentState();
-  }, [setSidebarWidth]);
+  }, [store]);
 
   useEffect(() => {
     if (!isSidebarResizing) return;
 
     const applyLiveWidth = () => {
       animationFrameRef.current = null;
-      providerRef.current?.style.setProperty(
-        "--sidebar-width",
-        `${liveWidthRef.current}px`,
-      );
+      // flushSync commits the new width to the DOM inside this frame, so the
+      // bounds sync measures the moved content rect rather than last frame's.
+      flushSync(() => {
+        store.set(sidebarLiveWidthAtom, liveWidthRef.current);
+      });
       dispatchBrowserViewBoundsSync();
     };
 
@@ -806,13 +782,12 @@ export function AppLayout({ children }: AppLayoutProps) {
         window.cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
+      // Unmount mid-drag: drop the in-flight width so a remount shows the
+      // committed one.
+      store.set(sidebarLiveWidthAtom, null);
       resetSidebarResizeDocumentState();
     };
-  }, [finishSidebarResize, isSidebarResizing]);
-
-  useEffect(() => {
-    liveWidthRef.current = sidebarWidth;
-  }, [sidebarWidth]);
+  }, [finishSidebarResize, isSidebarResizing, store]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -823,11 +798,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <ProjectActionsProvider>
       <ThreadTitleMentionResourcesProvider {...titleMentionResources}>
         <ThreadActionsProvider>
-          <IframeDragGuardOverlay active={isSidebarResizing} />
-          <SidebarStateBridge
-            providerRef={providerRef}
-            style={sidebarProviderStyle}
-          >
+          <SidebarStateBridge providerRef={providerRef}>
             <AppLayoutSidebar
               mode={
                 isGlobalSettingsView
@@ -874,6 +845,14 @@ export function AppLayout({ children }: AppLayoutProps) {
               usesDesktopChrome={usesDesktopChrome}
             />
           </SidebarStateBridge>
+          <IframeDragGuardOverlay
+            active={isSidebarResizing}
+            cursor="col-resize"
+          />
+          <CommandPalette
+            threadId={threadId ?? null}
+            projectId={projectId ?? null}
+          />
           <ProjectPathDialog
             target={quickCreateProject.projectPathDialog.target}
             pending={quickCreateProject.isCreating}

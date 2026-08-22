@@ -66,7 +66,6 @@ import {
   DownloadLink,
   EmailSignup,
   GitHubLink,
-  ProductHuntCallout,
 } from "../landing/cta";
 import { SiteFooter, SiteNav } from "../landing/site-chrome";
 import {
@@ -83,7 +82,6 @@ import type { CtaPlacement } from "../landing/site";
 import {
   CLI_COMMAND,
   OG_DESCRIPTION,
-  PRODUCT_HUNT_LAUNCH_ACTIVE,
   SITE_DESCRIPTION,
   SITE_TITLE,
   unfurlMeta,
@@ -3115,17 +3113,11 @@ function LandingPage() {
       <SiteNav />
 
       <header className="hero">
-        {PRODUCT_HUNT_LAUNCH_ACTIVE ? (
-          <ProductHuntCallout placement="hero" />
-        ) : (
-          <a className="updates-callout" href={LATEST_RELEASE_URL}>
-            <span className="updates-label">New</span>
-            <span className="updates-title">
-              {LATEST_RELEASE_META.headline}
-            </span>
-            <ChevronRight className="updates-arrow" />
-          </a>
-        )}
+        <a className="updates-callout" href={LATEST_RELEASE_URL}>
+          <span className="updates-label">New</span>
+          <span className="updates-title">{LATEST_RELEASE_META.headline}</span>
+          <ChevronRight className="updates-arrow" />
+        </a>
         <h1>The IDE that builds itself</h1>
         <p className="sub">
           Mission control for coding agents. Claude Code, Codex, Cursor, and

@@ -41,6 +41,7 @@ import type {
   SystemChangeKind,
   ThreadChangeKind,
   ThreadEventType,
+  ThreadStatusChangeMetadata,
   ThreadWithRuntime,
 } from "@bb/domain";
 import {
@@ -54,9 +55,11 @@ import {
   getEnvironmentBranchListInvalidationQueryKeys,
   getEnvironmentRecordInvalidationQueryKeys,
   getEnvironmentWorkspaceStateInvalidationQueryKeys,
+  getFetchingThreadListQueryKeys,
   isArchivedThreadListQueryKey,
   removeEnvironmentDiffPatchQueries,
   updateCachedThreadListPendingInteractionState,
+  updateCachedThreadListStatusState,
 } from "./query-cache";
 import {
   getCachedThreadLists,
@@ -73,6 +76,7 @@ import {
   allProjectCommandsQueryKeyPrefix,
   allThreadStorageFilePreviewQueryKeyPrefix,
   allThreadStorageFilesQueryKeyPrefix,
+  allThreadStorageLocationsQueryKeyPrefix,
   allThreadStoragePathsQueryKeyPrefix,
   allSystemExecutionOptionsQueryKeyPrefix,
   allThreadQueryKeyPrefix,
@@ -93,6 +97,7 @@ import {
   threadsQueryKey,
   threadStorageFilePreviewQueryKeyPrefix,
   threadStorageFilesForThreadQueryKeyPrefix,
+  threadStorageLocationQueryKey,
   threadStoragePathsForThreadQueryKeyPrefix,
   threadTimelineQueryKeyPrefix,
 } from "../queries/query-keys";
@@ -101,6 +106,7 @@ import {
   getProjectListInvalidationQueryKeys,
   getProjectPromptHistoryInvalidationQueryKeys,
   getProjectSourceDependentInvalidationQueryKeys,
+  getThreadConversationOutlineInvalidationQueryKeys,
   getThreadDetailInvalidationQueryKeys,
   getThreadListInvalidationQueryKeys,
   getThreadPendingInteractionInvalidationQueryKeys,
@@ -204,8 +210,7 @@ function hasActiveQueries(
   queryKey: QueryKey,
 ): boolean {
   return (
-    queryClient.getQueryCache().findAll({ queryKey, type: "active" }).length >
-    0
+    queryClient.getQueryCache().findAll({ queryKey, type: "active" }).length > 0
   );
 }
 
@@ -427,7 +432,7 @@ export const REALTIME_THREAD_CHANGE_REGISTRY = {
   "status-changed": {
     flush: "immediate",
     dirty: [
-      dirtyActiveThreadListQueries, // List rows render status/runtime badges; archived pages only go stale.
+      patchThreadListStatusState, // List rows patch status/runtime from notification metadata; refetch only without it.
       dirtyThreadDetailQueries, // Detail controls and banners depend on status.
     ],
   },
@@ -629,13 +634,13 @@ export const REALTIME_SYSTEM_CHANGE_REGISTRY = {
   },
 } satisfies SystemChangeRegistry;
 
-export type ThreadChangeFlushPriority = "debounced" | "immediate";
+type ThreadChangeFlushPriority = "debounced" | "immediate";
 
-export interface RealtimeDirtyContext {
+interface RealtimeDirtyContext {
   queryClient: QueryClient;
 }
 
-export interface ThreadRealtimeDirtyContext extends RealtimeDirtyContext {
+interface ThreadRealtimeDirtyContext extends RealtimeDirtyContext {
   backgroundActivityChanged: boolean | undefined;
   eventTypes: readonly ThreadEventType[] | undefined;
   /**
@@ -646,6 +651,7 @@ export interface ThreadRealtimeDirtyContext extends RealtimeDirtyContext {
   flushOnce: (key: string) => boolean;
   hasPendingInteraction: boolean | undefined;
   projectId: string | undefined;
+  statusChange: ThreadStatusChangeMetadata | undefined;
   threadId: string | undefined;
 }
 
@@ -660,66 +666,61 @@ export function createFlushOncePredicate(): (key: string) => boolean {
   };
 }
 
-export interface EnvironmentRealtimeDirtyContext extends RealtimeDirtyContext {
+interface EnvironmentRealtimeDirtyContext extends RealtimeDirtyContext {
   environmentId: string;
   getCachedThreadIdsForEnvironment: () => string[];
 }
 
-export interface ProjectRealtimeDirtyContext extends RealtimeDirtyContext {
+interface ProjectRealtimeDirtyContext extends RealtimeDirtyContext {
   projectId: string | undefined;
 }
 
-export type HostRealtimeDirtyContext = RealtimeDirtyContext;
+type HostRealtimeDirtyContext = RealtimeDirtyContext;
 
-export type RealtimeDirtyHandler<Context extends RealtimeDirtyContext> = (
+type RealtimeDirtyHandler<Context extends RealtimeDirtyContext> = (
   context: Context,
 ) => readonly QueryKey[] | void;
 
-export interface ExecuteRealtimeDirtyHandlersArgs<
+interface ExecuteRealtimeDirtyHandlersArgs<
   Context extends RealtimeDirtyContext,
 > {
   context: Context;
   handlers: readonly RealtimeDirtyHandler<Context>[];
 }
 
-export interface ThreadChangeRule {
+interface ThreadChangeRule {
   dirty: readonly RealtimeDirtyHandler<ThreadRealtimeDirtyContext>[];
   flush: ThreadChangeFlushPriority;
 }
 
-export type ThreadChangeRegistry = Record<ThreadChangeKind, ThreadChangeRule>;
+type ThreadChangeRegistry = Record<ThreadChangeKind, ThreadChangeRule>;
 
-export interface EnvironmentChangeRule {
+interface EnvironmentChangeRule {
   dirty: readonly RealtimeDirtyHandler<EnvironmentRealtimeDirtyContext>[];
 }
 
-export type EnvironmentChangeRegistry = Record<
+type EnvironmentChangeRegistry = Record<
   EnvironmentChangeKind,
   EnvironmentChangeRule
 >;
 
-export interface ProjectChangeRule {
+interface ProjectChangeRule {
   dirty: readonly RealtimeDirtyHandler<ProjectRealtimeDirtyContext>[];
 }
 
-export type ProjectChangeRegistry = Record<
-  ProjectChangeKind,
-  ProjectChangeRule
->;
+type ProjectChangeRegistry = Record<ProjectChangeKind, ProjectChangeRule>;
 
-export interface HostChangeRule {
+interface HostChangeRule {
   dirty: readonly RealtimeDirtyHandler<HostRealtimeDirtyContext>[];
 }
 
-export type HostChangeRegistry = Record<HostChangeKind, HostChangeRule>;
+type HostChangeRegistry = Record<HostChangeKind, HostChangeRule>;
 
-export interface SystemChangeRule {
+interface SystemChangeRule {
   dirty: readonly RealtimeDirtyHandler<RealtimeDirtyContext>[];
 }
 
-export type SystemChangeRegistry = Partial<
-  Record<SystemChangeKind, SystemChangeRule>
->;
+type SystemChangeRegistry = Partial<Record<SystemChangeKind, SystemChangeRule>>;
 
 export function executeRealtimeDirtyHandlers<
   Context extends RealtimeDirtyContext,
@@ -902,7 +903,14 @@ function dirtyThreadTimelineQueries({
 }: ThreadRealtimeDirtyContext): void {
   // Window only: completed turn-summary-details are immutable, so realtime
   // event batches must not refetch open detail panels (see helper docs).
-  const queryKeys = getThreadTimelineWindowInvalidationQueryKeys({ threadId });
+  const timelineQueryKeys = getThreadTimelineWindowInvalidationQueryKeys({
+    threadId,
+  });
+  const outlineQueryKeys = getThreadConversationOutlineInvalidationQueryKeys({
+    threadId,
+  });
+  const outlineMayHaveChanged =
+    eventTypes === undefined || eventTypes.includes("turn/completed");
   if (
     threadId !== undefined &&
     !hasActiveQueries(queryClient, threadTimelineQueryKeyPrefix(threadId))
@@ -910,16 +918,28 @@ function dirtyThreadTimelineQueries({
     // Nobody is viewing this thread: mark the cached window stale so a remount
     // refetches, but skip the fetch pacing/cancel machinery. List
     // subscriptions deliver every streaming thread's batches to every client.
-    for (const queryKey of queryKeys) {
+    for (const queryKey of [...timelineQueryKeys, ...outlineQueryKeys]) {
       queryClient.invalidateQueries({ queryKey, refetchType: "none" });
     }
     return;
   }
   if (eventTypes?.includes("turn/completed")) {
-    invalidateTerminalTimelineQueryKeys({ queryClient, queryKeys });
+    invalidateTerminalTimelineQueryKeys({
+      queryClient,
+      queryKeys: [...timelineQueryKeys, ...outlineQueryKeys],
+    });
     return;
   }
-  invalidateQueryKeysWithoutCancelingActiveFetches({ queryClient, queryKeys });
+  invalidateQueryKeysWithoutCancelingActiveFetches({
+    queryClient,
+    queryKeys: timelineQueryKeys,
+  });
+  if (outlineMayHaveChanged) {
+    invalidateQueryKeysWithoutCancelingActiveFetches({
+      queryClient,
+      queryKeys: outlineQueryKeys,
+    });
+  }
 }
 
 function dirtyThreadTimelineRewriteQueries({
@@ -982,12 +1002,14 @@ function dirtyThreadStorageQueriesForThread({
   if (!threadId) {
     return [
       allThreadStorageFilesQueryKeyPrefix(),
+      allThreadStorageLocationsQueryKeyPrefix(),
       allThreadStoragePathsQueryKeyPrefix(),
       allThreadStorageFilePreviewQueryKeyPrefix(),
     ];
   }
   return [
     threadStorageFilesForThreadQueryKeyPrefix(threadId),
+    threadStorageLocationQueryKey(threadId),
     threadStoragePathsForThreadQueryKeyPrefix(threadId),
     threadStorageFilePreviewQueryKeyPrefix(threadId),
   ];
@@ -1060,6 +1082,32 @@ function patchThreadListPendingInteractionState({
     threadId,
     hasPendingInteraction,
   );
+}
+
+/**
+ * A status change rewrites a handful of row fields and never moves a thread
+ * between lists, so when the notification carries them the cached rows are
+ * patched in place. The alternative is what the fallback still does for
+ * pushes without the row (older servers, writers inside a transaction that
+ * cannot resolve the runtime): refetch every active thread list plus the
+ * sidebar bootstrap, which is ~1 KB per unarchived thread, twice per turn.
+ *
+ * A list fetch already in flight read the database before this transition
+ * and would overwrite the patch when it lands, so those queries are
+ * invalidated, which cancels and restarts them.
+ */
+function patchThreadListStatusState(
+  context: ThreadRealtimeDirtyContext,
+): QueryKey[] {
+  const { queryClient, statusChange, threadId } = context;
+  if (!threadId || !statusChange) {
+    return dirtyActiveThreadListQueries(context);
+  }
+  updateCachedThreadListStatusState(queryClient, threadId, statusChange);
+  for (const queryKey of getFetchingThreadListQueryKeys(queryClient)) {
+    queryClient.invalidateQueries({ exact: true, queryKey });
+  }
+  return [threadSearchQueryKeyPrefix()]; // Result rows render status but are not list-shaped.
 }
 
 function dirtyEnvironmentRecordQueries(
