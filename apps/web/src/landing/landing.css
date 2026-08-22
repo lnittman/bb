@@ -5844,21 +5844,16 @@ button.sub-row:focus-visible {
 }
 
 /* Overscroll past the end of the page revealed the body's canvas behind the
-   closing band, which is a different colour — the band appeared to lift off
-   a seam. The band paints its own colour on past the document instead, so
-   the rubber band shows more of the same surface. Half a viewport is more
-   than any overscroll reaches. */
-.band-close {
-  position: relative;
-}
+   closing band, so the band appeared to lift off a seam.
 
-.band-close::after {
-  content: "";
-  position: absolute;
-  inset: 100% 0 auto;
-  height: 50vh;
-  background: inherit;
-  pointer-events: none;
+   .slate already paints 100vmax of its own colour in every direction via a
+   spread shadow and then clips it to the band's own top and bottom edges.
+   The last band simply stops clipping at the bottom, so that existing paint
+   carries on past the document. An absolutely-positioned filler was the
+   first attempt and was wrong: out-of-flow boxes still extend the scrollable
+   area, which added a screen of dead page under the footer. A shadow cannot. */
+.band-close {
+  clip-path: inset(0 -100vmax -100vmax);
 }
 
 /* Island geometry, as a share of the device rather than fixed pixels, so it
