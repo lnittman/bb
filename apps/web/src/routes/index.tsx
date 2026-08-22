@@ -1680,7 +1680,7 @@ function SubagentsDemo() {
         (openId === t.id ? " is-open" : "")
       }
       aria-pressed={openId === t.id}
-      onClick={() => setOpenId(t.id)}
+      onClick={() => withViewTransition(() => setOpenId(t.id))}
     >
       <span className="sub-title">{t.title}</span>
       {openId === t.id ? null : <i className="sub-dot" />}
@@ -1712,7 +1712,10 @@ function SubagentsDemo() {
         </span>
         {SUB_API_THREADS.map(row)}
       </div>
-      <div className="sub-main">
+      {/* Picking a thread replaces the pane wholesale, so it is the state
+          change that most wants a morph — the technique the retired board
+          toggle used to carry. */}
+      <div className="sub-main" style={{ viewTransitionName: "sub-pane" }}>
         <span className="sub-main-title">{open.title}</span>
         {open.lines.map((l) => (
           <p
@@ -2169,6 +2172,50 @@ const BatteryGlyph = () => (
     />
   </svg>
 );
+
+/* bb's own question, on a phone. The thread paused for a decision and it
+ * reached you where you are — tapping an option answers it and the agent
+ * carries on, which is the claim the desktop ask card made, minus the
+ * assumption that you were sitting in front of it. */
+function AskPhone() {
+  const [picked, setPicked] = useState<number | null>(null);
+  const chosen = picked === null ? null : ASK_OPTIONS[picked];
+  return (
+    <div className="ap">
+      <div className="ap-bar">
+        <span className="ap-thread">Audit promo code coverage</span>
+        <span className="ap-wait">
+          <HugeiconsIcon icon={MessageQuestionIcon} className="ap-wait-ic" />
+          Waiting for you
+        </span>
+      </div>
+      <div className="ap-body">
+        <p className="ap-q">
+          Should the promo engine support stacking codes, or one per cart?
+        </p>
+        <div className="ap-opts">
+          {ASK_OPTIONS.slice(0, 3).map((o, i) => (
+            <button
+              key={o.label}
+              type="button"
+              className={picked === i ? "ap-opt on" : "ap-opt"}
+              aria-pressed={picked === i}
+              onClick={() => setPicked(i)}
+            >
+              <i className="ap-radio" />
+              <span className="ap-label">{o.label}</span>
+            </button>
+          ))}
+        </div>
+        {chosen ? (
+          <p className="ap-reply">{chosen.outcome}</p>
+        ) : (
+          <p className="ap-hint">Tap an answer and the thread carries on.</p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 /* ────────────────────────────────────────────────
  * PHONE
@@ -3316,7 +3363,7 @@ function LandingPage() {
 
       <section className="act">
         <div className="act-head rail">
-          <h2>More than a chat window.</h2>
+          <h2>More than a chat window</h2>
           <div className="act-lead">
             <p>
               bb carries the work around the conversation: building,
@@ -3326,39 +3373,38 @@ function LandingPage() {
         </div>
         <ul className="bento rail">
           <li>
-            <h3>Built from one prompt</h3>
-            <p>
-              One sentence became this board, a CLI, and a skill.
-            </p>
-            <div className="bento-window bento-component">
-              <TasksBoardDemo />
-            </div>
-          </li>
-          <li>
-            <h3>Review from the thread</h3>
-            <p>
-              Diffs, commits, and PRs beside the conversation.
-            </p>
-            <div className="bento-window bento-component">
-              <ReviewDemo />
-            </div>
-          </li>
-          <li>
             <h3>Subagents</h3>
-            <p>
-              Threads spawn threads and take the report back.
-            </p>
+            <p>A thread spawns another, then folds its report back in.</p>
             <div className="bento-window bento-component">
               <SubagentsDemo />
             </div>
           </li>
           <li>
-            <h3>Asks, not guesses</h3>
-            <p>
-              They pause with a real question when they need you.
-            </p>
+            <h3>Review from the thread</h3>
+            <p>Diffs, commits, and PRs beside the conversation.</p>
             <div className="bento-window bento-component">
-              <AskDemo />
+              <ReviewDemo />
+            </div>
+          </li>
+          {/* The bottom row leaves the desk. Both are true without a native
+              app: one is a third-party chat app talking to your machine, the
+              other is bb's own question reaching you wherever you are. */}
+          <li className="bento-phone">
+            <h3>Answer from anywhere</h3>
+            <p>The question finds you instead of waiting at your desk.</p>
+            <div className="bento-component">
+              <Phone label="An agent's question, answered from a phone">
+                <AskPhone />
+              </Phone>
+            </div>
+          </li>
+          <li className="bento-phone">
+            <h3>Text it to work</h3>
+            <p>Message the bot and a thread spawns on your machine.</p>
+            <div className="bento-component">
+              <Phone label="Texting the bb bot, which spawns a thread">
+                <AgentChat />
+              </Phone>
             </div>
           </li>
         </ul>
@@ -3366,7 +3412,7 @@ function LandingPage() {
 
       <section className="act slate">
         <div className="act-head rail">
-          <h2>Ask for a feature. Watch it appear.</h2>
+          <h2>Ask for a feature, watch it appear</h2>
           <div className="act-lead">
             <p>
               Ask for a review queue. bb scaffolds the plugin, registers{" "}
@@ -3408,7 +3454,7 @@ function LandingPage() {
 
       <section className="act slate">
         <div className="act-head rail">
-          <h2>Anything can kick off work.</h2>
+          <h2>Anything can kick off work</h2>
           <div className="act-lead">
             <p>
               The CLI your agents use is open to any program you write: a
@@ -3425,7 +3471,7 @@ function LandingPage() {
 
       <section className="act open-act">
         <div className="act-head rail">
-          <h2>Open source, end to end.</h2>
+          <h2>Open source, end to end</h2>
           <div className="act-lead">
             <p>
               bb is MIT-licensed and built in the open. Fork it, customize the
@@ -3468,7 +3514,7 @@ function LandingPage() {
           width={72}
           height={72}
         />
-        <h2 className="sec-title">Put your agents to work.</h2>
+        <h2 className="sec-title">Put your agents to work</h2>
         <p>Free, open source, and local-first. Install in under a minute.</p>
         <InstallOptions placement="closer" />
         <div className="closer-subscribe">

@@ -88,7 +88,7 @@ function BlogIndexRoute() {
       </div>
 
       <section className="subscribe" id="subscribe">
-        <h2 className="subscribe-title">Stay in the loop.</h2>
+        <h2 className="subscribe-title">Stay in the loop</h2>
         <p>Get new posts in your inbox. No spam.</p>
         <EmailSignup placement="footer" />
       </section>

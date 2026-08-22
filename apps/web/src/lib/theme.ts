@@ -51,9 +51,20 @@ export function applyThemePreference(preference: ThemePreference) {
     preference === "dark" ||
     (preference === "system" && matchMedia(DARK_SCHEME_QUERY).matches);
   const root = document.documentElement;
+
+  // A theme change is a repaint, not an animation. Every hover, state and
+  // surface transition on the page would otherwise fire at once and the
+  // whole document would crossfade over its slowest duration. The attribute
+  // kills transitions for exactly one frame; reading offsetWidth forces the
+  // style flush so the class change lands inside that window.
+  root.setAttribute("data-theme-switching", "");
   root.classList.toggle("dark", dark);
   root.setAttribute("data-theme-preference", preference);
   syncThemeColorMeta(preference);
+  void root.offsetWidth;
+  requestAnimationFrame(() => {
+    root.removeAttribute("data-theme-switching");
+  });
 }
 
 export function setThemePreference(preference: ThemePreference) {

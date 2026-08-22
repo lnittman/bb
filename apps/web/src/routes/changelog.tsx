@@ -201,7 +201,7 @@ function ChangelogPage() {
       ))}
 
       <section className="subscribe" id="subscribe">
-        <h2 className="subscribe-title">Stay in the loop.</h2>
+        <h2 className="subscribe-title">Stay in the loop</h2>
         <p>Get release notes in your inbox. No spam.</p>
         <EmailSignup placement="footer" />
       </section>

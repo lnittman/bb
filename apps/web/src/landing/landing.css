@@ -769,15 +769,18 @@ code,
   gap: 8px;
   font-size: 13px;
   line-height: 1.35;
+  /* Asymmetric: the hover-in lands on the frame the pointer arrives, and the
+     hover-out eases over 150ms. A control should answer instantly and let go
+     gently, not fade in while you are already reading it. */
   transition:
-    background var(--duration-hover) var(--ease-standard),
-    border-color var(--duration-hover) var(--ease-standard),
-    transform var(--duration-hover) var(--ease-standard);
+    background 150ms var(--ease-standard),
+    border-color 150ms var(--ease-standard);
 }
 
 .updates-callout:hover {
   background: var(--state-hover);
   border-color: color-mix(in oklab, var(--ink) 22%, var(--bg));
+  transition-duration: 0ms;
 }
 
 .updates-label {
@@ -4482,13 +4485,11 @@ button.sub-row:focus-visible {
 }
 
 .closer {
-  border-top: 1px solid var(--border-soft);
   padding: 88px 0;
   text-align: center;
 }
 
 .closer p {
-  text-wrap: pretty;
   text-wrap: pretty;
   color: var(--dim);
   margin-top: 12px;
@@ -5447,4 +5448,273 @@ button.sub-row:focus-visible {
 .phone-app .tg-feed {
   flex: 1;
   min-height: 0;
+}
+
+/* ── Ask, on a phone ─────────────────────────────────────────────────
+   bb's pending-question surface at phone width: a thread header saying who
+   is waiting, the question, and tappable answers. Sized for a thumb, not
+   scaled down from the desktop card. */
+.ap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg);
+}
+
+.ap-bar {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 14px 10px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface);
+}
+
+.ap-thread {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ap-wait {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--subtle);
+}
+
+.ap-wait-ic {
+  width: 12px;
+  height: 12px;
+}
+
+.ap-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 12px 10px;
+}
+
+.ap-q {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-strong);
+  font-weight: 550;
+  text-wrap: pretty;
+}
+
+.ap-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 40px rows: a real thumb target, which is the point of showing this on a
+   phone at all. */
+.ap-opt {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 40px;
+  padding: 8px 11px;
+  text-align: left;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  transition:
+    background var(--duration-hover) var(--ease-standard),
+    border-color var(--duration-hover) var(--ease-standard);
+}
+
+.ap-opt.on {
+  background: color-mix(in oklab, var(--ink) 10%, var(--bg));
+  border-color: color-mix(in oklab, var(--ink) 24%, var(--bg));
+}
+
+.ap-radio {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-strong);
+  transition: border-color var(--duration-hover) var(--ease-standard);
+}
+
+.ap-opt.on .ap-radio {
+  border-width: 4px;
+  border-color: var(--ink-strong);
+}
+
+.ap-label {
+  min-width: 0;
+}
+
+.ap-hint,
+.ap-reply {
+  margin-top: auto;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--subtle);
+  text-wrap: pretty;
+}
+
+.ap-reply {
+  color: var(--ink);
+  animation: gang-in 0.45s var(--ease-out) both;
+}
+
+/* Theme changes repaint; they do not animate. Held for one frame while the
+   class flips (see applyThemePreference in lib/theme.ts) so the page does
+   not crossfade over the slowest transition it happens to contain. */
+[data-theme-switching],
+[data-theme-switching] *,
+[data-theme-switching] *::before,
+[data-theme-switching] *::after {
+  transition: none !important;
+}
+
+/* A phone in a bento card is height-bound, not width-bound: the card is a
+   fixed 440px and the device is 390:800, so sizing by width overflows the
+   bottom every time. Let the height drive and the aspect ratio find the
+   width. The card also drops its bottom padding so the device can sit into
+   the edge the way the window demos do. */
+/* The base component box is a COLUMN flex, so justify-content is the
+   vertical axis here and align-items the horizontal one. Centring on the
+   main axis pushed the over-tall device half its overflow ABOVE the box,
+   straight through the heading. Start on the main axis, centre on the
+   cross axis: the device hangs off the bottom only. */
+.bento-phone .bento-component {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding-top: 20px;
+}
+
+/* The device runs off the bottom of the card rather than fitting inside it.
+   A phone sized to fit a 440px card is 168px wide, which leaves its screen
+   about 130px for text — every line wraps after three words and the demo
+   stops being readable, which defeats showing it at all. At 232px the
+   content reads, and the card clips the lower third the way a device peeks
+   into a frame. Sized by width because aspect-ratio can only derive one
+   axis, and there is no definite parent height to resolve `height: 100%`
+   against here. */
+.bento-phone .phone {
+  flex: none;
+  width: 232px;
+  max-width: 100%;
+  height: auto;
+  margin-inline: 0;
+}
+
+/* Below the grid's single-column breakpoint the card grows to its content,
+   so the device takes a sensible fixed width instead of an unbounded one. */
+@media (max-width: 960px) {
+  .bento-phone .bento-component {
+    padding-bottom: 18px;
+  }
+
+  .bento-phone .phone {
+    width: min(240px, 70vw);
+    height: auto;
+  }
+}
+
+/* The chat was drawn as a 340px band visual; inside a 220px screen its
+   bubbles run under the bezel. Everything below is the same layout at
+   phone scale — type down a step, tighter padding, and bubbles capped as a
+   share of the screen rather than at a fixed width. */
+.phone-app .tg-bar {
+  padding: 7px 10px;
+}
+
+.phone-app .tg-name {
+  font-size: 12px;
+}
+
+.phone-app .tg-sub {
+  font-size: 9.5px;
+}
+
+.phone-app .tg-msg {
+  max-width: 82%;
+}
+
+.phone-app .tg-bubble {
+  padding: 6px 9px;
+  border-radius: 13px;
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.phone-app .tg-cmd {
+  margin-top: 5px;
+  padding: 4px 6px;
+  font-size: 9.5px;
+}
+
+.phone-app .tg-thread {
+  padding: 8px 9px;
+}
+
+.phone-app .tg-thread-eyebrow,
+.phone-app .tg-stat {
+  font-size: 9.5px;
+}
+
+.phone-app .tg-thread-title {
+  font-size: 11.5px;
+}
+
+.phone-app .tg-thread-branch {
+  font-size: 9.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phone-app .tg-input {
+  padding: 6px 9px;
+}
+
+.phone-app .tg-field {
+  font-size: 11px;
+}
+
+/* The ask surface gets the same treatment for the same reason. */
+.phone-app .ap-q {
+  font-size: 11.5px;
+}
+
+.phone-app .ap-opt {
+  min-height: 36px;
+  font-size: 11.5px;
+  padding: 7px 9px;
+}
+
+/* .tg-msg caps itself at a share of the feed, but a flex item's default
+   min-width is its content, and the command chip is nowrap — so the bubble
+   grew past the cap to fit the command on one line and the ellipsis never
+   engaged. Allowing the chain to shrink is what lets the cap hold and the
+   chip truncate. */
+.phone-app .tg-msg {
+  min-width: 0;
+}
+
+.phone-app .tg-bubble {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
