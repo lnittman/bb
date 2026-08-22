@@ -3397,34 +3397,9 @@ function StatNumber({ value }: { value: string }) {
   return <strong>{value}</strong>;
 }
 
-/** Transform-only entrance for the bento: cards settle up as the grid enters
- *  the viewport. Opacity never changes, so every render context shows full
- *  content — motion is pure enhancement. */
-function useBentoSettle() {
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-    const bento = document.querySelector(".bento");
-    if (!bento) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          bento.classList.add("bento-in");
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "0px 0px -18% 0px" },
-    );
-    observer.observe(bento);
-    return () => observer.disconnect();
-  }, []);
-}
-
 function LandingPage() {
   useConstructMock();
   useFitMock();
-  useBentoSettle();
   return (
     <div className="wrap">
       <SiteNav />

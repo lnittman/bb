@@ -3583,24 +3583,22 @@ code,
   border-radius: var(--r-tile);
   background: color-mix(in oklab, var(--ink-strong) 6%, var(--canvas));
   overflow: hidden;
-  transform: translateY(12px);
-  transition: transform var(--duration-enter) var(--ease-out);
 }
 
-.bento-in > li {
-  transform: none;
-}
+/* Apple gives one grid rhythm by alternating the ground per tile — iPad Air
+   light, MacBook Pro dark, Watch light, iPad Pro dark. On a 2x2 that reads
+   as the diagonal changing, and it splits the two window demos and the two
+   phones one-and-one.
 
-.bento-in > li:nth-child(2) {
-  transition-delay: 90ms;
-}
-
-.bento-in > li:nth-child(3) {
-  transition-delay: 180ms;
-}
-
-.bento-in > li:nth-child(4) {
-  transition-delay: 270ms;
+   bb takes the rhythm but not the polarity flip. Apple's tiles hold product
+   photography, which sits on any ground; these hold recreations of the app,
+   whose surfaces are fixed by the theme. A fully inverted tile put a dark
+   diff window on a light card and read as two design systems colliding
+   rather than as a deliberate choice. A deeper step of the same ground gives
+   the alternation without putting the mock in conflict with its container. */
+.bento > li:nth-child(2),
+.bento > li:nth-child(3) {
+  background: color-mix(in oklab, var(--ink-strong) 13%, var(--canvas));
 }
 
 .bento > li > h3 {
