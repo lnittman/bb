@@ -64,18 +64,6 @@
   --rail: 1200px;
   --stage: 1440px;
 
-  /* Provider brand colours. These are the only literals on the page that do
-     not derive from --canvas/--ink, and they are not a palette chosen here:
-     they are lifted verbatim from the app's own
-     `getProviderIconColorClass` (apps/app/src/lib/provider-icon.ts), so a
-     provider wears the same colour on the landing page that it wears inside
-     bb. Providers the app leaves on the foreground — Codex, Cursor, Grok,
-     Hermes — are absent on purpose; those brands are monochrome and the app
-     renders them in ink. */
-  --brand-claude: #d97757;
-  --brand-pi: #6d5dfb;
-  --brand-opencode: #2563eb;
-  --brand-omp: #9333ea;
   --measure: 640px;
   --gutter: clamp(20px, 4vw, 48px);
   --act: 144px;
@@ -410,10 +398,13 @@ code,
 
 /* Crafted demos sit on a tighter measure than the rail so they read as
    objects with air around them rather than walls of product. */
+/* These sat at 1040px inside a 1184px rail while the hero mock filled it, so
+   three of the page's four app windows were 144px narrower than the first one
+   a reader sees. They take the rail now, like everything else. */
 .gang-demo,
 .build-demo,
 .spawn-demo {
-  max-width: 1040px;
+  max-width: none;
   margin-inline: auto;
 }
 
@@ -1798,12 +1789,27 @@ code,
 }
 
 .model select {
+  /* `appearance: none` is the whole fix. Without it the browser paints its
+     own control — on macOS a native popup button with its own arrow, corner
+     radius and focus ring — inside a recreation of the bb app, which is the
+     one place a piece of OS chrome cannot appear. The app's picker is a
+     button with a chevron, so the chevron is drawn here as a background
+     glyph and the box keeps the shared control metrics. */
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+  background-position:
+    right 10px center,
+    right 6px center;
   max-width: 150px;
   height: var(--btn-h);
   border: 0;
   border-radius: var(--r-control);
-  background: transparent;
-  padding: 0 6px;
+  background-color: transparent;
+  padding: 0 20px 0 6px;
   font: inherit;
   font-size: 13px;
   color: var(--ink);
@@ -2039,12 +2045,27 @@ code,
 }
 
 .diff-toolbar select {
+  /* `appearance: none` is the whole fix. Without it the browser paints its
+     own control — on macOS a native popup button with its own arrow, corner
+     radius and focus ring — inside a recreation of the bb app, which is the
+     one place a piece of OS chrome cannot appear. The app's picker is a
+     button with a chevron, so the chevron is drawn here as a background
+     glyph and the box keeps the shared control metrics. */
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+  background-position:
+    right 10px center,
+    right 6px center;
   height: var(--btn-h);
   flex: none;
   border: 1px solid var(--border);
   border-radius: var(--r-control);
-  background: var(--bg);
-  padding: 0 var(--btn-pad-x);
+  background-color: var(--bg);
+  padding: 0 26px 0 var(--btn-pad-x);
   font: inherit;
   font-size: 12px;
   color: var(--ink);
@@ -3950,6 +3971,11 @@ code,
   border-radius: 999px;
   background: var(--canvas);
   border: 1px solid var(--line);
+  /* Optical, not geometric. Flexbox centres the line box, but a sans-serif's
+     cap height sits high within it and its descender space goes unused on a
+     word with no descender, so a mathematically centred label reads a pixel
+     high. The nudge puts the letterforms where the eye expects them. */
+  padding-top: 2px;
   font-size: 13.5px;
   font-weight: 500;
   letter-spacing: -0.008em;
@@ -4687,172 +4713,6 @@ button.sub-row:focus-visible {
 
 /* ── Closer: one ending with the subscribe inline ────────────────── */
 
-/* The stage. Wider than the text below it and cropping at both edges, so the
-   crowd reads as continuing past the frame rather than ending politely. */
-.closer-field {
-  position: relative;
-  /* `100%`, not `100vw`: the field sits inside `.closer`, which is inset
-     from the viewport, so a viewport-relative width made it wider than its
-     own parent — and, exactly as with the subscribe card, `margin: auto`
-     cannot centre what has negative free space, so it hung 28px off the
-     right edge of the page at phone width. The crop still happens, because
-     the discs are placed by percentage and clipped. */
-  width: min(1040px, 100%);
-  height: 380px;
-  /* `overflow: clip`, not the mask, is what keeps this inside the page. The
-     outer discs are placed past both edges on purpose so the crowd crops
-     rather than ending, and a mask only clips paint — the boxes still counted
-     toward scrollable overflow and put the document into horizontal scroll.
-     Clip removes them from it, and the crop it performs is the effect that
-     was wanted anyway; the mask just softens the approach to it. */
-  overflow: clip;
-  margin: 0 auto 68px;
-  /* The whole field dissolves outward: a hard edge on a crowd that is meant
-     to continue would give it a boundary it should not have. */
-  /* The dissolve has to clear the front row completely — an earlier pass had
-     it fading at 66% and it took the bottoms off the four sharp discs and the
-     marks on their shoulders. It fades the crowd out sideways and upward and
-     leaves the foreground whole. */
-  /* The mask must reach zero before `overflow: clip` does, or the clip shows
-     as a hard vertical seam where a half-faded disc is cut off — which is
-     what the right edge was doing. 50% from centre is the box edge exactly,
-     so ending the gradient there means the crop always lands on transparent. */
-  -webkit-mask-image: radial-gradient(50% 96% at 50% 74%, black 34%, transparent 98%);
-  mask-image: radial-gradient(50% 96% at 50% 74%, black 34%, transparent 98%);
-}
-
-.pf-tier {
-  position: absolute;
-  inset: 0;
-}
-
-.pf {
-  position: absolute;
-  translate: -50% -50%;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  /* Each disc carries its own tint, passed in per item. In the reference
-     every bubble holds a different photograph, and that variety is most of
-     what makes the field read as a crowd rather than a pattern; monochrome
-     marks cannot supply it, so the ground varies instead — a spread of
-     lightness across the field rather than one value repeated twenty times.
-     Still mixed from the page's own anchors, so it re-tints with a custom
-     palette. */
-  /* The colour has to carry, not tint. A 14% wash of a brand colour over a
-     near-black canvas is mud — it reads as a dirty grey circle, which is
-     exactly what it looked like. `--pf-fill` is the disc's whole ground:
-     coloured providers pass their brand at a strength that survives the dark
-     page, and the ones bb itself keeps in ink pass a light neutral, so the
-     field alternates hue against value instead of colour against nothing. */
-  background: var(--pf-fill, color-mix(in oklab, var(--ink-strong) var(--pf-tint, 9%), var(--canvas)));
-  /* Overlapping discs of similar value need an edge to stay separate. The
-     ring reads the near one as in front; the drop gives it somewhere to be. */
-  box-shadow:
-    inset 0 0 0 1px color-mix(in oklab, var(--ink-strong) 9%, transparent),
-    0 8px 22px -8px color-mix(in oklab, var(--shade) 42%, transparent);
-}
-
-/* On a filled disc the mark is the hole in the colour, not more colour: a
-   coral logo on a coral ground disappears. */
-.pf-logo {
-  width: 40%;
-  height: 40%;
-  color: var(--pf-ink, var(--ink));
-}
-
-/* The mark on the shoulder, hung off the lower right the way the reference
-   hangs a second avatar there. Masked, so it takes the ground's own ink. */
-.pf-bb {
-  position: absolute;
-  right: -5%;
-  bottom: 1%;
-  width: 29%;
-  height: 29%;
-  border-radius: 50%;
-  /* A step lighter than the disc it hangs off, not the raw canvas — against a
-     near-black ground the canvas read as a hole punched in the shape rather
-     than a second object in front of it. */
-  background: color-mix(in oklab, var(--ink-strong) 88%, var(--canvas));
-  /* A real ring in the ground's own colour, the way the reference rings its
-     attached avatar — that outline is what makes it sit in front of the
-     bubble instead of being a bite taken out of it. */
-  box-shadow: 0 0 0 3px var(--canvas);
-}
-
-.pf-bb::after {
-  content: "";
-  position: absolute;
-  inset: 22%;
-  background: var(--canvas);
-  -webkit-mask-image: url("../assets/bb-icon-dark.png");
-  mask-image: url("../assets/bb-icon-dark.png");
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-}
-
-/* Three tiers of distance: each step loses ink and gains blur. */
-.pf-tier-1 {
-  opacity: 1;
-  animation: pf-drift-1 26s var(--ease-standard) infinite alternate;
-}
-
-.pf-tier-2 {
-  opacity: 0.6;
-  filter: blur(2px);
-  animation: pf-drift-2 34s var(--ease-standard) infinite alternate;
-}
-
-.pf-tier-3 {
-  opacity: 0.32;
-  filter: blur(7px);
-  animation: pf-drift-3 44s var(--ease-standard) infinite alternate;
-}
-
-/* Parallax, not decoration: the near tier travels furthest and the far tier
-   barely moves, which is the relationship distance actually produces. Slow
-   enough to be weather. */
-@keyframes pf-drift-1 {
-  to {
-    transform: translateX(-26px);
-  }
-}
-
-@keyframes pf-drift-2 {
-  to {
-    transform: translateX(-16px);
-  }
-}
-
-@keyframes pf-drift-3 {
-  to {
-    transform: translateX(-8px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pf-tier-1,
-  .pf-tier-2,
-  .pf-tier-3 {
-    animation: none;
-  }
-}
-
-@media (max-width: 620px) {
-  .closer-field {
-    height: 190px;
-  }
-
-  /* The back carpet is placed for a 940px stage; at phone width its discs
-     land on top of the front four instead of behind them. */
-  .pf-tier-3 {
-    display: none;
-  }
-}
 
 .closer-subscribe {
   margin-top: 34px;
@@ -5165,10 +5025,17 @@ button.sub-row:focus-visible {
      cannot reach the middle — the `border-top` covers that span, and the two
      meet at the rail edge as one continuous hairline. */
   border-top: 1px solid var(--line);
-  background: color-mix(in oklab, var(--ink-strong) 8%, var(--canvas));
+  /* The ground matches the closer above rather than stepping away from it.
+     An 8% step was tried and it separated the two too hard — the footer is
+     the same quiet end of the page, not a different room. The rule alone
+     marks the boundary. The shadows stay, because they are what carries that
+     rule out past the rail: the ground shadow is pushed down by its own
+     spread plus one pixel, uncovering a single row of the line shadow
+     beneath it, and the `border-top` covers the middle span an outer shadow
+     cannot reach. */
+  background: var(--canvas);
   box-shadow:
-    0 calc(100vmax + 1px) 0 100vmax
-      color-mix(in oklab, var(--ink-strong) 8%, var(--canvas)),
+    0 calc(100vmax + 1px) 0 100vmax var(--canvas),
     0 0 0 100vmax var(--line);
   clip-path: inset(0 -100vmax);
 

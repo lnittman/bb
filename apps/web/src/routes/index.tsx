@@ -38,7 +38,7 @@ import {
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import changelogMd from "../../../../CHANGELOG.md?raw";
 import { initAnalytics, trackLandingEvent } from "../landing/analytics";
@@ -62,7 +62,6 @@ import pendoLogo from "../assets/company-logos/pendo.svg";
 import renderLogo from "../assets/company-logos/render.svg";
 import shortcutLogo from "../assets/company-logos/shortcut.svg";
 import simileLogo from "../assets/company-logos/simile.svg";
-import bbStickerRiso from "../assets/stickers/bb-riso.webp";
 import phoneBezel from "../assets/phone-bezel.svg";
 import vscodeIcon from "../assets/vscode.png";
 import { RELEASE_META, parseChangelog } from "../landing/changelog";
@@ -2205,138 +2204,6 @@ function AskPhone() {
 // universe from a page built out of hairlines and flat tokens; the risograph
 // is flat and printed and belongs. A cycle of one is just a toggle, which is
 // enough of an easter egg until there are more that earn their place.
-/**
- * The closer's field of agents.
- *
- * A crowd, not a row. The first version placed eight discs evenly and read as
- * eight discs placed evenly; what makes the reference work is density — a
- * carpet of shapes overlapping and running off both edges, out of which a few
- * resolve. So the back layer here is a dozen anonymous discs, blurred past the
- * point where a logo would survive anyway, and only the eight that are legible
- * carry a provider. That also settles the repetition problem: bb runs eight
- * agents, and eight is exactly how many marks appear.
- *
- * The front four carry a small bb mark on the shoulder, the way the reference
- * hangs a second avatar off each bubble. Here it says the thing the section is
- * for: that agent, running in this.
- *
- * Flat discs, still. Depth is blur, scale and ink — what distance does to a
- * thing you are looking at — not gloss and rim light, which would make this
- * the 3D render the page does not allow itself.
- *
- * The drift is the one piece of motion. Three tiers move at three speeds and
- * the near ones move furthest, which is parallax rather than decoration; it is
- * slow enough to be atmosphere and it stops entirely under reduced motion.
- * Nothing is stated by it — the field is `aria-hidden`, the hero already lists
- * these providers by name, and every word of the closer is legible in a
- * screenshot taken at any moment.
- */
-const FIELD_BACK = [
-  { x: -6, y: 8, size: 168, tint: 7 },
-  { x: 8, y: 22, size: 132, tint: 11 },
-  { x: 19, y: 3, size: 152, tint: 8 },
-  { x: 31, y: 19, size: 126, tint: 13 },
-  { x: 41, y: 1, size: 160, tint: 9 },
-  { x: 52, y: 21, size: 134, tint: 12 },
-  { x: 62, y: 3, size: 150, tint: 7 },
-  { x: 73, y: 20, size: 128, tint: 12 },
-  { x: 84, y: 2, size: 162, tint: 9 },
-  { x: 95, y: 22, size: 136, tint: 11 },
-  { x: 106, y: 9, size: 170, tint: 8 },
-] as const;
-
-/* Provider colours are the app's own, not a palette invented for this page:
-   `getProviderIconColorClass` in apps/app/src/lib/provider-icon.ts assigns
-   claude-code #D97757, pi #6D5DFB, acp-opencode #2563EB and acp-omp #9333EA,
-   and returns the foreground for codex, acp-cursor and anything unmapped —
-   which is correct, because those brands really are monochrome. Four in
-   colour and four in ink is what bb itself shows. */
-const FIELD_MID = [
-  { Icon: OmpIcon, x: 3, y: 42, size: 150, fill: "var(--brand-omp)", ink: "var(--canvas)" },
-  { Icon: GrokIcon, x: 25, y: 31, size: 134, fill: "", ink: "" },
-  { Icon: OpencodeIcon, x: 75, y: 33, size: 140, fill: "var(--brand-opencode)", ink: "var(--canvas)" },
-  { Icon: HermesAgentIcon, x: 98, y: 44, size: 152, fill: "", ink: "" },
-] as const;
-
-const FIELD_FRONT = [
-  { Icon: CursorIcon, x: 13, y: 62, size: 176, fill: "", ink: "" },
-  { Icon: ClaudeIcon, x: 38, y: 68, size: 200, fill: "var(--brand-claude)", ink: "var(--canvas)" },
-  { Icon: OpenAiIcon, x: 62, y: 67, size: 194, fill: "", ink: "" },
-  { Icon: PiIcon, x: 87, y: 61, size: 172, fill: "var(--brand-pi)", ink: "var(--canvas)" },
-] as const;
-
-function CloserMark() {
-  return (
-    <div className="closer-field" aria-hidden>
-      <div className="pf-tier pf-tier-3">
-        {FIELD_BACK.map(({ x, y, size, tint }, i) => (
-          <span
-            key={i}
-            className="pf"
-            style={{
-              left: `${x}%`,
-              top: `${y}%`,
-              width: size,
-              height: size,
-              "--pf-tint": `${tint}%`,
-            } as CSSProperties}
-          />
-        ))}
-      </div>
-      <div className="pf-tier pf-tier-2">
-        {FIELD_MID.map(({ Icon, x, y, size, fill, ink }, i) => (
-          <span
-            key={i}
-            className="pf"
-            style={
-              {
-                left: `${x}%`,
-                top: `${y}%`,
-                width: size,
-                height: size,
-                /* A provider bb keeps in ink gets a light neutral disc, so
-                   the field alternates hue against value rather than colour
-                   against an absence of it. */
-                "--pf-fill":
-                  fill ||
-                  "color-mix(in oklab, var(--ink-strong) 26%, var(--canvas))",
-                "--pf-ink": ink || "var(--ink-strong)",
-              } as CSSProperties
-            }
-          >
-            <Icon className="pf-logo" />
-          </span>
-        ))}
-      </div>
-      <div className="pf-tier pf-tier-1">
-        {FIELD_FRONT.map(({ Icon, x, y, size, fill, ink }, i) => (
-          <span
-            key={i}
-            className="pf"
-            style={
-              {
-                left: `${x}%`,
-                top: `${y}%`,
-                width: size,
-                height: size,
-                /* A provider bb keeps in ink gets a light neutral disc, so
-                   the field alternates hue against value rather than colour
-                   against an absence of it. */
-                "--pf-fill":
-                  fill ||
-                  "color-mix(in oklab, var(--ink-strong) 26%, var(--canvas))",
-                "--pf-ink": ink || "var(--ink-strong)",
-              } as CSSProperties
-            }
-          >
-            <Icon className="pf-logo" />
-            <span className="pf-bb" />
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /* ────────────────────────────────────────────────
  * PHONE
@@ -3635,7 +3502,6 @@ function LandingPage() {
 
       <div className="slate band-close">
       <section className="closer">
-        <CloserMark />
         <h2 className="sec-title">Put your agents to work</h2>
         <p>Free, open source, and local-first. Install in under a minute.</p>
         <InstallOptions placement="closer" />
