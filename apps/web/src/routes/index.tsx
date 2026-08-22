@@ -3,18 +3,27 @@ import {
   ArrowExpand01Icon,
   ArrowLeft01Icon,
   ArrowMoveDownLeftIcon,
+  ArrowReloadHorizontalIcon,
   ArrowRight01Icon,
   AttachmentIcon,
+  BrainIcon,
+  BrowserIcon,
   BubbleChatAddIcon,
   CheckListIcon,
   CheckmarkCircle02Icon,
   Clock01Icon,
+  Edit04Icon,
+  ElectricPlugsIcon,
+  File01Icon,
   FolderGitTwoIcon,
   FolderIcon as HiFolderIcon,
   GitBranchIcon as HiGitBranchIcon,
+  GithubIcon,
   GitMergeIcon as HiGitMergeIcon,
   LaptopIcon as HiLaptopIcon,
   Loading03Icon,
+  LockIcon,
+  MessageAdd02Icon,
   MessageQuestionIcon,
   Mic02Icon,
   MoreHorizontalIcon,
@@ -26,8 +35,11 @@ import {
   Settings01Icon,
   SidebarLeftIcon,
   SidebarRightIcon,
+  SmartPhone01Icon,
   Tick02Icon,
   ToolboxIcon,
+  WorkflowCircle03Icon,
+  ZapIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { createFileRoute } from "@tanstack/react-router";
@@ -484,43 +496,151 @@ const RefreshGlyph = ({ className }: IconProps) => (
   <HugeiconsIcon icon={RefreshIcon} className={className} />
 );
 
-// The Tasks board's per-column status glyphs, matching the real board:
-// a dashed circle for Backlog, a hollow circle for Todo, and a half-filled
-// dial for In Progress. Drawn by hand at the Hugeicons stroke weight
-// (the free set has no equivalents).
-const BacklogStateGlyph = ({ className }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
-    <circle
-      cx="12"
-      cy="12"
-      r="8.5"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeDasharray="0.5 5.4"
-    />
-  </svg>
-);
-const TodoStateGlyph = ({ className }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
-    <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="2" />
-  </svg>
-);
-const DoingStateGlyph = ({ className }: IconProps) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
-    <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="2" />
-    <path d="M12 6.5a5.5 5.5 0 0 1 0 11Z" fill="currentColor" stroke="none" />
-  </svg>
-);
+type BoardTaskStatus =
+  | "backlog"
+  | "todo"
+  | "in_progress"
+  | "in_review"
+  | "done";
+type BoardTaskPriority = "urgent" | "high" | "medium" | "low" | "none";
 
-/** The priority bar-chart glyph every real task card carries. */
-const PriorityGlyph = ({ level }: { level: 1 | 2 | 3 }) => (
-  <svg className="board-pri" viewBox="0 0 13 10" aria-hidden>
-    <rect x="0" y="6" width="3" height="4" rx="1" />
-    <rect x="5" y="3" width="3" height="7" rx="1" opacity={level >= 2 ? 1 : 0.35} />
-    <rect x="10" y="0" width="3" height="10" rx="1" opacity={level >= 3 ? 1 : 0.35} />
-  </svg>
-);
+/** Exact status artwork from plugins/tasks/views/board/icons.tsx. */
+function BoardStatusGlyph({ status }: { status: BoardTaskStatus }) {
+  let artwork: ReactNode;
+  switch (status) {
+    case "backlog":
+      artwork = (
+        <circle
+          cx="7"
+          cy="7"
+          r="5.4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeDasharray="1.8 2"
+        />
+      );
+      break;
+    case "todo":
+      artwork = (
+        <circle
+          cx="7"
+          cy="7"
+          r="5.4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+        />
+      );
+      break;
+    case "in_progress":
+      artwork = (
+        <>
+          <circle
+            cx="7"
+            cy="7"
+            r="5.4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+          <path d="M7 7 L7 2.4 A4.6 4.6 0 0 1 11.2 9.5 Z" fill="currentColor" />
+        </>
+      );
+      break;
+    case "in_review":
+      artwork = (
+        <>
+          <circle
+            cx="7"
+            cy="7"
+            r="5.4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+          <path d="M7 7 L7 2.4 A4.6 4.6 0 1 1 6.99 2.4 Z" fill="currentColor" />
+        </>
+      );
+      break;
+    case "done":
+      artwork = (
+        <>
+          <circle cx="7" cy="7" r="6" fill="currentColor" />
+          <path
+            d="M4.4 7.2 l1.8 1.8 3.4-3.8"
+            stroke="var(--canvas)"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+          />
+        </>
+      );
+      break;
+  }
+  return (
+    <svg
+      className={`board-state board-state-${status}`}
+      viewBox="0 0 14 14"
+      aria-hidden="true"
+    >
+      {artwork}
+    </svg>
+  );
+}
+
+const PRIORITY_LIT_BARS: Record<
+  Exclude<BoardTaskPriority, "urgent">,
+  number
+> = {
+  high: 3,
+  medium: 2,
+  low: 1,
+  none: 0,
+};
+
+/** Exact priority artwork from plugins/tasks/views/board/icons.tsx. */
+function PriorityGlyph({ priority }: { priority: BoardTaskPriority }) {
+  if (priority === "urgent") {
+    return (
+      <svg
+        className="board-pri board-pri-urgent"
+        viewBox="0 0 14 14"
+        aria-hidden="true"
+      >
+        <rect width="14" height="14" rx="3" />
+        <path
+          d="M7 3.2v4.4"
+          stroke="var(--canvas)"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+        <circle cx="7" cy="10.6" r="1.1" fill="var(--canvas)" />
+      </svg>
+    );
+  }
+  const lit = PRIORITY_LIT_BARS[priority];
+  const bars = [
+    { x: 1.5, height: 5 },
+    { x: 5.5, height: 8 },
+    { x: 9.5, height: 11 },
+  ];
+  return (
+    <svg className="board-pri" viewBox="0 0 14 14" aria-hidden="true">
+      {bars.map((bar, index) => (
+        <rect
+          key={bar.x}
+          x={bar.x}
+          y={13 - bar.height}
+          width="3"
+          height={bar.height}
+          rx="1"
+          className={index < lit ? "board-pri-lit" : "board-pri-muted"}
+        />
+      ))}
+    </svg>
+  );
+}
 
 type Status = "running" | "done" | "waiting";
 type Step =
@@ -1421,95 +1541,645 @@ const DEMO_PLAY_VISIBILITY = 0.35;
 
 /* ── Page ─────────────────────────────────────────────────────────── */
 
-/* ── Mock plugin panels: compact, believable states for the sidebar IA.
-   Same storefront fiction as everything else on the page. ── */
+function TasksPanelMock() {
+  return <TasksBoardDemo />;
+}
 
-const MOCK_TASKS = [
-  { id: "SF-1", title: "Ship the promo-code analytics page", col: "In Progress" },
-  { id: "SF-2", title: "Port the pricing script to TypeScript", col: "In Progress" },
-  { id: "SF-3", title: "Add Apple Pay to the checkout sheet", col: "Todo" },
-  { id: "SF-4", title: "Write docs for the promo engine", col: "Todo" },
-  { id: "SF-5", title: "Triage the flaky checkout test", col: "Todo" },
-  { id: "SF-6", title: "Cut the 1.4 release notes", col: "Backlog" },
+type BuiltinPlugin = {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+};
+
+// Derived from every package.json under
+// packages/bb-app/server/dist/builtin-plugins/ in the source checkout.
+const BUILTIN_PLUGINS_FROM_MANIFESTS: readonly BuiltinPlugin[] = [
+  {
+    id: "ask-user-question",
+    name: "Ask User Question",
+    description:
+      "Let any provider ask the user a multiple-choice question, the way Claude Code's AskUserQuestion does natively.",
+    icon: "MessageQuestion",
+  },
+  {
+    id: "automations",
+    name: "Automations",
+    description: "Schedule recurring and one-shot agent or script work.",
+    icon: "Clock",
+  },
+  {
+    id: "connect",
+    name: "Remote access",
+    description:
+      "Remote access via getbb.app — this bb becomes reachable at https://<handle>.getbb.app. Disable to cut off all remote access.",
+    icon: "Smartphone",
+  },
+  {
+    id: "custom-instructions",
+    name: "Custom instructions",
+    description:
+      "Add persistent custom instructions to agent tasks on this bb host.",
+    icon: "EditFile",
+  },
+  {
+    id: "simple-notes",
+    name: "Docs",
+    description:
+      "Create and edit Markdown documents across local and connected-host vaults.",
+    icon: "FileText",
+  },
+  {
+    id: "github",
+    name: "GitHub",
+    description:
+      "Browse GitHub issues and pull requests in BB, then send them to agents.",
+    icon: "Github",
+  },
+  {
+    id: "inline-vis",
+    name: "Inline visualizations",
+    description:
+      "Render workspace HTML visualizations inline in assistant messages.",
+    icon: "AppWindow",
+  },
+  {
+    id: "memory",
+    name: "Memory",
+    description:
+      "Provider-independent durable memory for agents. We recommend disabling provider-native memory when using this plugin.",
+    icon: "Brain",
+  },
+  {
+    id: "provider-retry",
+    name: "Provider retry",
+    description:
+      "Continue turns after Codex and Claude Code subscription limits reset.",
+    icon: "ArrowReloadHorizontal",
+  },
+  {
+    id: "secrets",
+    name: "Secrets",
+    description:
+      "Securely request credentials from a user and reconcile them into dotenv files.",
+    icon: "Lock",
+  },
+  {
+    id: "side-chat",
+    name: "Side chat",
+    description:
+      "Reply to messages in hidden side-chat forks rendered in a thread panel.",
+    icon: "SideChat",
+  },
+  {
+    id: "tasks",
+    name: "Tasks",
+    description:
+      "Plan and track work in BB, delegate tasks to agents, and keep task context connected to worker threads.",
+    icon: "ListTodo",
+  },
+  {
+    id: "workflows",
+    name: "Workflows",
+    description: "Run durable, provider-independent agent workflows.",
+    icon: "Workflow",
+  },
 ];
 
-function TasksPanelMock() {
-  const cols = ["Backlog", "Todo", "In Progress"];
+// Installation and initial switch state come from
+// apps/server/src/services/plugins/builtin-registry.ts. Official plugins stay
+// in Browse until installed; builtins reconcile onto a fresh host.
+const AUTO_INSTALLED_PLUGIN_IDS_FROM_REGISTRY = new Set([
+  "ask-user-question",
+  "automations",
+  "connect",
+  "custom-instructions",
+  "inline-vis",
+  "provider-retry",
+  "secrets",
+  "side-chat",
+  "workflows",
+]);
+const DEFAULT_ENABLED_PLUGIN_IDS_FROM_REGISTRY = new Set([
+  "automations",
+  "connect",
+  "custom-instructions",
+  "inline-vis",
+  "secrets",
+  "side-chat",
+]);
+const PLUGIN_CATEGORIES_FROM_REGISTRY = [
+  "Workflow management",
+  "Agent interaction",
+  "Context & knowledge",
+  "Developer tools",
+  "Host access",
+  "Interface",
+] as const;
+const PLUGIN_CATEGORY_BY_ID_FROM_REGISTRY: Readonly<Record<string, string>> = {
+  "ask-user-question": "Agent interaction",
+  automations: "Workflow management",
+  connect: "Host access",
+  "custom-instructions": "Context & knowledge",
+  "inline-vis": "Interface",
+  "provider-retry": "Agent interaction",
+  secrets: "Developer tools",
+  "side-chat": "Agent interaction",
+  workflows: "Workflow management",
+  github: "Developer tools",
+  "simple-notes": "Context & knowledge",
+  memory: "Context & knowledge",
+  tasks: "Workflow management",
+};
+
+const BUILTIN_PLUGIN_ICON_MAP: Readonly<Record<string, IconSvgElement>> = {
+  AppWindow: BrowserIcon,
+  ArrowReloadHorizontal: ArrowReloadHorizontalIcon,
+  Brain: BrainIcon,
+  Clock: Clock01Icon,
+  EditFile: Edit04Icon,
+  FileText: File01Icon,
+  Github: GithubIcon,
+  ListTodo: CheckListIcon,
+  Lock: LockIcon,
+  MessageQuestion: MessageQuestionIcon,
+  SideChat: MessageAdd02Icon,
+  Smartphone: SmartPhone01Icon,
+  Workflow: WorkflowCircle03Icon,
+};
+
+function BuiltinPluginGlyph({ plugin }: { plugin: BuiltinPlugin }) {
   return (
-    <div className="ppanel" aria-hidden>
-      <div className="ppanel-bar">
-        <span className="ppanel-name">storefront 1.4</span>
-        <span className="ppanel-cta">+ New task</span>
-      </div>
-      <div className="tboard">
-        {cols.map((col) => (
-          <div key={col} className="tcol">
-            <span className="tcol-head">
-              {col}
-              <em>{MOCK_TASKS.filter((t) => t.col === col).length}</em>
-            </span>
-            {MOCK_TASKS.filter((t) => t.col === col).map((t) => (
-              <div key={t.id} className="tcard">
-                <span className="tcard-id">{t.id}</span>
-                {t.title}
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
+    <HugeiconsIcon
+      icon={BUILTIN_PLUGIN_ICON_MAP[plugin.icon] ?? ZapIcon}
+      className="ext-plugin-icon"
+      aria-hidden="true"
+    />
   );
 }
+
+type ExtensionsPage =
+  | "plugins-browse"
+  | "plugins-installed"
+  | "skills-browse"
+  | "skills-library";
+
+const EXTENSIONS_PAGE_COPY: Record<
+  ExtensionsPage,
+  { title: string; description: string }
+> = {
+  "plugins-browse": {
+    title: "Browse plugins",
+    description:
+      "Plugins add app surfaces, commands, services, schedules, and skills to bb. Install an official plugin, or describe your own and build it from a prompt.",
+  },
+  "plugins-installed": {
+    title: "Installed plugins",
+    description:
+      "The plugins installed on this bb host. Turn one on or off, apply updates, or open it for settings and details.",
+  },
+  "skills-browse": {
+    title: "Browse skills",
+    description:
+      "Trending agent skills from skills.sh. Install one and every agent you use in bb can run it.",
+  },
+  "skills-library": {
+    title: "My skills",
+    description:
+      "The skills on this bb host — yours, your providers', and those bundled with plugins. They work with every agent you use in bb.",
+  },
+};
 
 function ExtensionsPanelMock() {
-  const plugins = [
-    ["Tasks", "Built from one prompt: a panel, a CLI, and a skill."],
-    ["GitHub", "Issues and pull requests, in threads."],
-    ["Agent memory", "What your agents learn, kept."],
-    ["Remote access", "Reach bb from your phone."],
-  ] as const;
+  const [page, setPage] = useState<ExtensionsPage>("plugins-browse");
+  const [query, setQuery] = useState("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [officialOnly, setOfficialOnly] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [selectedPluginId, setSelectedPluginId] = useState<string | null>(null);
+  const [enabledPluginIds, setEnabledPluginIds] = useState(
+    () => new Set(DEFAULT_ENABLED_PLUGIN_IDS_FROM_REGISTRY),
+  );
+  const pageCopy = EXTENSIONS_PAGE_COPY[page];
+  const selectedPlugin =
+    BUILTIN_PLUGINS_FROM_MANIFESTS.find(
+      (plugin) => plugin.id === selectedPluginId,
+    ) ?? null;
+  const visiblePlugins = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    const collection =
+      page === "plugins-installed"
+        ? BUILTIN_PLUGINS_FROM_MANIFESTS.filter((plugin) =>
+            AUTO_INSTALLED_PLUGIN_IDS_FROM_REGISTRY.has(plugin.id),
+          )
+        : BUILTIN_PLUGINS_FROM_MANIFESTS;
+    return [...collection]
+      .filter(
+        (plugin) =>
+          (page !== "plugins-browse" ||
+            categoryFilter === "" ||
+            PLUGIN_CATEGORY_BY_ID_FROM_REGISTRY[plugin.id] ===
+              categoryFilter) &&
+          (normalizedQuery === "" ||
+            `${plugin.name} ${plugin.description}`
+              .toLocaleLowerCase()
+              .includes(normalizedQuery)),
+      )
+      .sort((left, right) => {
+        const order = left.name.localeCompare(right.name);
+        return sortDirection === "asc" ? order : -order;
+      });
+  }, [categoryFilter, page, query, sortDirection]);
+
+  const navigate = (nextPage: ExtensionsPage) => {
+    setPage(nextPage);
+    setQuery("");
+    setCategoryFilter("");
+    setSelectedPluginId(null);
+  };
+  const togglePlugin = (pluginId: string) => {
+    setEnabledPluginIds((current) => {
+      const next = new Set(current);
+      if (next.has(pluginId)) next.delete(pluginId);
+      else next.add(pluginId);
+      return next;
+    });
+  };
+
   return (
-    <div className="ppanel" aria-hidden>
-      <div className="ppanel-bar">
-        <span className="ppanel-name">Installed plugins</span>
-        <span className="ppanel-cta">Create a plugin</span>
-      </div>
-      <div className="plist">
-        {plugins.map(([name, blurb]) => (
-          <div key={name} className="plist-row">
-            <span className="plist-name">{name}</span>
-            <span className="plist-blurb">{blurb}</span>
+    <section className="ext-panel" aria-label="Extensions">
+      <nav className="ext-sidebar" aria-label="Extensions collections">
+        <div className="ext-nav-group">
+          <span className="ext-nav-label">Plugins</span>
+          <button
+            type="button"
+            className={
+              page === "plugins-browse" ? "ext-nav-row active" : "ext-nav-row"
+            }
+            aria-current={page === "plugins-browse" ? "page" : undefined}
+            onClick={() => navigate("plugins-browse")}
+          >
+            <HugeiconsIcon icon={ElectricPlugsIcon} aria-hidden="true" />
+            Browse plugins
+          </button>
+          <button
+            type="button"
+            className={
+              page === "plugins-installed"
+                ? "ext-nav-row active"
+                : "ext-nav-row"
+            }
+            aria-current={page === "plugins-installed" ? "page" : undefined}
+            onClick={() => navigate("plugins-installed")}
+          >
+            <HugeiconsIcon icon={CheckListIcon} aria-hidden="true" />
+            Installed plugins
+          </button>
+        </div>
+        <div className="ext-nav-group">
+          <span className="ext-nav-label">Skills</span>
+          <button
+            type="button"
+            className={
+              page === "skills-browse" ? "ext-nav-row active" : "ext-nav-row"
+            }
+            aria-current={page === "skills-browse" ? "page" : undefined}
+            onClick={() => navigate("skills-browse")}
+          >
+            <HugeiconsIcon icon={ZapIcon} aria-hidden="true" />
+            Browse skills
+          </button>
+          <button
+            type="button"
+            className={
+              page === "skills-library" ? "ext-nav-row active" : "ext-nav-row"
+            }
+            aria-current={page === "skills-library" ? "page" : undefined}
+            onClick={() => navigate("skills-library")}
+          >
+            <HugeiconsIcon icon={HiFolderIcon} aria-hidden="true" />
+            My skills
+          </button>
+        </div>
+      </nav>
+      <div className="ext-content">
+        {selectedPlugin ? (
+          <div className="ext-detail">
+            <button
+              type="button"
+              className="ext-back"
+              onClick={() => setSelectedPluginId(null)}
+            >
+              <HugeiconsIcon icon={ArrowLeft01Icon} aria-hidden="true" />
+              {pageCopy.title}
+            </button>
+            <BuiltinPluginGlyph plugin={selectedPlugin} />
+            <h2>{selectedPlugin.name}</h2>
+            <p>{selectedPlugin.description}</p>
+            <span className="ext-publisher">BB Official</span>
+            {page === "plugins-installed" ? (
+              <button
+                type="button"
+                className="ext-switch-row"
+                role="switch"
+                aria-checked={enabledPluginIds.has(selectedPlugin.id)}
+                onClick={() => togglePlugin(selectedPlugin.id)}
+              >
+                Enabled
+                <i className="ext-switch" aria-hidden="true" />
+              </button>
+            ) : null}
           </div>
-        ))}
+        ) : (
+          <>
+            <header className="ext-heading">
+              <p>{pageCopy.description}</p>
+            </header>
+            {page.startsWith("plugins-") ? (
+              <>
+                <div
+                  className={
+                    page === "plugins-browse"
+                      ? "ext-toolbar ext-toolbar-browse"
+                      : "ext-toolbar"
+                  }
+                >
+                  <label className="ext-search">
+                    <SearchGlyph className="ext-search-icon" />
+                    <span className="sr-only">
+                      {page === "plugins-installed"
+                        ? "Search installed plugins"
+                        : "Search plugins"}
+                    </span>
+                    <input
+                      type="search"
+                      value={query}
+                      placeholder={
+                        page === "plugins-installed"
+                          ? "Search installed plugins"
+                          : "Search plugins"
+                      }
+                      onChange={(event) => setQuery(event.target.value)}
+                    />
+                  </label>
+                  {page === "plugins-browse" ? (
+                    <select
+                      className="ext-tool ext-category"
+                      aria-label="Category"
+                      value={categoryFilter}
+                      onChange={(event) =>
+                        setCategoryFilter(event.target.value)
+                      }
+                    >
+                      <option value="">Category</option>
+                      {PLUGIN_CATEGORIES_FROM_REGISTRY.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <button
+                      type="button"
+                      className="ext-tool"
+                      aria-pressed={officialOnly}
+                      onClick={() => setOfficialOnly((current) => !current)}
+                    >
+                      Type · BB Official
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="ext-tool"
+                    aria-label={`Plugin name, ${sortDirection === "asc" ? "ascending" : "descending"}`}
+                    onClick={() =>
+                      setSortDirection((current) =>
+                        current === "asc" ? "desc" : "asc",
+                      )
+                    }
+                  >
+                    Plugin name
+                    <HugeiconsIcon
+                      icon={ArrowDown01Icon}
+                      aria-hidden="true"
+                      className={
+                        sortDirection === "desc" ? "ext-sort desc" : "ext-sort"
+                      }
+                    />
+                  </button>
+                </div>
+                {visiblePlugins.length === 0 ? (
+                  <div className="ext-empty">No plugins match “{query}”</div>
+                ) : page === "plugins-installed" ? (
+                  <div className="ext-list">
+                    {visiblePlugins.map((plugin) => (
+                      <div key={plugin.id} className="ext-row">
+                        <button
+                          type="button"
+                          className="ext-row-open"
+                          onClick={() => setSelectedPluginId(plugin.id)}
+                        >
+                          <BuiltinPluginGlyph plugin={plugin} />
+                          <span className="ext-row-copy">
+                            <strong>{plugin.name}</strong>
+                            <span>{plugin.description}</span>
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className="ext-switch-button"
+                          role="switch"
+                          aria-label={`${plugin.name} enabled`}
+                          aria-checked={enabledPluginIds.has(plugin.id)}
+                          onClick={() => togglePlugin(plugin.id)}
+                        >
+                          <i className="ext-switch" aria-hidden="true" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="ext-grid">
+                    {visiblePlugins.map((plugin) => (
+                      <button
+                        key={plugin.id}
+                        type="button"
+                        className="ext-card"
+                        onClick={() => setSelectedPluginId(plugin.id)}
+                      >
+                        <BuiltinPluginGlyph plugin={plugin} />
+                        <strong>{plugin.name}</strong>
+                        <span>{plugin.description}</span>
+                        <em>BB Official</em>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="ext-empty ext-skills-empty">
+                <HugeiconsIcon icon={ZapIcon} aria-hidden="true" />
+                {page === "skills-library"
+                  ? "No skills in your library."
+                  : "No skills.sh resources available."}
+              </div>
+            )}
+          </>
+        )}
       </div>
-    </div>
+    </section>
   );
 }
 
+const CREATE_AUTOMATION_PROMPT_FROM_SOURCE = "Create a new bb automation to ";
+const AUTOMATION_CREATE_TEMPLATES_FROM_SOURCE = [
+  {
+    label: "CI failure triage",
+    description:
+      "runs every weekday morning, checks failed main-branch CI, and opens fixer threads only for new failures",
+    prompt: `${CREATE_AUTOMATION_PROMPT_FROM_SOURCE}runs every weekday morning, checks failed main-branch CI, and opens fixer threads only for new failures.`,
+  },
+  {
+    label: "Dependency drift",
+    description:
+      "checks weekly for stale dependencies and opens an update thread when risk is low",
+    prompt: `${CREATE_AUTOMATION_PROMPT_FROM_SOURCE}checks weekly for stale dependencies and opens an update thread when risk is low.`,
+  },
+  {
+    label: "Release readiness",
+    description:
+      "checks the release branch hourly, summarizes blocking checks, and alerts only when the status changes",
+    prompt: `${CREATE_AUTOMATION_PROMPT_FROM_SOURCE}checks the release branch hourly, summarizes blocking checks, and alerts only when the status changes.`,
+  },
+  {
+    label: "Stale worktrees",
+    description:
+      "checks daily for stale worktrees and opens cleanup threads only after they exceed the team's retention window",
+    prompt: `${CREATE_AUTOMATION_PROMPT_FROM_SOURCE}checks daily for stale worktrees and opens cleanup threads only after they exceed the team's retention window.`,
+  },
+] as const;
+
 function AutomationsPanelMock() {
-  const autos = [
-    ["Nightly changelog", "Every day · 02:00", "ok"],
-    ["Dependency sweep", "Mondays · 06:00", "ok"],
-    ["Flaky-test triage", "On CI failure", "paused"],
-  ] as const;
+  const [mode, setMode] = useState<"installed" | "browse">("browse");
+  const [installedQuery, setInstalledQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "paused">(
+    "all",
+  );
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   return (
-    <div className="ppanel" aria-hidden>
-      <div className="ppanel-bar">
-        <span className="ppanel-name">Scheduled</span>
-        <span className="ppanel-cta">+ New automation</span>
+    <section className="auto-panel" aria-label="Automations">
+      <header className="auto-heading">
+        <div>
+          <p>
+            Manage scheduled bb work across projects and folders. Automations
+            run recurring or one-time tasks without manual prompting.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="auto-new"
+          onClick={() => {
+            setMode("browse");
+          }}
+        >
+          <PlusGlyph />
+          New automation
+        </button>
+      </header>
+      <div className="auto-modes" aria-label="Automation collection">
+        <button
+          type="button"
+          className={mode === "installed" ? "active" : undefined}
+          aria-pressed={mode === "installed"}
+          onClick={() => {
+            setMode("installed");
+          }}
+        >
+          Installed
+        </button>
+        <button
+          type="button"
+          className={mode === "browse" ? "active" : undefined}
+          aria-pressed={mode === "browse"}
+          onClick={() => setMode("browse")}
+        >
+          Browse
+        </button>
       </div>
-      <div className="plist">
-        {autos.map(([name, cadence, state]) => (
-          <div key={name} className="plist-row">
-            <span className="plist-name">{name}</span>
-            <span className="plist-blurb">{cadence}</span>
-            <span className={state === "ok" ? "auto-ok" : "auto-paused"}>
-              {state === "ok" ? "On" : "Paused"}
-            </span>
+      {mode === "browse" ? (
+        <div className="auto-grid">
+          {AUTOMATION_CREATE_TEMPLATES_FROM_SOURCE.map((candidate) => (
+            <article key={candidate.label} className="auto-card">
+              <h3>{candidate.label}</h3>
+              <button
+                type="button"
+                className="auto-card-use"
+                aria-label={`Use template: ${candidate.label}`}
+                title="Use template"
+              >
+                <HugeiconsIcon icon={BubbleChatAddIcon} aria-hidden="true" />
+              </button>
+              <p>{candidate.description}</p>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="auto-installed">
+          <div className="auto-toolbar">
+            <label className="auto-search">
+              <SearchGlyph />
+              <span className="sr-only">Search automations</span>
+              <input
+                type="search"
+                placeholder="Search automations"
+                value={installedQuery}
+                onChange={(event) => setInstalledQuery(event.target.value)}
+              />
+            </label>
+            <button type="button" disabled>
+              Projects
+            </button>
+            <button
+              type="button"
+              aria-label={`Status filter: ${statusFilter}`}
+              onClick={() =>
+                setStatusFilter((current) =>
+                  current === "all"
+                    ? "active"
+                    : current === "active"
+                      ? "paused"
+                      : "all",
+                )
+              }
+            >
+              Status
+              {statusFilter === "all"
+                ? ""
+                : ` · ${statusFilter === "active" ? "Active" : "Paused"}`}
+            </button>
+            <button
+              type="button"
+              aria-label={`Automation name, ${sortDirection === "asc" ? "ascending" : "descending"}`}
+              onClick={() =>
+                setSortDirection((current) =>
+                  current === "asc" ? "desc" : "asc",
+                )
+              }
+            >
+              Automation name
+              <HugeiconsIcon
+                icon={ArrowDown01Icon}
+                aria-hidden="true"
+                className={
+                  sortDirection === "desc" ? "auto-sort desc" : "auto-sort"
+                }
+              />
+            </button>
           </div>
-        ))}
-      </div>
-    </div>
+          <div className="auto-empty">No automations installed.</div>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1840,61 +2510,96 @@ function AskDemo() {
   );
 }
 
-/* ────────────────────────────────────────────────
- * TASKS BOARD STORYBOARD (loops while in view)
- *
- *      0ms   the chrome is up, the columns are empty
- *    300ms   cards land column by column, 90ms apart; the toolbar's
- *            refresh dial sweeps once while they arrive
- *   2600ms   SF-1 ticks over to done; the rail's Active count follows
- *   9000ms   loop restarts (the board rests settled ~70% of the loop)
- *   rest     full board — also the reduced-motion state
- * ──────────────────────────────────────────────── */
-const BOARD_BEATS = [300, 2600];
-const BOARD_RESET = 9000;
+const BOARD_STATUS_LABELS: Record<BoardTaskStatus, string> = {
+  backlog: "Backlog",
+  todo: "Todo",
+  in_progress: "In Progress",
+  in_review: "In Review",
+  done: "Done",
+};
 
-const BOARD_COLUMNS = [
-  {
-    name: "Backlog",
-    state: "backlog",
-    cards: [
-      { id: "SF-6", title: "Cut the 1.4 release notes", pri: 1 },
-      { id: "SF-9", title: "Retire the legacy cart cookie", pri: 1 },
-      { id: "SF-11", title: "Audit checkout analytics", pri: 2 },
-      { id: "SF-14", title: "Drop the unused address form", pri: 1 },
-    ],
-  },
-  {
-    name: "Todo",
-    state: "todo",
-    cards: [
-      { id: "SF-3", title: "Add Apple Pay to checkout", pri: 3 },
-      { id: "SF-4", title: "Write docs for the promo engine", pri: 2 },
-      { id: "SF-7", title: "Handle expired promo codes", pri: 2 },
-      { id: "SF-12", title: "Cover the empty-cart path", pri: 1 },
-    ],
-  },
-  {
-    name: "In Progress",
-    state: "doing",
-    cards: [
-      { id: "SF-1", title: "Ship promo-code analytics", pri: 3 },
-      { id: "SF-2", title: "Port pricing to TypeScript", pri: 2 },
-      { id: "SF-8", title: "Split the order confirmation", pri: 2 },
-      { id: "SF-13", title: "Trace the checkout funnel", pri: 1 },
-    ],
-  },
-] as const;
+// The five always-visible statuses from plugins/tasks/views/board/drop-position.ts.
+const BOARD_STATUSES_FROM_SOURCE: readonly BoardTaskStatus[] = [
+  "backlog",
+  "todo",
+  "in_progress",
+  "in_review",
+  "done",
+];
 
-function BoardColGlyph({ state }: { state: string }) {
-  if (state === "backlog") {
-    return <BacklogStateGlyph className="board-state" />;
-  }
-  if (state === "todo") {
-    return <TodoStateGlyph className="board-state" />;
-  }
-  return <DoingStateGlyph className="board-state board-state-doing" />;
-}
+type SeededTask = {
+  key: string;
+  title: string;
+  description: string | null;
+  status: BoardTaskStatus;
+  priority: BoardTaskPriority;
+  parentKey: string | null;
+  labels: readonly string[];
+  subDone: number;
+  subTotal: number;
+};
+
+// Auditable fixture from plugins/tasks/cli/seed.ts. The board excludes the
+// parented TASKS-3 card, matching fetchBoard in views/board/index.tsx.
+const TASKS_PLUGIN_SEED_FROM_SOURCE: readonly SeededTask[] = [
+  {
+    key: "TASKS-1",
+    title: "Polish the task detail panel",
+    description: "Finish the detail view and verify markdown rendering.",
+    status: "in_progress",
+    priority: "urgent",
+    parentKey: null,
+    labels: ["UX"],
+    subDone: 0,
+    subTotal: 1,
+  },
+  {
+    key: "TASKS-2",
+    title: "Add CLI smoke coverage",
+    description: "Cover the canonical create, list, show, and update flow.",
+    status: "in_review",
+    priority: "high",
+    parentKey: null,
+    labels: ["Backend"],
+    subDone: 0,
+    subTotal: 0,
+  },
+  {
+    key: "TASKS-3",
+    title: "Document project linking",
+    description: null,
+    status: "todo",
+    priority: "medium",
+    parentKey: "TASKS-1",
+    labels: ["Backend", "UX"],
+    subDone: 0,
+    subTotal: 0,
+  },
+  {
+    key: "TASKS-4",
+    title: "Archive the old prototype notes",
+    description: null,
+    status: "done",
+    priority: "low",
+    parentKey: null,
+    labels: [],
+    subDone: 0,
+    subTotal: 0,
+  },
+];
+
+const BOARD_COLUMNS_FROM_SOURCE = BOARD_STATUSES_FROM_SOURCE.map((status) => ({
+  status,
+  name: BOARD_STATUS_LABELS[status],
+  cards: TASKS_PLUGIN_SEED_FROM_SOURCE.filter(
+    (task) => task.parentKey === null && task.status === status,
+  ),
+}));
+
+type BoardDraft =
+  | { kind: "task"; status: BoardTaskStatus }
+  | { kind: "project" }
+  | { kind: "preset" };
 
 /* The board rests in a real, complete state and answers the visitor: the
  * List/Board control is a real control, and cards respond to the pointer.
@@ -1923,108 +2628,346 @@ function withViewTransition(change: () => void) {
 
 function TasksBoardDemo() {
   const [view, setView] = useState<"board" | "list">("board");
-  const listed = BOARD_COLUMNS.flatMap((col) =>
-    col.cards.map((card) => ({ ...card, col })),
-  );
+  const [scope, setScope] = useState<"project" | "all" | "active">("project");
+  const [selectedTaskKey, setSelectedTaskKey] = useState<string | null>(null);
+  const [draft, setDraft] = useState<BoardDraft | null>(null);
+  const [refreshRevision, setRefreshRevision] = useState(0);
+  const selectedTask =
+    TASKS_PLUGIN_SEED_FROM_SOURCE.find(
+      (task) => task.key === selectedTaskKey,
+    ) ?? null;
+  const listed = scope === "active" ? [] : TASKS_PLUGIN_SEED_FROM_SOURCE;
+
+  const navigateScope = (nextScope: "project" | "all" | "active") => {
+    setScope(nextScope);
+    setSelectedTaskKey(null);
+    setDraft(null);
+    setView(nextScope === "project" ? "board" : "list");
+  };
+
   return (
-    <div className="board-demo">
+    <section className="board-demo" aria-label="Tasks">
       <div className="board-chrome" aria-hidden>
         <ChecklistGlyph className="board-chrome-ic" />
         <span className="board-chrome-title">Tasks</span>
         <PanelRightIcon className="board-chrome-ic board-chrome-panel" />
       </div>
       <div className="board-bar">
-        <span className="board-project" aria-hidden>
-          <i className="board-proj-dot" />
-          storefront 1.4
+        <button
+          type="button"
+          className="board-project"
+          onClick={() => navigateScope("project")}
+        >
+          {scope === "project" ? <i className="board-proj-dot" /> : null}
+          {scope === "project"
+            ? "Tasks Plugin"
+            : scope === "all"
+              ? "All tasks"
+              : "Active"}
+        </button>
+        {scope === "project" ? (
+          <span className="board-seg">
+            {(["list", "board"] as const).map((nextView) => (
+              <button
+                key={nextView}
+                type="button"
+                className={view === nextView ? "on" : undefined}
+                aria-pressed={view === nextView}
+                onClick={() => setView(nextView)}
+              >
+                {nextView === "list" ? "List" : "Board"}
+              </button>
+            ))}
+          </span>
+        ) : null}
+        <button
+          type="button"
+          className="board-refresh"
+          aria-label="Refresh tasks"
+          onClick={() => setRefreshRevision((revision) => revision + 1)}
+        >
+          <RefreshGlyph />
+        </button>
+        <span className="sr-only" aria-live="polite">
+          {refreshRevision > 0 ? "Tasks refreshed" : ""}
         </span>
-        <span className="board-seg">
-          {(["list", "board"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              className={view === v ? "on" : undefined}
-              aria-pressed={view === v}
-              onClick={() => withViewTransition(() => setView(v))}
-            >
-              {v === "list" ? "List" : "Board"}
-            </button>
-          ))}
-        </span>
-        <RefreshGlyph className="board-refresh" />
-        <span className="board-new" aria-hidden>
+        <button
+          type="button"
+          className="board-new"
+          onClick={() => setDraft({ kind: "task", status: "todo" })}
+        >
           <PlusGlyph className="board-new-ic" />
           New task
-        </span>
+        </button>
       </div>
       <div className="board-main">
-        {view === "board" ? (
-          <div className="board-cols">
-            {BOARD_COLUMNS.map((col) => (
-              <div key={col.name} className="board-col">
-                <span className="board-col-head" aria-hidden>
-                  <BoardColGlyph state={col.state} />
-                  {col.name}
-                  <em>{col.cards.length}</em>
-                  <PlusGlyph className="board-col-add" />
-                </span>
-                {/* The name is what ties this card to its row in the list
-                    view. Same name on both sides, so the browser treats them
-                    as one thing that moved rather than two that swapped. */}
-                {col.cards.map((card) => (
-                  <div
-                    key={card.id}
-                    className="board-card"
-                    style={{ viewTransitionName: `task-${card.id}` }}
-                  >
-                    <span className="board-id">{card.id}</span>
-                    <span className="board-card-title">{card.title}</span>
-                    <PriorityGlyph level={card.pri} />
+        {scope === "project" && view === "board" ? (
+          <>
+            <div className="board-cols">
+              {BOARD_COLUMNS_FROM_SOURCE.map((col) => (
+                <div key={col.name} className="board-col">
+                  <div className="board-col-head">
+                    <BoardStatusGlyph status={col.status} />
+                    <span>{col.name}</span>
+                    <em>{col.cards.length}</em>
+                    <button
+                      type="button"
+                      className="board-col-add"
+                      aria-label={`New ${col.name} task`}
+                      onClick={() =>
+                        setDraft({ kind: "task", status: col.status })
+                      }
+                    >
+                      <PlusGlyph />
+                    </button>
                   </div>
-                ))}
-              </div>
-            ))}
-          </div>
+                  <div className="board-col-cards">
+                    {col.cards.map((card) => (
+                      <button
+                        key={card.key}
+                        type="button"
+                        className={
+                          selectedTaskKey === card.key
+                            ? "board-card selected"
+                            : "board-card"
+                        }
+                        onClick={() => setSelectedTaskKey(card.key)}
+                      >
+                        <span className="board-id">{card.key}</span>
+                        <span className="board-card-title">{card.title}</span>
+                        <span className="board-card-meta">
+                          <PriorityGlyph priority={card.priority} />
+                          {card.labels.map((label) => (
+                            <span key={label} className="board-label">
+                              <i
+                                className={`board-label-dot board-label-${label.toLocaleLowerCase()}`}
+                                aria-hidden="true"
+                              />
+                              {label}
+                            </span>
+                          ))}
+                          {card.subTotal > 0 ? (
+                            <span className="board-subtasks">
+                              <HugeiconsIcon
+                                icon={HiGitBranchIcon}
+                                aria-hidden="true"
+                              />
+                              {card.subDone}/{card.subTotal}
+                            </span>
+                          ) : null}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="board-mobile-list">
+              {TASKS_PLUGIN_SEED_FROM_SOURCE.map((card) => (
+                <button
+                  key={card.key}
+                  type="button"
+                  className={
+                    card.parentKey === null
+                      ? "board-lrow"
+                      : "board-lrow board-lrow-child"
+                  }
+                  onClick={() => setSelectedTaskKey(card.key)}
+                >
+                  <BoardStatusGlyph status={card.status} />
+                  <span className="board-lid">{card.key}</span>
+                  <span className="board-ltitle">{card.title}</span>
+                  <PriorityGlyph priority={card.priority} />
+                </button>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="board-list">
-            {listed.map((card) => (
-              <div
-                key={card.id}
-                className="board-lrow"
-                style={{ viewTransitionName: `task-${card.id}` }}
-              >
-                <BoardColGlyph state={card.col.state} />
-                <span className="board-lid">{card.id}</span>
-                <span className="board-ltitle">{card.title}</span>
-                <PriorityGlyph level={card.pri} />
+            {scope === "active" ? (
+              <div className="board-empty">
+                <HugeiconsIcon icon={ZapIcon} aria-hidden="true" />
+                <strong>No agents working right now</strong>
+                <span>
+                  Dispatch a task to an agent preset and it will show up here
+                  while it runs.
+                </span>
               </div>
-            ))}
+            ) : (
+              listed.map((card) => (
+                <button
+                  key={card.key}
+                  type="button"
+                  className={
+                    card.parentKey === null
+                      ? "board-lrow"
+                      : "board-lrow board-lrow-child"
+                  }
+                  onClick={() => setSelectedTaskKey(card.key)}
+                >
+                  <BoardStatusGlyph status={card.status} />
+                  <span className="board-lid">{card.key}</span>
+                  <span className="board-ltitle">{card.title}</span>
+                  <PriorityGlyph priority={card.priority} />
+                </button>
+              ))
+            )}
           </div>
         )}
-        <aside className="board-rail" aria-hidden>
-          <span className="brail-row">
-            <strong>All tasks</strong>
-            <em>12</em>
-          </span>
-          <span className="brail-row">
-            <strong>Active</strong>
-            <em>3</em>
-          </span>
-          <span className="brail-label">Projects</span>
-          <span className="brail-row">
-            <i className="board-proj-dot" />
-            <strong>storefront 1.4</strong>
-            <em>12</em>
-          </span>
-          <span className="brail-row brail-ghost">
-            <PlusGlyph className="brail-ic" />
-            New project
-          </span>
-          <span className="brail-label">Agent presets</span>
-          <span className="brail-note">No presets yet.</span>
+        <aside className="board-rail" aria-label="Tasks navigation">
+          {selectedTask ? (
+            <div className="board-detail">
+              <button
+                type="button"
+                className="board-detail-back"
+                onClick={() => setSelectedTaskKey(null)}
+              >
+                <HugeiconsIcon icon={ArrowLeft01Icon} aria-hidden="true" />
+                Back
+              </button>
+              <span className="board-detail-key">{selectedTask.key}</span>
+              <strong>{selectedTask.title}</strong>
+              {selectedTask.description ? (
+                <p>{selectedTask.description}</p>
+              ) : null}
+              <span className="board-detail-prop">
+                <BoardStatusGlyph status={selectedTask.status} />
+                {BOARD_STATUS_LABELS[selectedTask.status]}
+              </span>
+              <span className="board-detail-prop">
+                <PriorityGlyph priority={selectedTask.priority} />
+                {selectedTask.priority === "none"
+                  ? "No priority"
+                  : `${selectedTask.priority[0]!.toUpperCase()}${selectedTask.priority.slice(1)}`}
+              </span>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                className={scope === "all" ? "brail-row active" : "brail-row"}
+                aria-current={scope === "all" ? "page" : undefined}
+                onClick={() => navigateScope("all")}
+              >
+                <strong>All tasks</strong>
+                <em>{TASKS_PLUGIN_SEED_FROM_SOURCE.length}</em>
+              </button>
+              <button
+                type="button"
+                className={
+                  scope === "active" ? "brail-row active" : "brail-row"
+                }
+                aria-current={scope === "active" ? "page" : undefined}
+                onClick={() => navigateScope("active")}
+              >
+                <strong>Active</strong>
+                <em>0</em>
+              </button>
+              <span className="brail-label">Projects</span>
+              <button
+                type="button"
+                className={
+                  scope === "project" ? "brail-row active" : "brail-row"
+                }
+                aria-current={scope === "project" ? "page" : undefined}
+                onClick={() => navigateScope("project")}
+              >
+                <i className="board-proj-dot" />
+                <strong>Tasks Plugin</strong>
+                <em>{TASKS_PLUGIN_SEED_FROM_SOURCE.length}</em>
+              </button>
+              <button
+                type="button"
+                className="brail-row brail-ghost"
+                onClick={() => setDraft({ kind: "project" })}
+              >
+                <PlusGlyph className="brail-ic" />
+                New project
+              </button>
+              <span className="brail-label">Agent presets</span>
+              <span className="brail-note">No presets yet.</span>
+              <button
+                type="button"
+                className="brail-row brail-ghost"
+                onClick={() => setDraft({ kind: "preset" })}
+              >
+                <PlusGlyph className="brail-ic" />
+                New preset
+              </button>
+            </>
+          )}
         </aside>
       </div>
-    </div>
+      {draft ? (
+        <form
+          className="board-draft"
+          role="dialog"
+          aria-modal={false}
+          aria-labelledby="board-draft-title"
+          onSubmit={(event) => event.preventDefault()}
+        >
+          <h3 id="board-draft-title">
+            {draft.kind === "task"
+              ? "New task · Tasks Plugin"
+              : draft.kind === "project"
+                ? "New project"
+                : "New preset"}
+          </h3>
+          {draft.kind === "task" ? (
+            <>
+              <input
+                autoFocus
+                aria-label="Task title"
+                placeholder="Task title"
+              />
+              <textarea
+                aria-label="Description"
+                placeholder="Description — rich text, round-trips as markdown for agents"
+              />
+              <span className="board-draft-status">
+                <BoardStatusGlyph status={draft.status} />
+                {BOARD_STATUS_LABELS[draft.status]}
+              </span>
+            </>
+          ) : draft.kind === "project" ? (
+            <>
+              <p>Projects group tasks under a shared key prefix.</p>
+              <label>
+                Name
+                <input autoFocus placeholder="e.g. Tasks Plugin" />
+              </label>
+              <label>
+                Prefix
+                <input placeholder="TSK" />
+              </label>
+            </>
+          ) : (
+            <>
+              <p>
+                Presets pick the provider, model, and guardrails for dispatched
+                threads.
+              </p>
+              <label>
+                Name
+                <input autoFocus placeholder="e.g. Sonnet · high" />
+              </label>
+            </>
+          )}
+          <div className="board-draft-actions">
+            <button type="button" onClick={() => setDraft(null)}>
+              Cancel
+            </button>
+            <button type="submit" disabled>
+              {draft.kind === "task"
+                ? "Create task"
+                : draft.kind === "project"
+                  ? "Create project"
+                  : "Create preset"}
+            </button>
+          </div>
+        </form>
+      ) : null}
+    </section>
   );
 }
 
