@@ -58,7 +58,6 @@ import shortcutLogo from "../assets/company-logos/shortcut.svg";
 import simileLogo from "../assets/company-logos/simile.svg";
 import bbIconLarge from "../assets/bb-icon.png";
 import bbStickerRiso from "../assets/stickers/bb-riso.webp";
-import hermesAvatar from "../assets/hermes-avatar.jpg";
 import phoneBezel from "../assets/phone-bezel.svg";
 import vscodeIcon from "../assets/vscode.png";
 import { RELEASE_META, parseChangelog } from "../landing/changelog";
@@ -2347,9 +2346,15 @@ function Phone({
   );
 }
 
-/* A Telegram chat with the bb bot: you text a request, the bot acks with the
- * command it ran, and a thread card lands and goes spawning → running. The
- * shell stays put; the messages arrive once and stay. */
+/* A Telegram chat with your own bb: the `connect` plugin puts this machine at
+ * <handle>.getbb.app, so anything that can reach an HTTPS endpoint can call
+ * `bb thread spawn`. You text a request, bb acks with the command it ran, and
+ * a thread card lands and goes spawning → running. The shell stays put; the
+ * messages arrive once and stay.
+ *
+ * The bot is bb, not an agent. Hermes is a real ACP provider
+ * (known-acp-agents.ts: `hermes acp`) that can run a thread once it exists —
+ * which is why it appears in the agent rail and not in this title bar. */
 function AgentChat() {
   // The card ends on the live thread rather than on a "done" message: a
   // fourth bubble pushed the conversation past the edge the bento clips at,
@@ -2359,11 +2364,11 @@ function AgentChat() {
       <div className="tg-bar">
         <ChevronLeft className="tg-back" />
         <span className="tg-contact">
-          <span className="tg-name">Hermes</span>
+          <span className="tg-name">bb</span>
           <span className="tg-sub">bot</span>
         </span>
         <span className="tg-av" aria-hidden>
-          <img src={hermesAvatar} alt="" />
+          <span className="bb-mark tg-av-mark" />
         </span>
       </div>
       <div className="tg-feed">
@@ -3056,7 +3061,7 @@ const SPAWN_CAUSES = [
   {
     id: "telegram",
     title: "Audit promo code coverage",
-    origin: "Spawned by Hermes · via Telegram",
+    origin: "Spawned via Telegram",
     branch: "bb/audit-promo-coverage",
     diff: { files: "1 file", add: "+38", del: "-2" },
     lines: [
@@ -3111,17 +3116,11 @@ const SPAWN_CAUSES = [
   },
 ] as const;
 
-/** Hermes messages bb over Telegram, so the rail shows his avatar the way
- *  it shows any agent's glyph. */
-const HermesGlyph = ({ className }: IconProps) => (
-  <img src={hermesAvatar} alt="" width={15} height={15} className={className} />
-);
-
 /** The app's own vocabulary for a background spawn: a terminal for a shell
  *  command, the sender for an agent, a clock for a schedule. */
 const SPAWN_GLYPHS: Record<string, (p: IconProps) => ReactNode> = {
   cli: TerminalGlyph,
-  telegram: HermesGlyph,
+  telegram: PaperPlane,
   cron: ClockIcon,
 };
 

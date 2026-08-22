@@ -4977,6 +4977,13 @@ button.sub-row:focus-visible {
   background: var(--surface-recessed);
 }
 
+/* The chat is with your own bb, so the title bar carries the bb mark rather
+   than an agent's face. .bb-mark already swaps for the dark theme. */
+.tg-av-mark {
+  width: 18px;
+  height: 18px;
+}
+
 .tg-av img {
   width: 100%;
   height: 100%;
