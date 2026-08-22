@@ -3237,50 +3237,66 @@ function SpawnDemo() {
  * the aggregate count in the stats block is computed from, so the feed and the
  * stat are derived from one query and cannot disagree.
  *
- * Every row is rendered. An earlier version scrolled a duplicated copy of the
- * list on a 46-second loop and showed about four of eighteen at a time, which
- * spent motion to hide the argument: the volume IS the argument. The soft
- * edges are a mask, not a marquee — they keep the block from reading as a
- * hard rectangle without moving anything or concealing a row.
+ * It scrolls. The list is rendered twice and the track translated by exactly
+ * half its height, so the second copy arrives where the first began and the
+ * loop has no seam; the duplicate is `aria-hidden` so a screen reader is not
+ * read eighteen pull requests twice. It pauses on hover, because every row is
+ * a link and a moving target is a hostile one. Under reduced motion the track
+ * stops and the mask lifts, which leaves the full static list — the same thing
+ * a prerender and a screenshot get.
  */
 function PRFeed() {
+  const rows = (duplicate: boolean) =>
+    PR_FEED.map((pr) => {
+      const url =
+        CONTRIBUTOR_AVATARS[`../assets/contributors/${pr.login}.webp`];
+      return (
+        <li key={`${duplicate ? "b" : "a"}-${pr.number}`}>
+          <a
+            href={pr.url}
+            target="_blank"
+            rel="noreferrer"
+            tabIndex={duplicate ? -1 : undefined}
+          >
+            {url ? (
+              <img
+                src={url}
+                alt=""
+                width={22}
+                height={22}
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <span className="pr-avatar-fallback" aria-hidden>
+                {pr.login.slice(0, 1)}
+              </span>
+            )}
+            <span className="pr-title">{pr.title}</span>
+            {pr.agent ? (
+              <span
+                className="pr-agent"
+                title="Written by an agent running in bb"
+              >
+                agent
+              </span>
+            ) : null}
+            <span className="pr-meta">
+              #{pr.number} · {pr.date}
+            </span>
+          </a>
+        </li>
+      );
+    });
+
   return (
     <div className="pr-feed rail" aria-label="Recently merged pull requests">
-      <ul>
-        {PR_FEED.map((pr) => {
-          const url =
-            CONTRIBUTOR_AVATARS[`../assets/contributors/${pr.login}.webp`];
-          return (
-            <li key={pr.number}>
-              <a href={pr.url} target="_blank" rel="noreferrer">
-                {url ? (
-                  <img
-                    src={url}
-                    alt=""
-                    width={22}
-                    height={22}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <span className="pr-avatar-fallback" aria-hidden>
-                    {pr.login.slice(0, 1)}
-                  </span>
-                )}
-                <span className="pr-title">{pr.title}</span>
-                {pr.agent ? (
-                  <span className="pr-agent" title="Written by an agent running in bb">
-                    agent
-                  </span>
-                ) : null}
-                <span className="pr-meta">
-                  #{pr.number} · {pr.date}
-                </span>
-              </a>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="pr-feed-clip">
+        <div className="pr-feed-track">
+          <ul>{rows(false)}</ul>
+          <ul aria-hidden>{rows(true)}</ul>
+        </div>
+      </div>
     </div>
   );
 }
@@ -3338,14 +3354,6 @@ function LandingPage() {
           <h2 id="company-proof-title">Used by builders at</h2>
           <CompanyProofLogos />
         </section>
-      </div>
-
-      {/* The second signup, directly under the window. A reader convinced by
-          the mock should not have to scroll nine sections to act on it, and
-          this position carries its own `placement` so the data can say which
-          of the two actually earns the address. */}
-      <div className="subscribe-band">
-        <SubscribeCard placement="hero" title="Keep up with the build" />
       </div>
 
       <section className="act">

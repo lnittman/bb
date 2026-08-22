@@ -4589,17 +4589,70 @@ button.sub-row:focus-visible {
   padding: 12px;
 }
 
-/* Eighteen merged pull requests, all of them at once. This was a 46-second
-   marquee over two duplicated copies of the list, which meant about four
-   were legible at any moment and the other fourteen were a rumour. The
-   volume IS the argument in this section, so showing the whole set static
-   is both a stronger claim and the only version that survives a screenshot,
-   a prerender, or reduced motion. */
+/* The feed scrolls. It was a static grid of all eighteen for a while, on the
+   argument that the volume is the argument — but a feed that never moves
+   reads as a screenshot of a feed, and the motion is what says this is still
+   happening. The list is rendered twice and the track moved by exactly half
+   its own height, so the second copy lands where the first started and there
+   is no seam to see. */
 /* Two columns, not three. At three the track was 320px and every row had to
    fit an avatar, a title, the agent marker and "#2303 · Aug 22" inside it, so
    the title — the only part that carries meaning — was the part that got the
    ellipsis. Nine rows of readable title beat eighteen rows of truncation, and
    the block is barely taller for it. */
+.pr-feed-clip {
+  /* Six rows of the eighteen. Tall enough that the section still reads as a
+     volume of work, short enough that it is a feed and not a wall. */
+  height: 306px;
+  overflow: hidden;
+  /* Top and bottom only: rows leave and arrive through a fade rather than
+     appearing at a hard edge. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 44px,
+    black calc(100% - 44px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 44px,
+    black calc(100% - 44px),
+    transparent
+  );
+}
+
+@keyframes pr-scroll {
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+.pr-feed-track {
+  animation: pr-scroll 60s linear infinite;
+}
+
+/* Every row is a link, and a moving target is a hostile one. */
+.pr-feed:hover .pr-feed-track,
+.pr-feed:focus-within .pr-feed-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pr-feed-track {
+    animation: none;
+  }
+
+  /* With nothing moving there is no edge to soften, and the clip would hide
+     twelve real rows for no reason. */
+  .pr-feed-clip {
+    height: auto;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
 .pr-feed ul {
   list-style: none;
   display: grid;
@@ -4622,6 +4675,9 @@ button.sub-row:focus-visible {
 /* The row tile is a real object: inset from the card wall, properly
    rounded for its height, and padded so the avatar and title never sit
    against its edge. */
+/* Instant in and instant out, which is what the app does: its list rows carry
+   `LIST_HOVER_TRANSITION = "transition-none"`. A row that eases reads as laggy
+   beside a product that repaints immediately. */
 .pr-feed li a {
   display: flex;
   align-items: center;
@@ -4630,14 +4686,12 @@ button.sub-row:focus-visible {
   margin-inline: 0;
   border-radius: 12px;
   color: inherit;
-  transition:
-    background var(--duration-hover) var(--ease-standard),
-    box-shadow var(--duration-hover) var(--ease-standard);
+  transition: none;
 }
 
+/* No ring: the tile alone is the hover. */
 .pr-feed li a:hover {
   background: var(--bg);
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink-strong) 8%, transparent);
 }
 
 .pr-feed li a:hover .pr-title {
@@ -4810,18 +4864,6 @@ button.sub-row:focus-visible {
 
 /* A slim, secondary strip — deliberately lighter than the closer above it so
    the two don't read as the same centered band twice. */
-/* The band the second card sits in. It follows the theater band, so it needs
-   its own vertical air rather than inheriting a section's. */
-.subscribe-band {
-  padding: 72px 0;
-}
-
-@media (max-width: 620px) {
-  .subscribe-band {
-    padding: 48px 0;
-  }
-}
-
 /* The signup as a room: a hairline-ruled card with the heading pair centred
    over the field, rather than a note tucked under a rule. Given it now
    appears twice on the page, it has to hold its own composition — a bare
@@ -6387,8 +6429,7 @@ button.sub-row:focus-visible {
 .subscribe-input,
 .plogo,
 .nav-links a,
-.footer a,
-.pr-feed li a {
+.footer a {
   transition-duration: var(--hover-out);
 }
 
@@ -6404,7 +6445,6 @@ button.sub-row:focus-visible {
 .plogo:hover,
 .nav-links a:hover,
 .footer a:hover,
-.pr-feed li a:hover,
 .subscribe-input:focus {
   transition-duration: 0ms;
 }
