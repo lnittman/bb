@@ -2150,12 +2150,10 @@ function ReviewDemo() {
  *
  *      0ms   a thread titled "New thread", nothing in the pane
  *    300ms   the title morphs into the ask; the agent starts working
- *   1100ms   "Scaffolded the plugin"
- *   1700ms   "Registered the CLI"
- *   2300ms   "Wrote the skill"
- *   2900ms   the Review queue panel appears in the sidebar nav
- *   3600ms   the panel itself opens beside the thread
- *   4300ms   the thread reports back and the branch chip fills in
+ *  0.8-2.8s  five build steps land, one every 500ms
+ *   3400ms   the Review queue panel appears in the sidebar nav
+ *   4000ms   the panel itself opens beside the thread
+ *   4600ms   the thread reports back and the branch chip fills in
  *  12000ms   loop restarts
  *
  * The build runs briskly and then holds: complete for roughly two thirds of
@@ -2169,14 +2167,16 @@ function ReviewDemo() {
  * section used to say "the panel is live in your sidebar" and then show a
  * label — evidence that a string was inserted, not that software was built.
  * ──────────────────────────────────────────────── */
-const BUILD_BEATS = [300, 1100, 1700, 2300, 2900, 3600, 4300];
+const BUILD_BEATS = [300, 800, 1300, 1800, 2300, 2800, 3400, 4000, 4600];
 const BUILD_RESET = 12000;
 const BUILD_PROMPT = "Add a review queue panel";
 
 const BUILD_STEPS = [
+  { kind: "step", text: "Read the plugin API" },
   { kind: "step", text: "Scaffolded the plugin" },
   { kind: "step", text: "Registered the CLI" },
   { kind: "step", text: "Wrote the skill" },
+  { kind: "step", text: "Added it to the sidebar" },
 ] as const;
 
 /** What the built panel is for: every thread that stopped to ask you
@@ -2191,10 +2191,10 @@ function BuildDemo() {
   const { ref, stage } = useLoopStage(BUILD_BEATS, BUILD_RESET);
   const settled = stage >= BUILD_BEATS.length;
   const asked = stage >= 1 || settled;
-  const steps = settled ? 3 : Math.max(0, stage - 1);
-  const navOn = stage >= 5 || settled;
-  const panelOn = stage >= 6 || settled;
-  const done = stage >= 7 || settled;
+  const steps = settled ? BUILD_STEPS.length : Math.max(0, stage - 1);
+  const navOn = stage >= 7 || settled;
+  const panelOn = stage >= 8 || settled;
+  const done = stage >= 9 || settled;
   return (
     <div className="build-demo" ref={ref} aria-hidden>
       <div className="dwin-bar">
@@ -2351,11 +2351,13 @@ function BuildDemo() {
  * GANG STORYBOARD (loops while in view)
  *
  *      0ms   four threads working across three projects
- *    900ms   the finding lands in the open transcript
- *   1900ms   the edit lands; the claude thread completes, its child
+ *    700ms   the read lands in the open transcript
+ *   1350ms   the finding lands
+ *   2000ms   the gap is named; the claude thread completes, its child
  *            appears nested
- *   2800ms   the suite starts; the pi thread completes
- *   3700ms   "Ran 32 tests" lands
+ *   2650ms   the edit lands; the pi thread completes
+ *   3300ms   the suite starts
+ *   3950ms   "Ran 32 tests" lands
  *   4600ms   the suite passes; the open codex thread completes last,
  *            on screen
  *  12000ms   loop restarts
@@ -2365,10 +2367,15 @@ function BuildDemo() {
  * at and then rests: settled for roughly two thirds.
  *   rest     everything settled — also the reduced-motion state
  * ──────────────────────────────────────────────── */
-const GANG_BEATS = [900, 1900, 2800, 3700, 4600];
+const GANG_BEATS = [700, 1350, 2000, 2650, 3300, 3950, 4600];
 const GANG_RESET = 12000;
 
 const GANG_STEPS = [
+  { kind: "step", text: "Read promo.ts, cart.ts, checkout.ts" },
+  {
+    kind: "say",
+    text: "applyPromo covers percent and fixed codes. Nothing exercises two codes on one cart.",
+  },
   { kind: "step", text: "Explored 3 files" },
   {
     kind: "say",
@@ -2451,7 +2458,7 @@ function GangDemo() {
         <span className="dwin-title">Audit promo code coverage</span>
         <span
           className={
-            stage >= 5 || settled ? "gang-commit armed" : "gang-commit"
+            stage >= 7 || settled ? "gang-commit armed" : "gang-commit"
           }
         >
           Commit
@@ -2471,19 +2478,19 @@ function GangDemo() {
         <div className="sub-row gang-row is-open">
           <OpenAiIcon className="gang-pv" />
           <span className="sub-title">Audit promo code coverage</span>
-          {stage >= 5 || settled ? null : <DemoSpinner />}
+          {stage >= 7 || settled ? null : <DemoSpinner />}
         </div>
         <div className="sub-row gang-row">
           <ClaudeIcon className="gang-pv" />
           <span className="sub-title">Trace order checkout flow</span>
-          {stage >= 2 || settled ? <i className="sub-dot" /> : <DemoSpinner />}
+          {stage >= 4 || settled ? <i className="sub-dot" /> : <DemoSpinner />}
         </div>
         {/* One hairline for the whole child group, as the real rail draws it. */}
         <div className="sub-kids">
           <i className="sub-guide" aria-hidden />
           <div
             className={
-              stage >= 2 || settled
+              stage >= 3 || settled
                 ? "sub-row gang-row gang-kid in"
                 : "sub-row gang-row gang-kid"
             }
@@ -2595,9 +2602,15 @@ const SPAWN_CAUSES = [
     title: "Trace order checkout flow",
     origin: "Spawned from your shell · bb thread spawn",
     branch: "bb/trace-order-checkout",
+    diff: { files: "3 files", add: "+61", del: "-4" },
     lines: [
+      { kind: "step", text: "Read checkout.ts" },
       { kind: "say", text: "Cart totals resolve before promo codes apply." },
       { kind: "step", text: "Read 3 files" },
+      {
+        kind: "say",
+        text: "Tax reads the discounted subtotal, so promo has to land first.",
+      },
       { kind: "say", text: "Traced. The order is cart, then promo, then tax." },
     ],
   },
@@ -2606,9 +2619,15 @@ const SPAWN_CAUSES = [
     title: "Audit promo code coverage",
     origin: "Spawned by Hermes · via Telegram",
     branch: "bb/audit-promo-coverage",
+    diff: { files: "1 file", add: "+38", del: "-2" },
     lines: [
+      { kind: "step", text: "Read promo.test.ts" },
       { kind: "say", text: "The promo engine has no test for stacked codes." },
       { kind: "step", text: "Edited promo.test.ts" },
+      {
+        kind: "say",
+        text: "Covered two codes on one cart, and a code that collides with a prototype key.",
+      },
       { kind: "say", text: "Added four cases. All 32 passing." },
     ],
   },
@@ -2617,8 +2636,14 @@ const SPAWN_CAUSES = [
     title: "Nightly dependency sweep",
     origin: "Spawned by Automations · every night at 02:00",
     branch: "bb/nightly-sweep",
+    diff: { files: "14 files", add: "+126", del: "-118" },
     lines: [
+      { kind: "step", text: "Read 14 package manifests" },
       { kind: "say", text: "Fourteen manifests read. Seven are behind." },
+      {
+        kind: "say",
+        text: "Six are minors and group cleanly. The major is vite, so it goes on its own.",
+      },
       { kind: "step", text: "Opened 3 pull requests" },
       { kind: "say", text: "Sweep done. Three PRs are up for review." },
     ],
@@ -2799,6 +2824,14 @@ function SpawnDemo() {
                 {l.text}
               </p>
             ))}
+          </div>
+          <div className="gang-pr">
+            <GitMergeIcon className="gang-pr-ic" />
+            <span className="gang-pr-strong">Uncommitted</span>
+            <span className="gang-pr-dim">· {open.diff.files},</span>
+            <em className="review-add">{open.diff.add}</em>
+            <em className="review-del">{open.diff.del}</em>
+            <ChevronDown className="gang-commit-chev" />
           </div>
           <div className="gang-composer">
             <span className="gang-ph">Ask a follow-up</span>

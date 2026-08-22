@@ -77,6 +77,13 @@
      Values inside a demo (6px rows, 7px cards, 12px frames) are the app's
      own metrics, transcribed so the recreations match what ships. Those are
      fidelity, not drift: change them only when the app changes. */
+  /* One window height for the three act demos. Without it each window is
+     only as tall as the least content it happens to hold — a 1040px-wide
+     frame landing at ~370px, a 2.8:1 letterbox that reads as a strip rather
+     than an application. The hero mock has carried an explicit height all
+     along, which is why it alone reads like a window. */
+  --demo-window: 500px;
+
   --r-control: 8px;
   --r-field: 10px;
   --r-card: 14px;
@@ -2849,6 +2856,7 @@ code,
 .build-demo {
   display: flex;
   flex-direction: column;
+  min-height: var(--demo-window);
   border-radius: var(--r-card);
   background: var(--bg);
   box-shadow:
@@ -3038,6 +3046,7 @@ code,
 .gang-demo {
   display: flex;
   flex-direction: column;
+  min-height: var(--demo-window);
   border-radius: var(--r-card);
   background: var(--bg);
   box-shadow:
@@ -3377,6 +3386,7 @@ code,
 .spawn-demo {
   display: flex;
   flex-direction: column;
+  min-height: var(--demo-window);
   border-radius: var(--r-card);
   background: var(--bg);
   box-shadow:
