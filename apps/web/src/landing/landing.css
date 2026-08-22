@@ -5907,3 +5907,16 @@ button.sub-row,
   color: var(--ink-strong);
   white-space: nowrap;
 }
+
+/* The hero diff's line-number gutter, matching the review demo's — same
+   width, same tabular figures, same weight. Two diffs on one page were
+   drawing the same app surface with and without one. */
+.dl-no {
+  flex: none;
+  width: 26px;
+  padding-right: 6px;
+  text-align: right;
+  color: var(--subtle);
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}

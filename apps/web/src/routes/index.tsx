@@ -1086,6 +1086,24 @@ function Composer({ thread }: { thread?: MockThread }) {
 }
 
 // The diff / secondary panel that opens on the right.
+/** Unified-diff line numbers, the way the app's GitDiffCard computes them: a
+ *  deletion carries its old number, an addition its new one, and context
+ *  carries both because they agree. The hero panel was the only diff on this
+ *  page — or in the product — drawn without a gutter, while the review demo
+ *  twelve hundred lines below drew one. */
+function numberDiff(lines: DiffLine[], start = 12) {
+  let oldNo = start;
+  let newNo = start;
+  return lines.map((line) => {
+    if (line.t === "del") return { ...line, no: oldNo++ };
+    if (line.t === "add") return { ...line, no: newNo++ };
+    const no = newNo;
+    oldNo += 1;
+    newNo += 1;
+    return { ...line, no };
+  });
+}
+
 function DiffPanel({
   thread,
   onClose,
@@ -1114,8 +1132,9 @@ function DiffPanel({
         promo.test.ts
       </div>
       <div className="diff-body">
-        {DIFF_LINES.map((line, i) => (
+        {numberDiff(DIFF_LINES).map((line, i) => (
           <div key={i} className={`dl dl-${line.t}`}>
+            <span className="dl-no">{line.no}</span>
             <span className="dl-sign">
               {line.t === "add" ? "+" : line.t === "del" ? "-" : " "}
             </span>
