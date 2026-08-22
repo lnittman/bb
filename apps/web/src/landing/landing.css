@@ -4162,7 +4162,11 @@ button.sub-row:focus-visible {
 .pr-feed ul {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+  /* min(440px, 100%), not a bare 440px: auto-fill honours the floor even when
+     the container is narrower than it, so a plain minmax(440px, 1fr) laid a
+     440px track inside a 390px phone and pushed the whole page into
+     horizontal scroll. The min() lets the track collapse to the container. */
+  grid-template-columns: repeat(auto-fill, minmax(min(440px, 100%), 1fr));
   gap: 2px;
 }
 
@@ -4372,6 +4376,60 @@ button.sub-row:focus-visible {
 
 /* A slim, secondary strip — deliberately lighter than the closer above it so
    the two don't read as the same centered band twice. */
+/* The band the second card sits in. It follows the theater band, so it needs
+   its own vertical air rather than inheriting a section's. */
+.subscribe-band {
+  padding: 72px 0;
+}
+
+@media (max-width: 620px) {
+  .subscribe-band {
+    padding: 48px 0;
+  }
+}
+
+/* The signup as a room: a hairline-ruled card with the heading pair centred
+   over the field, rather than a note tucked under a rule. Given it now
+   appears twice on the page, it has to hold its own composition — a bare
+   form repeated reads as a repeated afterthought. */
+.subscribe-card {
+  width: min(var(--rail), calc(100vw - 2 * var(--gutter)));
+  margin-inline: auto;
+  padding: 44px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-room);
+  background: var(--surface-1);
+  text-align: center;
+}
+
+.subscribe-card-head > h2 {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  color: var(--ink-strong);
+}
+
+.subscribe-card-head > p {
+  margin-top: 6px;
+  font-size: 15px;
+  color: var(--dim);
+}
+
+@media (max-width: 620px) {
+  .subscribe-card {
+    padding: 32px 20px;
+  }
+
+  /* The button drops below the field rather than squeezing it to a stub. */
+  .subscribe-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 .subscribe {
   border-top: 1px solid var(--border-soft);
   padding: 44px 0;
@@ -4391,43 +4449,33 @@ button.sub-row:focus-visible {
   font-size: 14px;
 }
 
-/* One pill, the way the hero's install command is one pill: the field IS the
-   container and the action sits inset at its right end, rather than a box
-   with a separate button parked beside it. The form carries the border and
-   the focus ring so the two halves read as a single control. */
+/* Two pills with air between them, not one capsule with the button inset.
+   The fused version borrowed the hero install command's shape, but that
+   control is a single object — a string you copy. This one is a field and a
+   commitment, and separating them lets the field own the full width it needs
+   while the button keeps a shape a thumb recognises as pressable. */
 .subscribe-form {
   display: flex;
   align-items: center;
-  gap: 0;
-  margin: 18px auto 0;
-  max-width: 420px;
-  padding: 4px 4px 4px 6px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  transition:
-    border-color var(--duration-hover) var(--ease-standard),
-    box-shadow var(--duration-hover) var(--ease-standard);
-}
-
-/* A tighter ring that hugs the capsule instead of haloing it. The 3px
-   spread read as a soft glow sitting off the shape rather than as focus. */
-.subscribe-form:focus-within {
-  border-color: color-mix(in oklab, var(--ink) 38%, var(--bg));
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink) 26%, transparent);
-}
-
-.subscribe-form[data-status="error"] {
-  border-color: color-mix(in oklab, var(--del) 55%, var(--bg));
+  gap: 12px;
+  margin: 0 auto;
+  width: min(560px, 100%);
 }
 
 .subscribe-input {
   flex: 1 1 auto;
   min-width: 0;
-  padding: 8px 10px 8px 12px;
-  border: 0;
-  background: none;
+  height: 42px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  /* A recessed well rather than a raised box: the field is a hole in the
+     card, which is what makes the solid button beside it read as the raised
+     thing. */
+  background: color-mix(in oklab, var(--ink-strong) 5%, transparent);
   border-radius: 999px;
+  transition:
+    border-color var(--duration-hover) var(--ease-standard),
+    background var(--duration-hover) var(--ease-standard);
   /* iOS Safari zooms the whole page when a focused input's text is under
      16px. The page's only field is the last thing a visitor touches, so it
      takes the full 16px on touch widths rather than capping maximum-scale
@@ -4437,23 +4485,28 @@ button.sub-row:focus-visible {
   color: var(--ink);
 }
 
+/* One indicator, on the control that has focus. */
 .subscribe-input:focus {
   outline: none;
+  border-color: color-mix(in oklab, var(--ink) 34%, transparent);
+  background: color-mix(in oklab, var(--ink-strong) 7%, transparent);
+}
+
+.subscribe-form[data-status="error"] .subscribe-input {
+  border-color: color-mix(in oklab, var(--del) 55%, transparent);
 }
 
 .subscribe-input::placeholder {
   color: var(--subtle);
 }
 
-.subscribe-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent);
-}
-
-.subscribe-input[aria-invalid="true"] {
-  border-color: var(--del);
-}
+/* The accent halo that used to live here is gone. `.subscribe-input:focus`
+   was declared twice and the second copy added
+   `box-shadow: 0 0 0 3px accent/18%` on top of the ring the field already
+   carries — two focus indicators on one control. On the dark canvas the
+   accent bloomed into a coloured glow around the pill instead of reading as
+   focus. The border-color and aria-invalid rules went with it: the input has
+   no border of its own to colour, so both were inert. */
 
 /* Inset evenly. At 32px the button left 7px above and below but only 5px to
    its right, and an uneven inset reads as a misalignment even though the

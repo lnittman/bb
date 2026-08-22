@@ -100,17 +100,34 @@ export function focusSubscribeEmail() {
   document.getElementById(SUBSCRIBE_EMAIL_ID)?.focus();
 }
 
+/**
+ * The landing page renders this twice, so the input id cannot be a constant.
+ * Only the closer's copy keeps SUBSCRIBE_EMAIL_ID: it is the anchor other
+ * pages link to (`#subscribe-email` from the blog and changelog), and two
+ * elements sharing an id would be invalid HTML and would make
+ * `focusSubscribeEmail` depend on document order.
+ */
+function subscribeInputId(placement: CtaPlacement) {
+  return placement === "footer" || placement === "closer"
+    ? SUBSCRIBE_EMAIL_ID
+    : `${SUBSCRIBE_EMAIL_ID}-${placement}`;
+}
+
 export function EmailSignup({ placement }: { placement: CtaPlacement }) {
+  const inputId = subscribeInputId(placement);
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<SubscribeStatus>("idle");
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (inputId !== SUBSCRIBE_EMAIL_ID) {
+      return;
+    }
     const hash = window.location.hash.replace(/^#/, "");
     if (hash === SUBSCRIBE_EMAIL_ID || hash === "subscribe") {
       focusSubscribeEmail();
     }
-  }, []);
+  }, [inputId]);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -164,7 +181,7 @@ export function EmailSignup({ placement }: { placement: CtaPlacement }) {
       noValidate
     >
       <input
-        id={SUBSCRIBE_EMAIL_ID}
+        id={inputId}
         className="subscribe-input"
         type="email"
         name="email"
@@ -195,5 +212,32 @@ export function EmailSignup({ placement }: { placement: CtaPlacement }) {
         </span>
       ) : null}
     </form>
+  );
+}
+
+/**
+ * The signup, as a room of its own.
+ *
+ * It appears twice: once below the hero mock, where a reader who is already
+ * convinced by the window can act without scrolling the whole page, and once
+ * in the closer. The two carry different `placement` values, so the
+ * click-through data can say which position actually earns the address rather
+ * than crediting one arbitrarily.
+ */
+export function SubscribeCard({
+  placement,
+  title,
+}: {
+  placement: CtaPlacement;
+  title: string;
+}) {
+  return (
+    <div className="subscribe-card">
+      <div className="subscribe-card-head">
+        <h2>{title}</h2>
+        <p>Product updates and what we&rsquo;re building next. No spam.</p>
+      </div>
+      <EmailSignup placement={placement} />
+    </div>
   );
 }

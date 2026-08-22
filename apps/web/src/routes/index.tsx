@@ -63,7 +63,7 @@ import { RELEASE_META, parseChangelog } from "../landing/changelog";
 import {
   DiscordLink,
   DownloadLink,
-  EmailSignup,
+  SubscribeCard,
   GitHubLink,
 } from "../landing/cta";
 import { SiteFooter, SiteNav } from "../landing/site-chrome";
@@ -3400,6 +3400,14 @@ function LandingPage() {
         </section>
       </div>
 
+      {/* The second signup, directly under the window. A reader convinced by
+          the mock should not have to scroll nine sections to act on it, and
+          this position carries its own `placement` so the data can say which
+          of the two actually earns the address. */}
+      <div className="subscribe-band">
+        <SubscribeCard placement="hero" title="Keep up with the build" />
+      </div>
+
       <section className="act">
         <div className="act-head rail">
           <h2>More than a chat window</h2>
@@ -3559,8 +3567,7 @@ function LandingPage() {
         <p>Free, open source, and local-first. Install in under a minute.</p>
         <InstallOptions placement="closer" />
         <div className="closer-subscribe">
-          <span>Product updates and what we&rsquo;re building next. No spam.</span>
-          <EmailSignup placement="footer" />
+          <SubscribeCard placement="footer" title="Keep up with the build" />
         </div>
       </section>
 
