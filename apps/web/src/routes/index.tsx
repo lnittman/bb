@@ -2268,62 +2268,92 @@ function AskPhone() {
  * screenshot taken at any moment.
  */
 const FIELD_BACK = [
-  { x: -4, y: 6, size: 96 },
-  { x: 9, y: 18, size: 74 },
-  { x: 17, y: 2, size: 86 },
-  { x: 29, y: 14, size: 70 },
-  { x: 38, y: 1, size: 92 },
-  { x: 49, y: 16, size: 78 },
-  { x: 58, y: 3, size: 84 },
-  { x: 69, y: 15, size: 72 },
-  { x: 79, y: 2, size: 94 },
-  { x: 90, y: 17, size: 76 },
-  { x: 103, y: 7, size: 98 },
+  { x: -6, y: 8, size: 168, tint: 7 },
+  { x: 8, y: 22, size: 132, tint: 11 },
+  { x: 19, y: 3, size: 152, tint: 8 },
+  { x: 31, y: 19, size: 126, tint: 13 },
+  { x: 41, y: 1, size: 160, tint: 9 },
+  { x: 52, y: 21, size: 134, tint: 12 },
+  { x: 62, y: 3, size: 150, tint: 7 },
+  { x: 73, y: 20, size: 128, tint: 12 },
+  { x: 84, y: 2, size: 162, tint: 9 },
+  { x: 95, y: 22, size: 136, tint: 11 },
+  { x: 106, y: 9, size: 170, tint: 8 },
 ] as const;
 
+/* Provider colours are the app's own, not a palette invented for this page:
+   `getProviderIconColorClass` in apps/app/src/lib/provider-icon.ts assigns
+   claude-code #D97757, pi #6D5DFB, acp-opencode #2563EB and acp-omp #9333EA,
+   and returns the foreground for codex, acp-cursor and anything unmapped —
+   which is correct, because those brands really are monochrome. Four in
+   colour and four in ink is what bb itself shows. */
 const FIELD_MID = [
-  { Icon: OmpIcon, x: 4, y: 40, size: 104 },
-  { Icon: GrokIcon, x: 26, y: 33, size: 96 },
-  { Icon: OpencodeIcon, x: 74, y: 34, size: 100 },
-  { Icon: HermesAgentIcon, x: 97, y: 42, size: 108 },
+  { Icon: OmpIcon, x: 2, y: 42, size: 182, tint: 10, brand: "var(--brand-omp)" },
+  { Icon: GrokIcon, x: 24, y: 31, size: 164, tint: 14, brand: "var(--ink)" },
+  { Icon: OpencodeIcon, x: 76, y: 33, size: 170, tint: 9, brand: "var(--brand-opencode)" },
+  { Icon: HermesAgentIcon, x: 99, y: 44, size: 186, tint: 13, brand: "var(--ink)" },
 ] as const;
 
 const FIELD_FRONT = [
-  { Icon: CursorIcon, x: 14, y: 62, size: 132 },
-  { Icon: ClaudeIcon, x: 38, y: 70, size: 152 },
-  { Icon: OpenAiIcon, x: 62, y: 68, size: 146 },
-  { Icon: PiIcon, x: 86, y: 60, size: 128 },
+  { Icon: CursorIcon, x: 12, y: 62, size: 216, tint: 15, brand: "var(--ink)" },
+  { Icon: ClaudeIcon, x: 37, y: 68, size: 248, tint: 9, brand: "var(--brand-claude)" },
+  { Icon: OpenAiIcon, x: 63, y: 67, size: 240, tint: 17, brand: "var(--ink)" },
+  { Icon: PiIcon, x: 88, y: 61, size: 210, tint: 11, brand: "var(--brand-pi)" },
 ] as const;
 
 function CloserMark() {
   return (
     <div className="closer-field" aria-hidden>
       <div className="pf-tier pf-tier-3">
-        {FIELD_BACK.map(({ x, y, size }, i) => (
+        {FIELD_BACK.map(({ x, y, size, tint }, i) => (
           <span
             key={i}
             className="pf"
-            style={{ left: `${x}%`, top: `${y}%`, width: size, height: size }}
+            style={{
+              left: `${x}%`,
+              top: `${y}%`,
+              width: size,
+              height: size,
+              "--pf-tint": `${tint}%`,
+            } as CSSProperties}
           />
         ))}
       </div>
       <div className="pf-tier pf-tier-2">
-        {FIELD_MID.map(({ Icon, x, y, size }, i) => (
+        {FIELD_MID.map(({ Icon, x, y, size, tint, brand }, i) => (
           <span
             key={i}
             className="pf"
-            style={{ left: `${x}%`, top: `${y}%`, width: size, height: size }}
+            style={
+              {
+                left: `${x}%`,
+                top: `${y}%`,
+                width: size,
+                height: size,
+                "--pf-tint": `${tint}%`,
+                "--pf-brand": brand,
+              } as CSSProperties
+            }
           >
             <Icon className="pf-logo" />
           </span>
         ))}
       </div>
       <div className="pf-tier pf-tier-1">
-        {FIELD_FRONT.map(({ Icon, x, y, size }, i) => (
+        {FIELD_FRONT.map(({ Icon, x, y, size, tint, brand }, i) => (
           <span
             key={i}
             className="pf"
-            style={{ left: `${x}%`, top: `${y}%`, width: size, height: size }}
+            style={
+              {
+                left: `${x}%`,
+                top: `${y}%`,
+                width: size,
+                height: size,
+                "--pf-tint": `${tint}%`,
+                "--pf-brand": brand,
+              } as CSSProperties
+            }
           >
             <Icon className="pf-logo" />
             <span className="pf-bb" />
