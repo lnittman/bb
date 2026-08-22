@@ -2244,49 +2244,92 @@ function AskPhone() {
 /**
  * The closer's field of agents.
  *
- * A shallow arc of provider marks receding into depth: the two bb is most used
- * with sit forward and sharp, the rest fall back through two tiers of scale,
- * blur and ink until they are atmosphere. It replaces a single 72px logo above
- * "Put your agents to work", which is a line about many agents illustrated by
- * one mark of the tool.
+ * A crowd, not a row. The first version placed eight discs evenly and read as
+ * eight discs placed evenly; what makes the reference work is density — a
+ * carpet of shapes overlapping and running off both edges, out of which a few
+ * resolve. So the back layer here is a dozen anonymous discs, blurred past the
+ * point where a logo would survive anyway, and only the eight that are legible
+ * carry a provider. That also settles the repetition problem: bb runs eight
+ * agents, and eight is exactly how many marks appear.
  *
- * Flat discs, not the glossy spheres of the reference. Depth here comes from
- * blur, scale and opacity — the things distance actually does to a thing you
- * are looking at — rather than from gloss and rim light, which would make this
+ * The front four carry a small bb mark on the shoulder, the way the reference
+ * hangs a second avatar off each bubble. Here it says the thing the section is
+ * for: that agent, running in this.
+ *
+ * Flat discs, still. Depth is blur, scale and ink — what distance does to a
+ * thing you are looking at — not gloss and rim light, which would make this
  * the 3D render the page does not allow itself.
  *
- * Every mark is a provider bb genuinely runs. The field is `aria-hidden`
- * because the hero already lists these with real names; a second announcement
- * of the same eight would be noise, and nothing here is stated only visually.
+ * The drift is the one piece of motion. Three tiers move at three speeds and
+ * the near ones move furthest, which is parallax rather than decoration; it is
+ * slow enough to be atmosphere and it stops entirely under reduced motion.
+ * Nothing is stated by it — the field is `aria-hidden`, the hero already lists
+ * these providers by name, and every word of the closer is legible in a
+ * screenshot taken at any moment.
  */
-const CLOSER_FIELD = [
-  { Icon: OmpIcon, tier: 3, x: 2, y: 20, size: 82 },
-  { Icon: GrokIcon, tier: 3, x: 26, y: 6, size: 68 },
-  { Icon: OpencodeIcon, tier: 3, x: 74, y: 7, size: 72 },
-  { Icon: HermesAgentIcon, tier: 3, x: 98, y: 22, size: 78 },
-  { Icon: CursorIcon, tier: 2, x: 14, y: 52, size: 104 },
-  { Icon: PiIcon, tier: 2, x: 86, y: 54, size: 100 },
-  { Icon: ClaudeIcon, tier: 1, x: 37, y: 62, size: 132 },
-  { Icon: OpenAiIcon, tier: 1, x: 63, y: 66, size: 124 },
+const FIELD_BACK = [
+  { x: -4, y: 6, size: 96 },
+  { x: 9, y: 18, size: 74 },
+  { x: 17, y: 2, size: 86 },
+  { x: 29, y: 14, size: 70 },
+  { x: 38, y: 1, size: 92 },
+  { x: 49, y: 16, size: 78 },
+  { x: 58, y: 3, size: 84 },
+  { x: 69, y: 15, size: 72 },
+  { x: 79, y: 2, size: 94 },
+  { x: 90, y: 17, size: 76 },
+  { x: 103, y: 7, size: 98 },
+] as const;
+
+const FIELD_MID = [
+  { Icon: OmpIcon, x: 4, y: 40, size: 104 },
+  { Icon: GrokIcon, x: 26, y: 33, size: 96 },
+  { Icon: OpencodeIcon, x: 74, y: 34, size: 100 },
+  { Icon: HermesAgentIcon, x: 97, y: 42, size: 108 },
+] as const;
+
+const FIELD_FRONT = [
+  { Icon: CursorIcon, x: 14, y: 62, size: 132 },
+  { Icon: ClaudeIcon, x: 38, y: 70, size: 152 },
+  { Icon: OpenAiIcon, x: 62, y: 68, size: 146 },
+  { Icon: PiIcon, x: 86, y: 60, size: 128 },
 ] as const;
 
 function CloserMark() {
   return (
     <div className="closer-field" aria-hidden>
-      {CLOSER_FIELD.map(({ Icon, tier, x, y, size }, i) => (
-        <span
-          key={i}
-          className={`pf pf-${tier}`}
-          style={{
-            left: `${x}%`,
-            top: `${y}%`,
-            width: `${size}px`,
-            height: `${size}px`,
-          }}
-        >
-          <Icon className="pf-logo" />
-        </span>
-      ))}
+      <div className="pf-tier pf-tier-3">
+        {FIELD_BACK.map(({ x, y, size }, i) => (
+          <span
+            key={i}
+            className="pf"
+            style={{ left: `${x}%`, top: `${y}%`, width: size, height: size }}
+          />
+        ))}
+      </div>
+      <div className="pf-tier pf-tier-2">
+        {FIELD_MID.map(({ Icon, x, y, size }, i) => (
+          <span
+            key={i}
+            className="pf"
+            style={{ left: `${x}%`, top: `${y}%`, width: size, height: size }}
+          >
+            <Icon className="pf-logo" />
+          </span>
+        ))}
+      </div>
+      <div className="pf-tier pf-tier-1">
+        {FIELD_FRONT.map(({ Icon, x, y, size }, i) => (
+          <span
+            key={i}
+            className="pf"
+            style={{ left: `${x}%`, top: `${y}%`, width: size, height: size }}
+          >
+            <Icon className="pf-logo" />
+            <span className="pf-bb" />
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

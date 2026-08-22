@@ -193,7 +193,26 @@
   background-image: url("../assets/bb-icon-dark.png");
 }
 
-.logo-mark {
+/* The nav mark is masked, not painted. `.bb-mark` loads bb-icon.png, which is
+   the macOS app icon with its rounded white tile painted into the artwork —
+   correct where the app icon is the subject (the dashboard, the Telegram bot
+   avatar), wrong for a wordmark in the header, which should be the letterform
+   alone. Masking bb-icon-dark.png gives the bare glyph and lets it take the
+   theme's ink from one file, so the `.dark` swap is not needed here either. */
+/* `.bb-mark.logo-mark`, not `.logo-mark`: `.dark .bb-mark` is two classes
+   deep, so a single-class selector loses to it and the tiled PNG survived in
+   dark mode. */
+.bb-mark.logo-mark {
+  background-image: none;
+  background-color: var(--ink-strong);
+  -webkit-mask-image: url("../assets/bb-icon-dark.png");
+  mask-image: url("../assets/bb-icon-dark.png");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
   width: 36px;
   height: 36px;
 }
@@ -942,16 +961,23 @@ code,
 }
 
 /* The hero is a set piece: above the sidebar-collapse breakpoint the mock
-   breaks out of the 980px text column and takes the stage at up to 1340px,
-   the width the three-pane composition (sidebar, thread, Changes) needs to
-   breathe. The text column above stays narrow; only the product widens. */
-/* The theater: the interactive demo sits directly on the slate band at
-   product-stage width — no container, just the window and its shadow. */
+   breaks out of the 980px text column. It used to take `--stage` (1440px),
+   on the argument that the three-pane composition needs that much room to
+   breathe — but it was then the only artifact on the page at that width, and
+   every other one (the bento, the PR feed, the stat cards, the signup, the
+   section heads) sits on `--rail`. A single element 240px wider than
+   everything else does not read as emphasis, it reads as a misalignment, so
+   the mock joins the rail and gives up the extra width. The text column above
+   stays narrow; only the product widens, just not as far as it did. */
+/* The theater: the interactive demo sits directly on the slate band — no
+   container, just the window and its shadow. */
 @media (min-width: 1100px) {
   .hero-stage {
     position: relative;
-    width: min(var(--stage), calc(100vw - 32px));
-    margin-inline: calc((100% - min(var(--stage), 100vw - 32px)) / 2);
+    width: min(var(--rail), calc(100vw - 2 * var(--gutter)));
+    margin-inline: calc(
+      (100% - min(var(--rail), 100vw - 2 * var(--gutter))) / 2
+    );
   }
 
   .hero-stage .mock {
@@ -988,14 +1014,40 @@ code,
   color: var(--subtle);
 }
 
+/* One row at every width, never two.
+   Wrapping put eleven logos into a 9 + 2 split whose second row was two
+   centred orphans — and no amount of balancing fixes that, because flex has
+   no equivalent of `text-wrap: balance` and the count is prime. The scrolling
+   rail with faded edges already existed for narrow screens; it is simply the
+   right answer at every width, so it moves up here and the breakpoint goes.
+
+   `safe center` is what makes that work in both directions: the row centres
+   while it fits, and falls back to flow-start when it does not, so overflow
+   stays reachable instead of being stranded past the left edge. */
 .company-proof-logos {
   list-style: none;
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 18px 36px;
+  justify-content: safe center;
+  flex-wrap: nowrap;
+  gap: 36px;
   width: min(1320px, calc(100vw - 2 * var(--gutter)));
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  padding: 4px 28px;
+  scroll-padding-inline: 28px;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 28px,
+    black calc(100% - 28px),
+    transparent
+  );
+}
+
+.company-proof-logos::-webkit-scrollbar {
+  display: none;
 }
 
 .company-proof-company {
@@ -1017,29 +1069,6 @@ code,
   object-fit: contain;
   opacity: 0.62;
   filter: grayscale(1);
-}
-
-@media (max-width: 768px) {
-  .company-proof-logos {
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-    padding: 4px 28px;
-    scroll-padding-inline: 28px;
-    mask-image: linear-gradient(
-      to right,
-      transparent,
-      black 28px,
-      black calc(100% - 28px),
-      transparent
-    );
-  }
-
-  .company-proof-logos::-webkit-scrollbar {
-    display: none;
-  }
 }
 
 .mock {
@@ -4272,21 +4301,22 @@ button.sub-row:focus-visible {
 
 /* ── Closer: one ending with the subscribe inline ────────────────── */
 
-/* The field. A fixed-height stage the discs are placed into by percentage, so
-   the arc keeps its shape at any width. Nothing animates: depth is the whole
-   effect, and depth does not need to move to be read. */
+/* The stage. Wider than the text below it and cropping at both edges, so the
+   crowd reads as continuing past the frame rather than ending politely. */
 .closer-field {
   position: relative;
-  /* Wider than the text it sits above, and the outer discs are placed at 2%
-     and 98% so they crop against the viewport rather than stopping politely
-     inside it — the reference reads as a field continuing past the frame, not
-     a row of eight things. */
-  width: min(760px, 100%);
-  height: 250px;
-  margin: 0 auto 34px;
-  /* The back tier is blurred, and a blur samples past its own box; without
-     this the soft edges clip against the stage instead of fading. */
-  overflow: visible;
+  width: min(940px, 100vw);
+  height: 270px;
+  margin: 0 auto 36px;
+  /* The whole field dissolves outward: a hard edge on a crowd that is meant
+     to continue would give it a boundary it should not have. */
+  -webkit-mask-image: radial-gradient(72% 86% at 50% 62%, black 42%, transparent 100%);
+  mask-image: radial-gradient(72% 86% at 50% 62%, black 42%, transparent 100%);
+}
+
+.pf-tier {
+  position: absolute;
+  inset: 0;
 }
 
 .pf {
@@ -4295,42 +4325,106 @@ button.sub-row:focus-visible {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  /* A flat disc mixed from the page's own anchors, so it re-tints with a
-     custom palette instead of sitting on a fixed grey. */
-  background: color-mix(in oklab, var(--ink-strong) 8%, var(--canvas));
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent);
+  /* Mixed from the page's own anchors, so the crowd re-tints with a custom
+     palette instead of sitting on a fixed grey. */
+  background: color-mix(in oklab, var(--ink-strong) 9%, var(--canvas));
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklab, var(--ink-strong) 8%, transparent);
 }
 
 .pf-logo {
-  width: 44%;
-  height: 44%;
+  width: 42%;
+  height: 42%;
   color: var(--ink);
 }
 
-/* Three tiers of distance. Each step loses size, gains blur and drops ink —
-   the three things that actually happen to something further away. */
-.pf-1 {
+/* The mark on the shoulder, hung off the lower right the way the reference
+   hangs a second avatar there. Masked, so it takes the ground's own ink. */
+.pf-bb {
+  position: absolute;
+  right: -4%;
+  bottom: 2%;
+  width: 34%;
+  height: 34%;
+  border-radius: 50%;
+  /* A step lighter than the disc it hangs off, not the raw canvas — against a
+     near-black ground the canvas read as a hole punched in the shape rather
+     than a second object in front of it. */
+  background: color-mix(in oklab, var(--ink-strong) 16%, var(--canvas));
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklab, var(--ink-strong) 10%, transparent);
+}
+
+.pf-bb::after {
+  content: "";
+  position: absolute;
+  inset: 22%;
+  background: color-mix(in oklab, var(--ink-strong) 78%, transparent);
+  -webkit-mask-image: url("../assets/bb-icon-dark.png");
+  mask-image: url("../assets/bb-icon-dark.png");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+/* Three tiers of distance: each step loses ink and gains blur. */
+.pf-tier-1 {
   opacity: 1;
+  animation: pf-drift-1 26s var(--ease-standard) infinite alternate;
 }
 
-.pf-2 {
-  opacity: 0.55;
-  filter: blur(1.5px);
+.pf-tier-2 {
+  opacity: 0.6;
+  filter: blur(2px);
+  animation: pf-drift-2 34s var(--ease-standard) infinite alternate;
 }
 
-.pf-3 {
-  opacity: 0.34;
-  filter: blur(5px);
+.pf-tier-3 {
+  opacity: 0.32;
+  filter: blur(7px);
+  animation: pf-drift-3 44s var(--ease-standard) infinite alternate;
+}
+
+/* Parallax, not decoration: the near tier travels furthest and the far tier
+   barely moves, which is the relationship distance actually produces. Slow
+   enough to be weather. */
+@keyframes pf-drift-1 {
+  to {
+    transform: translateX(-26px);
+  }
+}
+
+@keyframes pf-drift-2 {
+  to {
+    transform: translateX(-16px);
+  }
+}
+
+@keyframes pf-drift-3 {
+  to {
+    transform: translateX(-8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-tier-1,
+  .pf-tier-2,
+  .pf-tier-3 {
+    animation: none;
+  }
 }
 
 @media (max-width: 620px) {
-  /* The arc is built for a 560px stage; at phone width the outer discs would
-     collide with the front pair, so the field keeps only what still reads. */
   .closer-field {
-    height: 168px;
+    height: 190px;
   }
 
-  .pf-3 {
+  /* The back carpet is placed for a 940px stage; at phone width its discs
+     land on top of the front four instead of behind them. */
+  .pf-tier-3 {
     display: none;
   }
 }
