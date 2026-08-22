@@ -1095,27 +1095,11 @@ code,
     0 30px 70px -32px color-mix(in oklab, var(--ink) 34%, transparent);
 }
 
-/* A row arriving in a live thread eases up as it lands. This is the one
-   piece of the old self-construction sequence that survives, because it
-   corresponds to something real: a message genuinely does appear while you
-   watch. The rest of that sequence animated the window assembling itself,
-   which the app has never done. */
-@keyframes c-up {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
 /* window title bar (mirrors the desktop app) */
 .mock-bar {
   display: flex;
   align-items: stretch;
-  height: 46px;
+  height: 48px;
   border-bottom: 1px solid var(--border-soft);
   background: var(--surface);
 }
@@ -1124,7 +1108,7 @@ code,
   display: flex;
   align-items: center;
   gap: 13px;
-  width: 210px;
+  width: 320px;
   flex-shrink: 0;
   padding: 0 16px;
   border-right: 1px solid var(--border-soft);
@@ -1135,6 +1119,23 @@ code,
   display: inline-flex;
   gap: 2px;
   color: var(--subtle);
+}
+
+.bar-nav button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
+  color: inherit;
+}
+
+.bar-nav button:disabled {
+  opacity: 0.55;
 }
 
 .bar-nav .ri {
@@ -1165,11 +1166,84 @@ code,
   text-overflow: ellipsis;
 }
 
+.bar-title-button {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: text;
+}
+
+.bar-title-form {
+  min-width: 0;
+  flex: 1;
+}
+
+.bar-title-form input {
+  width: min(100%, 360px);
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--bg);
+  padding: 0 8px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  outline: none;
+}
+
+.bar-title-form input:focus-visible {
+  box-shadow: var(--ring);
+}
+
+.bar-menu-wrap,
+.editor-menu-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
 .bar-kebab {
-  width: 17px;
-  height: 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
   flex-shrink: 0;
   color: var(--subtle);
+  cursor: pointer;
+}
+
+.bar-popover {
+  position: absolute;
+  z-index: 4;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 140px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-field);
+  background: var(--surface);
+  box-shadow: 0 10px 26px color-mix(in oklab, var(--ink) 16%, transparent);
+}
+
+.bar-popover button {
+  width: 100%;
+  min-height: var(--row-h);
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
+  padding: 0 8px;
+  text-align: left;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
 }
 
 .bar-actions {
@@ -1187,6 +1261,14 @@ code,
   border: 1px solid var(--border);
   border-radius: var(--r-control);
   padding: 0 var(--btn-pad-x);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.editor-popover {
+  right: 0;
+  left: auto;
 }
 
 .editor-ic {
@@ -1203,6 +1285,8 @@ code,
 }
 
 .commit-btn {
+  display: inline-flex;
+  align-items: center;
   height: var(--btn-h);
   border: 1px solid var(--border);
   border-radius: var(--r-control);
@@ -1210,11 +1294,12 @@ code,
   font-size: 12px;
   font-weight: 500;
   color: var(--ink);
+  background: transparent;
 }
 
-.trow-pin .trow-title {
-  font-weight: 500;
-  color: var(--ink);
+.commit-btn:disabled {
+  color: var(--subtle);
+  cursor: not-allowed;
 }
 
 .ri {
@@ -1230,19 +1315,29 @@ code,
   height: 520px;
 }
 
-/* Sidebar-toggle glyph in the title bar — decorative window chrome. */
 .bar-menu {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
   color: inherit;
+  cursor: pointer;
 }
 
 /* sidebar */
+/* Width matches the app's default sidebar: AppLayout.tsx clamps the resized
+   sidebar to 240–460px and defaults it to SIDEBAR_DEFAULT_WIDTH = 320
+   (apps/app/src/components/layout/AppLayout.tsx:103-105). 240 was the app's
+   *minimum*, not what a fresh window shows. */
 .side {
   display: flex;
   flex-direction: column;
-  width: 210px;
+  width: 320px;
   flex-shrink: 0;
   background: var(--surface);
   border-right: 1px solid var(--border-soft);
@@ -1268,19 +1363,53 @@ code,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
+  width: var(--row-h);
+  height: var(--row-h);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
   color: var(--subtle);
   flex-shrink: 0;
+  cursor: pointer;
 }
 
-/* Plugin-row count chip (the Tasks row), matching the app's muted counter. */
-.side-chip {
-  margin-left: auto;
-  font-size: 10.5px;
-  font-variant-numeric: tabular-nums;
+.side-search-form {
+  display: flex;
+  align-items: center;
+  min-height: var(--row-h);
+  gap: var(--row-gap);
+  margin-bottom: 2px;
+  padding-left: var(--row-pad);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--bg);
+}
+
+.side-search-form input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.side-search-form input::placeholder {
   color: var(--subtle);
+}
+
+.side-search-form button {
+  width: var(--row-h);
+  height: var(--row-h);
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: var(--subtle);
+  font-size: 18px;
+  cursor: pointer;
 }
 
 /* The app's list row, drawn once. This was split across two .side-act
@@ -1342,11 +1471,7 @@ code,
   text-align: left;
   font: inherit;
   color: var(--dim);
-  transition: background var(--duration-hover) var(--ease-standard);
-}
-
-.trow:hover {
-  background: var(--state-hover);
+  transition: none;
 }
 
 .trow.active {
@@ -1370,41 +1495,10 @@ code,
   text-overflow: ellipsis;
 }
 
-/* Nested children of a thread that spawned subagents. Mirrors the real app:
-   indented rows with a hairline running under the parent's title start. */
-.thread-kids {
-  position: relative;
-  margin-top: 2px;
-}
-
-.thread-kids::before {
-  content: "";
-  position: absolute;
-  left: 16px;
-  top: 2px;
-  bottom: 8px;
-  width: 1px;
-  background: var(--border);
-  opacity: 0.8;
-}
-
-.kid-li {
-  animation: kid-in 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.trow-kid {
-  padding-left: 26px;
-}
-
-@keyframes kid-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+.side-empty {
+  padding: 8px;
+  font-size: 12px;
+  color: var(--subtle);
 }
 
 /* Fixed-width centered box so every status (spinner / check / dot) aligns,
@@ -1465,7 +1559,8 @@ code,
 .feed {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
   padding: 22px 24px;
   display: flex;
   flex-direction: column;
@@ -1512,22 +1607,6 @@ code,
   padding: 1px 5px;
 }
 
-/* A running thread streams work in endlessly; anchor it to the bottom so the
-   newest rows stay visible and older ones clip past the top edge. */
-.feed-live {
-  justify-content: flex-end;
-}
-
-/* Tool line for a spawned subagent — its child appears nested in the sidebar. */
-.msg-spawn {
-  color: var(--dim);
-}
-
-.msg-spawn strong {
-  font-weight: 600;
-  color: var(--ink);
-}
-
 /* AskUserQuestion tool — replaces the prompt box (recessed card in the
    composer slot), mirroring the app's pending-interaction banner. */
 .askq {
@@ -1563,10 +1642,6 @@ code,
   text-align: left;
   cursor: pointer;
   transition: background var(--duration-hover) var(--ease-standard);
-}
-
-.askq-opt:hover {
-  background: var(--state-hover);
 }
 
 .askq-opt.on {
@@ -1651,55 +1726,15 @@ code,
   padding: 0;
 }
 
-.pr-bar {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-wrap: wrap;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  padding: 7px 11px;
-  margin-bottom: 10px;
-  font-size: 12.5px;
-  color: var(--dim);
-}
-
-.pr-ic {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  color: var(--dim);
-}
-
-.pr-strong {
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.pr-dim {
-  color: var(--subtle);
-}
-
-.pr-add {
-  color: var(--add);
-  font-weight: 500;
-}
-
-.pr-del {
-  color: var(--del);
-  font-weight: 500;
-}
-
-.pr-chev {
-  margin-left: auto;
-  color: var(--subtle);
-}
-
 .composer-box {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--r-card);
+  background: var(--bg);
   padding: 12px 14px;
+}
+
+.composer-file {
+  display: none;
 }
 
 .composer-top {
@@ -1710,9 +1745,22 @@ code,
   position: absolute;
   top: 0;
   right: 0;
-  width: 15px;
-  height: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--btn-h);
+  height: var(--btn-h);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
   color: var(--subtle);
+  cursor: pointer;
+}
+
+.cb-expand-ic {
+  width: 13px;
+  height: 13px;
 }
 
 .composer-input {
@@ -1727,7 +1775,7 @@ code,
   line-height: 1.5;
   color: var(--ink);
   min-height: 38px;
-  padding-right: 22px;
+  padding-right: 42px;
 }
 
 .composer-input::placeholder {
@@ -1749,16 +1797,23 @@ code,
   color: var(--ink);
 }
 
+.model select {
+  max-width: 150px;
+  height: var(--btn-h);
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
+  padding: 0 6px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
 .model-ic {
   width: 15px;
   height: 15px;
   color: var(--dim);
-}
-
-.chev-sm {
-  width: 14px;
-  height: 14px;
-  color: var(--subtle);
 }
 
 .composer-clip {
@@ -1770,23 +1825,57 @@ code,
 .composer-actions {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
+}
+
+.composer-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--btn-h);
+  height: var(--btn-h);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
+  color: var(--subtle);
+  cursor: pointer;
+}
+
+.composer-action.active {
+  background: var(--state-hover);
+  color: var(--ink);
 }
 
 .send-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 26px;
-  border-radius: 7px;
+  width: var(--btn-h);
+  height: var(--btn-h);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-control);
   background: var(--ink);
   color: var(--bg);
+}
+
+.send-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .send-ic {
   width: 15px;
   height: 15px;
+}
+
+.composer-status {
+  display: block;
+  margin-top: 8px;
+  padding-left: 2px;
+  font-size: 11.5px;
+  color: var(--subtle);
 }
 
 /* Project / environment / branch / permission pickers under the prompt box. */
@@ -1852,16 +1941,15 @@ code,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border: 0;
   background: none;
-  border-radius: 7px;
+  border-radius: var(--r-control);
   color: var(--subtle);
   cursor: pointer;
 }
 
-.bar-toggle:hover,
 .bar-toggle.active {
   background: var(--state-hover);
   color: var(--ink);
@@ -1875,50 +1963,37 @@ code,
 /* Diff / secondary panel. */
 .diff-panel {
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
-  width: 320px;
-  flex-shrink: 0;
+  width: auto;
   min-width: 0;
   border-left: 1px solid var(--border-soft);
   background: var(--surface);
   overflow: hidden;
-  /* The pane is the entrance's last beat. It used to animate its own width
-     from 0, which ran layout on the largest object above the fold on every
-     frame and reflowed the whole thread column with it. The box is final
-     from the first frame now; only the contents travel, on the compositor. */
-  animation: diff-join var(--duration-panel) var(--ease-out) both;
-}
-
-@keyframes diff-join {
-  from {
-    transform: translateX(24px);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-/* The width gate used to live in JS, alongside the mount timer that opened
-   the pane. The pane is open in the markup now, so the gate belongs here —
-   below this width the thread column needs the whole frame. */
-@media (max-width: 1099px) {
-  .diff-panel {
-    display: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .diff-panel {
-    animation: none;
-  }
 }
 
 .diff-head {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 14px;
+  height: 48px;
+  flex-shrink: 0;
+  padding: 0 8px;
   border-bottom: 1px solid var(--border-soft);
+}
+
+.diff-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--r-control);
+  background: var(--state-hover);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
 }
 
 .diff-ic {
@@ -1927,33 +2002,18 @@ code,
   color: var(--dim);
 }
 
-.diff-title {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.diff-stat {
-  font-size: 12px;
-  font-weight: 500;
-}
-
 .diff-close {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border: 0;
   background: none;
-  border-radius: 6px;
+  border-radius: var(--r-control);
   color: var(--subtle);
   cursor: pointer;
-}
-
-.diff-close:hover {
-  background: var(--state-hover);
-  color: var(--ink);
 }
 
 .diff-close .ri {
@@ -1961,15 +2021,103 @@ code,
   height: 16px;
 }
 
+.diff-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+  flex-shrink: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border-soft);
+  scrollbar-width: none;
+}
+
+.diff-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.diff-toolbar select {
+  height: var(--btn-h);
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--bg);
+  padding: 0 var(--btn-pad-x);
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.diff-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--dim);
+  cursor: pointer;
+}
+
+.diff-toolbar button.active {
+  background: var(--state-hover);
+  color: var(--ink);
+}
+
+.diff-toolbar button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.diff-view-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-field);
+}
+
+.diff-control-ic {
+  width: 14px;
+  height: 14px;
+}
+
 .diff-file {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 9px 14px;
+  width: 100%;
+  min-height: var(--row-h);
+  padding: 0 10px;
+  border: 0;
   font-size: 12px;
+  font-family: inherit;
+  text-align: left;
   color: var(--dim);
   background: var(--surface-recessed);
   border-bottom: 1px solid var(--border-soft);
+  cursor: pointer;
+}
+
+.diff-file-disclosure {
+  width: 13px;
+  height: 13px;
+  color: var(--subtle);
+}
+
+.diff-file-disclosure.collapsed {
+  transform: rotate(-90deg);
 }
 
 .diff-file-ic {
@@ -1980,7 +2128,9 @@ code,
 
 .diff-body {
   flex: 1;
-  overflow: hidden;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
   padding: 8px 0;
   font-family: var(--font-mono);
   font-size: 11.5px;
@@ -1989,8 +2139,54 @@ code,
 
 .dl {
   display: flex;
-  padding: 0 12px;
+  width: max-content;
+  min-width: 100%;
+  padding-right: 12px;
   white-space: pre;
+}
+
+.diff-body.wrap .dl {
+  width: 100%;
+  white-space: pre-wrap;
+}
+
+.diff-body.wrap .dl-text {
+  overflow-wrap: anywhere;
+}
+
+.diff-body[data-view="split"] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(max-content, 1fr));
+  align-content: start;
+}
+
+.diff-body[data-view="split"] .dl-ctx {
+  grid-column: 1 / -1;
+}
+
+.diff-body[data-view="split"] .dl-del {
+  grid-column: 1;
+}
+
+.diff-body[data-view="split"] .dl-add {
+  grid-column: 2;
+}
+
+.dl-gutter {
+  display: inline-flex;
+  flex: none;
+  border-right: 1px solid var(--border-soft);
+  margin-right: 8px;
+}
+
+.dl-no {
+  flex: none;
+  width: 26px;
+  padding-right: 6px;
+  text-align: right;
+  color: var(--subtle);
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
 }
 
 .dl-sign {
@@ -2023,6 +2219,183 @@ code,
 .dl-del .dl-sign,
 .dl-del .dl-text {
   color: color-mix(in oklab, var(--del) 62%, var(--ink));
+}
+
+.bar-menu,
+.bar-kebab,
+.bar-popover button,
+.editor-btn,
+.side-search,
+.side-search-form button,
+.cb-expand,
+.composer-action,
+.bar-toggle,
+.diff-close,
+.diff-toolbar button,
+.diff-file {
+  transition:
+    background-color var(--hover-out) var(--ease-standard),
+    color var(--hover-out) var(--ease-standard);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .bar-menu:hover,
+  .bar-kebab:hover,
+  .bar-popover button:hover,
+  .editor-btn:hover,
+  .side-search:hover,
+  .side-search-form button:hover,
+  .cb-expand:hover,
+  .composer-action:hover,
+  .bar-toggle:hover,
+  .diff-close:hover,
+  .diff-toolbar button:not(:disabled):hover,
+  .diff-file:hover {
+    background: var(--state-hover);
+    color: var(--ink);
+    transition-duration: 0ms;
+  }
+
+  .side-act:hover,
+  .trow:hover,
+  .askq-opt:hover {
+    background: var(--state-hover);
+  }
+}
+
+.sidebar-closed .bar-left {
+  width: 48px;
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar-closed .bar-nav {
+  display: none;
+}
+
+@media (max-width: 1099px) {
+  .mock-body {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .mock-body::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mock .bar-left {
+    width: 48px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .bar-nav {
+    display: none;
+  }
+
+  .main,
+  .side,
+  .diff-panel {
+    width: calc(100% - var(--btn-h));
+    flex: 0 0 calc(100% - var(--btn-h));
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  .main {
+    order: 1;
+    border-right: 1px solid var(--border-soft);
+  }
+
+  .side {
+    order: 2;
+  }
+
+  .diff-panel {
+    order: 3;
+    border-left: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .bar-main {
+    gap: 4px;
+    padding: 0 8px;
+  }
+
+  .bar-actions {
+    gap: 4px;
+  }
+
+  .commit-btn {
+    display: none;
+  }
+
+  .feed {
+    padding: 16px;
+  }
+
+  .composer {
+    padding: var(--row-pad);
+  }
+
+  .composer-box {
+    padding: var(--row-pad) var(--btn-pad-x);
+  }
+
+  .composer-input,
+  .model select,
+  .side-search-form input {
+    font-size: 16px;
+  }
+
+  .context-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .context-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ctx,
+  .ctx-perm {
+    flex: none;
+  }
+
+  .ctx-perm {
+    margin-left: 0;
+  }
+}
+
+@media (pointer: coarse) {
+  .bar-menu,
+  .bar-kebab,
+  .bar-toggle,
+  .diff-close {
+    width: 36px;
+    height: 36px;
+  }
+
+  .cb-expand,
+  .composer-action,
+  .send-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .model select {
+    height: 40px;
+  }
+
+  .diff-toolbar button {
+    width: 36px;
+    height: 36px;
+  }
 }
 
 /* ── Bands ──────────────────────────────────────────────────────── */
@@ -6197,17 +6570,4 @@ button.sub-row,
   font-size: 0.9em;
   color: var(--ink-strong);
   white-space: nowrap;
-}
-
-/* The hero diff's line-number gutter, matching the review demo's — same
-   width, same tabular figures, same weight. Two diffs on one page were
-   drawing the same app surface with and without one. */
-.dl-no {
-  flex: none;
-  width: 26px;
-  padding-right: 6px;
-  text-align: right;
-  color: var(--subtle);
-  opacity: 0.8;
-  font-variant-numeric: tabular-nums;
 }

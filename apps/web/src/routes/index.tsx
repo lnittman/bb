@@ -1,9 +1,11 @@
 import {
   ArrowDown01Icon,
+  ArrowDownDoubleIcon,
   ArrowExpand01Icon,
   ArrowLeft01Icon,
   ArrowMoveDownLeftIcon,
   ArrowRight01Icon,
+  ArrowUpDoubleIcon,
   AttachmentIcon,
   BubbleChatAddIcon,
   CheckListIcon,
@@ -14,6 +16,8 @@ import {
   GitBranchIcon as HiGitBranchIcon,
   GitMergeIcon as HiGitMergeIcon,
   LaptopIcon as HiLaptopIcon,
+  LayoutTwoColumnIcon,
+  LayoutTwoRowIcon,
   Loading03Icon,
   MessageQuestionIcon,
   Mic02Icon,
@@ -27,12 +31,14 @@ import {
   SidebarLeftIcon,
   SidebarRightIcon,
   Tick02Icon,
+  TextWrapIcon,
+  TimeScheduleIcon,
   ToolboxIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 
 import changelogMd from "../../../../CHANGELOG.md?raw";
 import { initAnalytics, trackLandingEvent } from "../landing/analytics";
@@ -366,6 +372,13 @@ const NewThreadIcon = ({ className }: IconProps) => (
 const ClockIcon = ({ className }: IconProps) => (
   <HugeiconsIcon icon={Clock01Icon} className={className} />
 );
+// The Automations plugin's nav-panel row carries TimeSchedule (its manifest
+// icon), not Clock — apps/app/src/components/plugin/PluginNavSidebarItems is
+// host chrome but the Automations row comes from the plugin's navPanel slot
+// (builtin-plugins/automations/dist/app.js: icon: "TimeSchedule").
+const TimeScheduleGlyph = ({ className }: IconProps) => (
+  <HugeiconsIcon icon={TimeScheduleIcon} className={className} />
+);
 const SearchGlyph = ({ className }: IconProps) => (
   <HugeiconsIcon icon={Search01Icon} className={className} />
 );
@@ -476,6 +489,21 @@ const LaptopGlyph = ({ className }: IconProps) => (
 const FileDiffIcon = ({ className }: IconProps) => (
   <HugeiconsIcon icon={PlusMinusSquare01Icon} className={className} />
 );
+const CollapseAllIcon = ({ className }: IconProps) => (
+  <HugeiconsIcon icon={ArrowUpDoubleIcon} className={className} />
+);
+const ExpandAllIcon = ({ className }: IconProps) => (
+  <HugeiconsIcon icon={ArrowDownDoubleIcon} className={className} />
+);
+const WrapIcon = ({ className }: IconProps) => (
+  <HugeiconsIcon icon={TextWrapIcon} className={className} />
+);
+const StackedDiffIcon = ({ className }: IconProps) => (
+  <HugeiconsIcon icon={LayoutTwoRowIcon} className={className} />
+);
+const SplitDiffIcon = ({ className }: IconProps) => (
+  <HugeiconsIcon icon={LayoutTwoColumnIcon} className={className} />
+);
 const PlusGlyph = ({ className }: IconProps) => (
   <HugeiconsIcon icon={PlusSignIcon} className={className} />
 );
@@ -526,8 +554,6 @@ type Step =
   | { kind: "user"; text: string }
   | { kind: "step"; text: ReactNode }
   | { kind: "say"; text: ReactNode }
-  // A "spawn" step prints a tool line in the feed and, the first time it
-  // streams in, adds a nested child thread to the sidebar (like the real app).
   | { kind: "spawn"; text: ReactNode; child: MockThread };
 type Ask = {
   question: string;
@@ -548,262 +574,75 @@ type MockThread = {
   ask?: Ask;
 };
 
-// The subagent the Sentry thread spawns mid-run. It lands as a nested child row
-// in the sidebar and, if opened, streams its own work like any running thread.
-const SENTRY_SUBAGENT: MockThread = {
-  id: "sentry-sub",
-  title: "Reproduce the null cart",
-  status: "running",
-  branch: "bb/triage-sentry-spike",
-  change: { files: 1, add: 14, del: 0 },
-  transcript: [
-    { kind: "user", text: "Reproduce the null cart in applyPromo." },
-    { kind: "step", text: "Read src/checkout/applyPromo.ts" },
-  ],
-  stream: [
-    { kind: "step", text: "Built an empty-cart fixture" },
-    {
-      kind: "say",
-      text: (
-        <>
-          An active promo on an empty <code>cart</code> throws. Reproduced.
-        </>
-      ),
-    },
-    { kind: "step", text: "Wrote a failing test" },
-    { kind: "say", text: "Handed the repro back to the parent thread." },
-    { kind: "step", text: "Re-checked the stack trace" },
-  ],
-};
-
-// Endless "work" each running thread streams in after its transcript. The pool
-// loops, so a glance at the hero always shows tool calls and messages arriving.
-const SENTRY_STREAM: Step[] = [
-  { kind: "step", text: "Ran 48 tests" },
-  {
-    kind: "say",
-    text: (
-      <>
-        All green. The null <code>cart</code> path is covered now.
-      </>
-    ),
-  },
-  {
-    kind: "spawn",
-    text: (
-      <>
-        Spawned a subagent: <strong>Reproduce the null cart</strong>
-      </>
-    ),
-    child: SENTRY_SUBAGENT,
-  },
-  { kind: "step", text: "Edited promo.test.ts" },
-  { kind: "say", text: "Added a case for an empty cart with an active promo." },
-  { kind: "step", text: "Checked Sentry for new events" },
-  { kind: "say", text: "No new occurrences in the last 10 minutes." },
-  { kind: "step", text: "Read applyPromo.ts" },
-  {
-    kind: "say",
-    text: (
-      <>
-        Tightening the type so <code>cart</code> can't be null at the call site.
-      </>
-    ),
-  },
-  { kind: "step", text: "Edited 2 files" },
-  {
-    kind: "say",
-    text: "Pushed the guard and a follow-up. Re-running the suite.",
-  },
-];
-
-const LIN482_STREAM: Step[] = [
-  { kind: "step", text: "Ran 12 tests" },
-  { kind: "say", text: "Debounce holds for 200ms. One call, asserted." },
-  {
-    kind: "step",
-    text: (
-      <>
-        Edited <code>SearchBar.tsx</code>
-      </>
-    ),
-  },
-  { kind: "say", text: "Cancelling the timer on unmount so there's no leak." },
-  { kind: "step", text: "Checked the other call sites" },
-  {
-    kind: "say",
-    text: "Two more inputs could reuse this. Noted it on LIN-482.",
-  },
-  { kind: "step", text: "Edited 1 file" },
-  { kind: "say", text: "Verifying the debounce once more." },
-];
-
-const CHIEF_STREAM: Step[] = [
-  { kind: "step", text: "Swept 4 active threads" },
-  {
-    kind: "say",
-    text: "Sentry triage is re-running tests; LIN-482 is verifying.",
-  },
-  { kind: "step", text: "Checked for blockers" },
-  {
-    kind: "say",
-    text: (
-      <>
-        One thread is waiting on you: <code>Refactor the timeline cache</code>.
-      </>
-    ),
-  },
-  { kind: "step", text: "Spawned 1 worker" },
-  {
-    kind: "say",
-    text: "Dispatched the review-panel follow-up. Nothing else needs you.",
-  },
-];
-
+// A finite timeline fixture. The app receives ordered timeline rows from the
+// server; the landing preview renders that final result directly and never
+// fabricates activity after hydration.
 const HERO_THREADS: MockThread[] = [
   {
-    id: "sentry",
-    title: "Triage the Sentry spike",
+    id: "sidebar-search",
+    title: "Fix sidebar search",
     status: "running",
-    branch: "bb/triage-sentry-spike",
-    change: { files: 6, add: 124, del: 18 },
-    stream: SENTRY_STREAM,
+    branch: "main",
+    change: { files: 0, add: 0, del: 0 },
     transcript: [
-      { kind: "user", text: "Triage the Sentry spike on checkout." },
-      { kind: "step", text: "Explored 4 files" },
+      { kind: "user", text: "Make sidebar search usable from the keyboard." },
+      { kind: "step", text: "Read ProjectList.tsx" },
       {
         kind: "say",
-        text: (
-          <>
-            The spike is one error. 92% of volume: a null <code>cart</code> in{" "}
-            <code>applyPromo</code>.
-          </>
-        ),
+        text: "The search control can become a focused input in the existing row.",
       },
-      { kind: "step", text: "Edited 2 files" },
+      { kind: "step", text: "Edited ProjectList.tsx" },
       {
         kind: "say",
-        text: (
-          <>
-            Guarded the null case and added a regression test in{" "}
-            <code>promo.test.ts</code>. Re-running the suite.
-          </>
-        ),
+        text: "Search now filters the visible threads without changing their order.",
       },
     ],
   },
   {
-    id: "review-panel",
-    title: "Add a review queue panel",
+    id: "prompt-controls",
+    title: "Wire prompt controls",
     status: "done",
-    branch: "bb/review-queue-plugin",
-    change: { files: 5, add: 214, del: 0 },
+    branch: "main",
+    change: { files: 0, add: 0, del: 0 },
     transcript: [
-      {
-        kind: "user",
-        text: "Add a review-queue panel: every thread waiting on me, one list.",
-      },
-      { kind: "step", text: "Scaffolded the plugin" },
+      { kind: "user", text: "Match the app's prompt controls." },
+      { kind: "step", text: "Read PromptBoxInternal.tsx" },
       {
         kind: "say",
-        text: "Built the panel: threads that are waiting on you, oldest first.",
-      },
-      { kind: "step", text: "Registered the CLI" },
-      {
-        kind: "say",
-        text: (
-          <>
-            <code>bb review</code> lists the queue from any shell. Wrote the
-            skill so every agent knows to use it.
-          </>
-        ),
-      },
-      {
-        kind: "say",
-        text: "The panel is live in your sidebar. bb building bb.",
+        text: "The model, attachment, voice, and expand controls are wired.",
       },
     ],
   },
   {
-    id: "timeline",
-    title: "Refactor the timeline cache",
+    id: "diff-toolbar",
+    title: "Review the diff toolbar",
     status: "waiting",
-    branch: "bb/timeline-cache",
-    change: { files: 3, add: 41, del: 67 },
+    branch: "main",
+    change: { files: 0, add: 0, del: 0 },
     transcript: [
+      { kind: "user", text: "Make the diff panel match the app toolbar." },
+      { kind: "step", text: "Read GitDiffToolbar.tsx" },
       {
-        kind: "user",
-        text: "Refactor the timeline cache to drop the duplicate fetch.",
+        kind: "say",
+        text: "The panel needs the app's view controls and separate gutters.",
       },
-      { kind: "step", text: "Explored 3 files" },
-      { kind: "say", text: "Found the duplicate fetch. Two ways to fix it." },
     ],
     ask: {
-      question: "How should I dedupe the timeline fetch?",
+      question: "Which diff layout should stay selected?",
       options: [
         {
-          label: "Shared in-flight promise",
-          description: "One request in flight; everyone awaits it. Simplest.",
+          label: "Stacked",
+          description: "Show each change across the full panel width.",
         },
         {
-          label: "Short TTL cache",
-          description: "Cache the result for a few seconds, then refetch.",
+          label: "Split",
+          description: "Place old and new changes in separate columns.",
         },
       ],
       selected: 0,
     },
   },
-  {
-    id: "lin482",
-    title: "Start on LIN-482",
-    status: "running",
-    branch: "bb/lin-482-debounce-search",
-    change: { files: 2, add: 33, del: 5 },
-    stream: LIN482_STREAM,
-    transcript: [
-      { kind: "step", text: "Read LIN-482" },
-      {
-        kind: "say",
-        text: (
-          <>
-            “Debounce the search input.” Adding a 200ms debounce in{" "}
-            <code>SearchBar</code>.
-          </>
-        ),
-      },
-      { kind: "step", text: "Edited 1 file" },
-      { kind: "say", text: "Added the debounce and a test. Verifying." },
-    ],
-  },
 ];
-
-// The pinned dispatcher thread, kept out of "All Threads".
-const CHIEF: MockThread = {
-  id: "chief",
-  title: "Chief",
-  status: "running",
-  branch: "bb/chief",
-  change: { files: 1, add: 12, del: 0 },
-  stream: CHIEF_STREAM,
-  transcript: [
-    { kind: "user", text: "Anything need me?" },
-    { kind: "step", text: "Swept 4 active threads" },
-    {
-      kind: "say",
-      text: (
-        <>
-          One thread is waiting on you: <code>Refactor the timeline cache</code>
-          . Sentry triage and LIN-482 are running; the nightly changelog merged.
-        </>
-      ),
-    },
-    { kind: "step", text: "Spawned 2 workers" },
-    {
-      kind: "say",
-      text: "I'll keep dispatching and ping you when something needs a call.",
-    },
-  ],
-};
 
 function ThreadStatus({ status }: { status: Status }) {
   return (
@@ -815,86 +654,23 @@ function ThreadStatus({ status }: { status: Status }) {
   );
 }
 
-// Cadence + rolling-window size for a running thread's live feed. The window is
-// generously larger than what fits, so the oldest rows are dropped well above
-// the (clipped) top edge and never cause a visible jump.
-const STREAM_INTERVAL_MS = 2200;
-const STREAM_WINDOW = 16;
-
-type FeedItem = { id: string; step: Step; live: boolean };
-
-/** The conversation pane. A running thread streams tool calls and messages in
- *  endlessly after its seed transcript; everything else renders statically.
- *  The first time a `spawn` step streams in, it calls `onSpawn` so the sidebar
- *  can add the nested child thread. Reduced-motion and no-JS render the seed. */
-function ThreadFeed({
-  thread,
-  onSpawn,
-}: {
-  thread: MockThread;
-  onSpawn: (parentId: string, child: MockThread) => void;
-}) {
-  const isLive =
-    thread.status === "running" && (thread.stream?.length ?? 0) > 0;
-  const seedItems = useMemo<FeedItem[]>(
-    () =>
-      thread.transcript.map((step, i) => ({
-        id: `seed-${i}`,
-        step,
-        live: false,
-      })),
-    [thread.transcript],
-  );
-  // ThreadFeed is keyed by thread id, so switching threads remounts it and
-  // resets the stream — no in-effect reset needed.
-  const [items, setItems] = useState<FeedItem[]>(seedItems);
-
-  useEffect(() => {
-    if (!isLive) {
-      return;
-    }
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-    const pool = thread.stream ?? [];
-    let cursor = 0;
-    let serial = 0;
-    const id = window.setInterval(() => {
-      const step = pool[cursor % pool.length];
-      cursor += 1;
-      serial += 1;
-      if (step.kind === "spawn") {
-        onSpawn(thread.id, step.child);
-      }
-      setItems((prev) => {
-        const next = [...prev, { id: `live-${serial}`, step, live: true }];
-        return next.length > STREAM_WINDOW
-          ? next.slice(next.length - STREAM_WINDOW)
-          : next;
-      });
-    }, STREAM_INTERVAL_MS);
-    return () => window.clearInterval(id);
-  }, [thread.id, isLive, thread.stream, onSpawn]);
-
+/** The conversation pane mirrors the server-provided timeline at rest. */
+function ThreadFeed({ thread }: { thread: MockThread }) {
+  const items = [...thread.transcript, ...(thread.stream ?? [])];
   return (
-    <div className={isLive ? "feed feed-live" : "feed"}>
-      {items.map(({ id, step, live }, index) => {
-        // A row that arrives while you watch eases up as it lands. Rows that
-        // were already there when the thread opened simply are there — the
-        // app does not replay its own history.
-        const style: CSSProperties | undefined = live
-          ? { animation: "c-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both" }
-          : undefined;
+    <div className="feed">
+      {items.map((step, index) => {
+        const id = `${step.kind}-${index}`;
         if (step.kind === "user") {
           return (
-            <div key={id} className="msg-user" style={style}>
+            <div key={id} className="msg-user">
               {step.text}
             </div>
           );
         }
         if (step.kind === "step") {
           return (
-            <div key={id} className="msg-step" style={style}>
+            <div key={id} className="msg-step">
               <ChevronRight className="step-chev" />
               {step.text}
             </div>
@@ -902,14 +678,14 @@ function ThreadFeed({
         }
         if (step.kind === "spawn") {
           return (
-            <div key={id} className="msg-step msg-spawn" style={style}>
+            <div key={id} className="msg-step">
               <GitBranchIcon className="step-chev" />
               {step.text}
             </div>
           );
         }
         return (
-          <div key={id} className="msg-say" style={style}>
+          <div key={id} className="msg-say">
             {step.text}
           </div>
         );
@@ -956,6 +732,7 @@ function AskQuestion({ ask }: { ask: Ask }) {
 }
 
 type DiffLine = { t: "ctx" | "add" | "del"; text: string };
+type DiffGutter = { oldNo: number | null; newNo: number | null };
 const DIFF_LINES: DiffLine[] = [
   { t: "ctx", text: 'it("applies a valid promo", () => {' },
   { t: "ctx", text: "  const cart = makeCart([item]);" },
@@ -975,28 +752,31 @@ const DIFF_LINES: DiffLine[] = [
 // send, plus the project / environment / branch / permission context row.
 function Composer({ thread }: { thread?: MockThread }) {
   const isNew = !thread;
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [model, setModel] = useState("claude-opus-5[1m]");
+  const [voiceActive, setVoiceActive] = useState(false);
+  const [attachmentName, setAttachmentName] = useState<string | null>(null);
+
   return (
     <div className={isNew ? "composer composer-new" : "composer"}>
-      {thread ? (
-        <div className="pr-bar">
-          <GitMergeIcon className="pr-ic" />
-          <span className="pr-strong">
-            {thread.pr ? `PR #${thread.pr}` : "Working tree"}
-          </span>
-          <span className="pr-dim">
-            · {thread.pr ? "Merged" : "Uncommitted"} · {thread.change.files}{" "}
-            {thread.change.files === 1 ? "file" : "files"},
-          </span>
-          <span className="pr-add">+{thread.change.add}</span>
-          <span className="pr-del">-{thread.change.del}</span>
-          <ChevronDown className="pr-ic pr-chev" />
-        </div>
-      ) : null}
-      <div className="composer-box">
+      <form
+        className={expanded ? "composer-box composer-expanded" : "composer-box"}
+        onSubmit={(event) => event.preventDefault()}
+      >
+        <input
+          ref={attachmentInputRef}
+          className="composer-file"
+          type="file"
+          multiple
+          onChange={(event) =>
+            setAttachmentName(event.currentTarget.files?.[0]?.name ?? null)
+          }
+        />
         <div className="composer-top">
           <textarea
             className="composer-input"
-            rows={1}
+            rows={expanded ? 5 : 1}
             placeholder={
               isNew
                 ? "Ask anything. @ to mention files or folders"
@@ -1004,23 +784,72 @@ function Composer({ thread }: { thread?: MockThread }) {
             }
             aria-label={isNew ? "Start a new thread" : "Message this thread"}
           />
-          <Maximize2 className="cb-expand" />
+          <button
+            type="button"
+            className="cb-expand"
+            aria-label={
+              expanded ? "Make prompt box smaller" : "Make prompt box larger"
+            }
+            aria-pressed={expanded}
+            onClick={() => setExpanded((value) => !value)}
+          >
+            <Maximize2 className="cb-expand-ic" />
+          </button>
         </div>
         <div className="composer-row">
-          <span className="model">
+          <label className="model">
             <ClaudeIcon className="model-ic" />
-            Opus 4.8 1M
-            <ChevronDown className="chev-sm" />
-          </span>
-          <span className="composer-actions" aria-hidden>
-            <Paperclip className="composer-clip" />
-            <MicIcon className="composer-clip" />
-            <span className="send-btn">
+            <span className="sr-only">Model</span>
+            <select
+              value={model}
+              onChange={(event) => setModel(event.target.value)}
+            >
+              <option value="claude-opus-5[1m]">Opus 5 (1M)</option>
+              <option value="claude-opus-4-8[1m]">Opus 4.8 (1M)</option>
+            </select>
+          </label>
+          <span className="composer-actions">
+            <button
+              type="button"
+              className="composer-action"
+              aria-label="Attach files"
+              onClick={() => attachmentInputRef.current?.click()}
+            >
+              <Paperclip className="composer-clip" />
+            </button>
+            <button
+              type="button"
+              className={
+                voiceActive ? "composer-action active" : "composer-action"
+              }
+              aria-label={
+                voiceActive ? "Stop voice input" : "Start voice input"
+              }
+              aria-pressed={voiceActive}
+              onClick={() => setVoiceActive((value) => !value)}
+            >
+              <MicIcon className="composer-clip" />
+            </button>
+            <button
+              type="submit"
+              className="send-btn"
+              aria-label="Send message"
+              disabled
+            >
               <SendIcon className="send-ic" />
-            </span>
+            </button>
           </span>
         </div>
-      </div>
+        {voiceActive ? (
+          <span className="composer-status" role="status">
+            Voice input active
+          </span>
+        ) : attachmentName ? (
+          <span className="composer-status" role="status">
+            {attachmentName}
+          </span>
+        ) : null}
+      </form>
       <div className="context-row">
         <span className="ctx">
           <FolderIcon className="ctx-ic" />
@@ -1061,33 +890,40 @@ function Composer({ thread }: { thread?: MockThread }) {
  *  carries both because they agree. The hero panel was the only diff on this
  *  page — or in the product — drawn without a gutter, while the review demo
  *  twelve hundred lines below drew one. */
-function numberDiff(lines: DiffLine[], start = 12) {
+function numberDiff(lines: DiffLine[], start = 1) {
   let oldNo = start;
   let newNo = start;
   return lines.map((line) => {
-    if (line.t === "del") return { ...line, no: oldNo++ };
-    if (line.t === "add") return { ...line, no: newNo++ };
-    const no = newNo;
+    let gutter: DiffGutter;
+    if (line.t === "del") {
+      gutter = { oldNo, newNo: null };
+      oldNo += 1;
+      return { ...line, gutter };
+    }
+    if (line.t === "add") {
+      gutter = { oldNo: null, newNo };
+      newNo += 1;
+      return { ...line, gutter };
+    }
+    gutter = { oldNo, newNo };
     oldNo += 1;
     newNo += 1;
-    return { ...line, no };
+    return { ...line, gutter };
   });
 }
 
-function DiffPanel({
-  thread,
-  onClose,
-}: {
-  thread: MockThread;
-  onClose: () => void;
-}) {
+function DiffPanel({ onClose }: { onClose: () => void }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [wrap, setWrap] = useState(false);
+  const [viewMode, setViewMode] = useState<"stacked" | "split">("stacked");
+
   return (
     <aside className="diff-panel" aria-label="Changes">
       <div className="diff-head">
-        <FileDiffIcon className="diff-ic" />
-        <span className="diff-title">Changes</span>
-        <span className="diff-stat pr-add">+{thread.change.add}</span>
-        <span className="diff-stat pr-del">-{thread.change.del}</span>
+        <button type="button" className="diff-tab" aria-pressed="true">
+          <FileDiffIcon className="diff-ic" />
+          Diff
+        </button>
         <button
           type="button"
           className="diff-close"
@@ -1097,205 +933,359 @@ function DiffPanel({
           <PanelRightIcon className="ri" />
         </button>
       </div>
-      <div className="diff-file">
+      <div className="diff-toolbar" aria-label="Diff controls">
+        <select aria-label="Change set" defaultValue="all">
+          <option value="all">All changes</option>
+          <option value="uncommitted">Uncommitted changes</option>
+        </select>
+        <button
+          type="button"
+          aria-label={collapsed ? "Expand all files" : "Collapse all files"}
+          onClick={() => setCollapsed((value) => !value)}
+        >
+          {collapsed ? (
+            <ExpandAllIcon className="diff-control-ic" />
+          ) : (
+            <CollapseAllIcon className="diff-control-ic" />
+          )}
+        </button>
+        <button
+          type="button"
+          className={wrap ? "active" : undefined}
+          aria-label={wrap ? "Disable diff line wrap" : "Wrap diff lines"}
+          aria-pressed={wrap}
+          onClick={() => setWrap((value) => !value)}
+        >
+          <WrapIcon className="diff-control-ic" />
+        </button>
+        <span
+          className="diff-view-group"
+          role="tablist"
+          aria-label="Diff view mode"
+        >
+          <button
+            type="button"
+            className={viewMode === "stacked" ? "active" : undefined}
+            aria-label="Stacked diff view"
+            aria-pressed={viewMode === "stacked"}
+            onClick={() => setViewMode("stacked")}
+          >
+            <StackedDiffIcon className="diff-control-ic" />
+          </button>
+          <button
+            type="button"
+            className={viewMode === "split" ? "active" : undefined}
+            aria-label="Split diff view"
+            aria-pressed={viewMode === "split"}
+            onClick={() => setViewMode("split")}
+          >
+            <SplitDiffIcon className="diff-control-ic" />
+          </button>
+        </span>
+      </div>
+      <button
+        type="button"
+        className="diff-file"
+        aria-expanded={!collapsed}
+        onClick={() => setCollapsed((value) => !value)}
+      >
+        <ChevronDown
+          className={
+            collapsed
+              ? "diff-file-disclosure collapsed"
+              : "diff-file-disclosure"
+          }
+        />
         <FolderGitIcon className="diff-file-ic" />
         promo.test.ts
-      </div>
-      <div className="diff-body">
-        {numberDiff(DIFF_LINES).map((line, i) => (
-          <div key={i} className={`dl dl-${line.t}`}>
-            <span className="dl-no">{line.no}</span>
-            <span className="dl-sign">
-              {line.t === "add" ? "+" : line.t === "del" ? "-" : " "}
-            </span>
-            <span className="dl-text">{line.text || " "}</span>
-          </div>
-        ))}
-      </div>
+      </button>
+      {!collapsed ? (
+        <div
+          className={wrap ? "diff-body wrap" : "diff-body"}
+          data-view={viewMode}
+        >
+          {numberDiff(DIFF_LINES).map((line, i) => (
+            <div key={`${line.t}-${i}`} className={`dl dl-${line.t}`}>
+              <span
+                className="dl-gutter"
+                aria-label={`Old line ${line.gutter.oldNo ?? "none"}, new line ${line.gutter.newNo ?? "none"}`}
+              >
+                <span className="dl-no" aria-hidden="true">
+                  {line.gutter.oldNo ?? ""}
+                </span>
+                <span className="dl-no" aria-hidden="true">
+                  {line.gutter.newNo ?? ""}
+                </span>
+              </span>
+              <span className="dl-sign">
+                {line.t === "add" ? "+" : line.t === "del" ? "-" : " "}
+              </span>
+              <span className="dl-text">{line.text || " "}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </aside>
   );
 }
 
-/* ────────────────────────────────────────────────
- * HERO STORYBOARD
- *
- * Read top-to-bottom. Times are ms after the mock scrolls into view.
- *
- *      0ms   the window is simply there, the way the app opens
- *  ~200ms   title bar, sidebar rows, feed, composer cascade in
- *  1800ms   construct class swaps to .constructed
- *  2400ms   on wide screens the Changes pane slides in, completing
- *            the three-pane set piece; the active thread keeps
- *            streaming work so the hero never rests on a dead frame
- * ──────────────────────────────────────────────── */
-const HERO_TIMING = {
-  diffJoins: 1100, // ms until the Changes pane slides into the entrance
-};
-/** The set piece opens all three panes only where they fit. */
-const HERO_DIFF_MIN_WIDTH = "(min-width: 1100px)";
+type HeroView = "thread" | "new" | "extensions" | "automations";
+
+const DEFAULT_SIDEBAR_NAV = [
+  { id: "extensions", label: "Extensions", Icon: ToolboxGlyph },
+  { id: "automations", label: "Automations", Icon: TimeScheduleGlyph },
+] as const;
 
 function HeroAppMock() {
   const [activeId, setActiveId] = useState(HERO_THREADS[0].id);
-  const [view, setView] = useState<
-    "thread" | "new" | "extensions" | "automations" | "tasks"
-  >("thread");
-  // Open from the first byte. The Changes pane is the hero's strongest
-  // evidence — it is the frame where bb is reviewing code rather than
-  // chatting — and it used to join on a timer after mount, which meant it
-  // existed in neither the prerendered HTML nor any capture taken before
-  // the timer fired. CSS decides where it is too narrow to show; the
-  // toggle stays live for anyone who wants it out of the way.
+  const [view, setView] = useState<HeroView>("thread");
   const [diffOpen, setDiffOpen] = useState(true);
-  // Subagents a running thread spawns, keyed by parent id. They persist once
-  // spawned and render as nested child rows in the sidebar.
-  const [spawned, setSpawned] = useState<Record<string, MockThread[]>>({});
-  const spawnedChildren = useMemo(
-    () => Object.values(spawned).flat(),
-    [spawned],
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [titleOverrides, setTitleOverrides] = useState<Record<string, string>>(
+    {},
   );
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
   const thread =
-    [CHIEF, ...HERO_THREADS, ...spawnedChildren].find(
-      (candidate) => candidate.id === activeId,
-    ) ?? HERO_THREADS[0];
+    HERO_THREADS.find((candidate) => candidate.id === activeId) ??
+    HERO_THREADS[0];
+  const threadTitle = titleOverrides[thread.id] ?? thread.title;
+  const visibleThreads = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    if (!normalizedQuery) return HERO_THREADS;
+    return HERO_THREADS.filter((candidate) =>
+      (titleOverrides[candidate.id] ?? candidate.title)
+        .toLocaleLowerCase()
+        .includes(normalizedQuery),
+    );
+  }, [query, titleOverrides]);
 
   const openThread = (id: string) => {
     setActiveId(id);
     setView("thread");
+    setEditingTitle(false);
+    setMoreOpen(false);
   };
 
-  const handleSpawn = useCallback((parentId: string, child: MockThread) => {
-    setSpawned((prev) => {
-      const kids = prev[parentId] ?? [];
-      if (kids.some((existing) => existing.id === child.id)) {
-        return prev;
-      }
-      return { ...prev, [parentId]: [...kids, child] };
-    });
-  }, []);
+  const startRename = () => {
+    setTitleDraft(threadTitle);
+    setEditingTitle(true);
+    setMoreOpen(false);
+  };
+
+  const saveTitle = () => {
+    const nextTitle = titleDraft.trim();
+    if (nextTitle) {
+      setTitleOverrides((current) => ({
+        ...current,
+        [thread.id]: nextTitle,
+      }));
+    }
+    setEditingTitle(false);
+  };
 
   return (
     <section className="mockup-wrap hero-stage">
       <div
-        className="mock"
+        className={sidebarOpen ? "mock" : "mock sidebar-closed"}
         aria-label="Interactive preview of the bb app"
       >
         <div className="mock-bar">
           <div className="bar-left">
-            <span className="bar-menu" aria-hidden>
+            <button
+              type="button"
+              className="bar-menu"
+              aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+              aria-expanded={sidebarOpen}
+              aria-controls="hero-sidebar"
+              onClick={() => setSidebarOpen((open) => !open)}
+            >
               <PanelIcon className="ri bar-ic" />
-            </span>
-            <span className="bar-nav" aria-hidden>
-              <ChevronLeft className="ri" />
-              <ChevronRight className="ri" />
+            </button>
+            <span className="bar-nav">
+              <button type="button" aria-label="Go back" disabled>
+                <ChevronLeft className="ri" />
+              </button>
+              <button type="button" aria-label="Go forward" disabled>
+                <ChevronRight className="ri" />
+              </button>
             </span>
           </div>
           <div className="bar-main">
-            {view === "extensions" || view === "automations" ||
-            view === "tasks" ? (
+            {view === "extensions" || view === "automations" ? (
               <span className="bar-title">
-                {view === "extensions"
-                  ? "Extensions"
-                  : view === "automations"
-                    ? "Automations"
-                    : "Tasks"}
+                {view === "extensions" ? "Extensions" : "Automations"}
               </span>
             ) : null}
             {view === "thread" ? (
               <>
-                <span className="bar-title">{thread.title}</span>
-                <Ellipsis className="ri bar-kebab" />
-                <span className="bar-actions">
-                  <span className="editor-btn" aria-hidden>
-                    <img src={vscodeIcon} alt="" className="editor-ic" />
-                    <ChevronDown className="chev-xs" />
-                  </span>
-                  <span className="commit-btn" aria-hidden>
-                    Commit
-                  </span>
+                {editingTitle ? (
+                  <form
+                    className="bar-title-form"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      saveTitle();
+                    }}
+                  >
+                    <input
+                      value={titleDraft}
+                      aria-label="Thread title"
+                      autoFocus
+                      onChange={(event) => setTitleDraft(event.target.value)}
+                      onBlur={saveTitle}
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") {
+                          setEditingTitle(false);
+                        }
+                      }}
+                    />
+                  </form>
+                ) : (
                   <button
                     type="button"
-                    className={diffOpen ? "bar-toggle active" : "bar-toggle"}
-                    aria-label={diffOpen ? "Hide changes" : "Show changes"}
-                    aria-pressed={diffOpen}
-                    onClick={() => setDiffOpen((open) => !open)}
+                    className="bar-title bar-title-button"
+                    onClick={startRename}
                   >
-                    <PanelRightIcon className="ri" />
+                    {threadTitle}
                   </button>
+                )}
+                <span className="bar-menu-wrap">
+                  <button
+                    type="button"
+                    className="bar-kebab"
+                    aria-label="Thread actions"
+                    aria-haspopup="menu"
+                    aria-expanded={moreOpen}
+                    onClick={() => setMoreOpen((open) => !open)}
+                  >
+                    <Ellipsis className="ri" />
+                  </button>
+                  {moreOpen ? (
+                    <span className="bar-popover" role="menu">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={startRename}
+                      >
+                        Rename thread
+                      </button>
+                    </span>
+                  ) : null}
+                </span>
+                <span className="bar-actions">
+                  <span className="editor-menu-wrap">
+                    <button
+                      type="button"
+                      className="editor-btn"
+                      aria-label="Open in editor"
+                      aria-haspopup="menu"
+                      aria-expanded={editorOpen}
+                      onClick={() => setEditorOpen((open) => !open)}
+                    >
+                      <img src={vscodeIcon} alt="" className="editor-ic" />
+                      <ChevronDown className="chev-xs" />
+                    </button>
+                    {editorOpen ? (
+                      <span className="bar-popover editor-popover" role="menu">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => setEditorOpen(false)}
+                        >
+                          VS Code
+                        </button>
+                      </span>
+                    ) : null}
+                  </span>
+                  <button type="button" className="commit-btn" disabled>
+                    Commit
+                  </button>
+                  {!diffOpen ? (
+                    <button
+                      type="button"
+                      className="bar-toggle"
+                      aria-label="Show changes"
+                      aria-pressed="false"
+                      onClick={() => setDiffOpen(true)}
+                    >
+                      <PanelRightIcon className="ri" />
+                    </button>
+                  ) : null}
                 </span>
               </>
             ) : null}
           </div>
         </div>
         <div className="mock-body">
-          <aside className="side">
-            <div className="side-row-new">
-              <button
-                type="button"
-                className={view === "new" ? "side-act active-act" : "side-act"}
-                aria-pressed={view === "new"}
-                onClick={() => setView("new")}
+          <aside id="hero-sidebar" className="side" hidden={!sidebarOpen}>
+            {searchOpen ? (
+              <form
+                className="side-search-form"
+                role="search"
+                onSubmit={(event) => event.preventDefault()}
               >
-                <NewThreadIcon className="sa-ic" />
-                New thread
-              </button>
-              <span className="side-search" aria-hidden>
                 <SearchGlyph className="sa-ic" />
-              </span>
-            </div>
-            {/* Plugin rows, exactly as today's sidebar orders them:
-                Extensions, then each installed plugin's nav panel. */}
-            <button
-              type="button"
-              className={
-                view === "extensions" ? "side-act active-act" : "side-act"
-              }
-              aria-pressed={view === "extensions"}
-              onClick={() => setView("extensions")}
-            >
-              <ToolboxGlyph className="sa-ic" />
-              Extensions
-            </button>
-            <button
-              type="button"
-              className={
-                view === "automations" ? "side-act active-act" : "side-act"
-              }
-              aria-pressed={view === "automations"}
-              onClick={() => setView("automations")}
-            >
-              <ClockIcon className="sa-ic" />
-              Automations
-            </button>
-            <button
-              type="button"
-              className={view === "tasks" ? "side-act active-act" : "side-act"}
-              aria-pressed={view === "tasks"}
-              onClick={() => setView("tasks")}
-            >
-              <ChecklistGlyph className="sa-ic" />
-              Tasks
-              <span className="side-chip" aria-hidden>
-                3
-              </span>
-            </button>
-            <div className="side-label">Pinned</div>
-            <button
-              type="button"
-              className={
-                view === "thread" && activeId === "chief"
-                  ? "trow trow-pin active"
-                  : "trow trow-pin"
-              }
-              aria-pressed={view === "thread" && activeId === "chief"}
-              onClick={() => openThread("chief")}
-            >
-              <span className="trow-title">Chief</span>
-            </button>
+                <input
+                  value={query}
+                  aria-label="Search threads"
+                  placeholder="Search threads"
+                  autoFocus
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+                <button
+                  type="button"
+                  aria-label="Close thread search"
+                  onClick={() => {
+                    setQuery("");
+                    setSearchOpen(false);
+                  }}
+                >
+                  <span aria-hidden="true">×</span>
+                </button>
+              </form>
+            ) : (
+              <div className="side-row-new">
+                <button
+                  type="button"
+                  className={
+                    view === "new" ? "side-act active-act" : "side-act"
+                  }
+                  aria-pressed={view === "new"}
+                  onClick={() => setView("new")}
+                >
+                  <NewThreadIcon className="sa-ic" />
+                  New thread
+                </button>
+                <button
+                  type="button"
+                  className="side-search"
+                  aria-label="Search threads"
+                  onClick={() => setSearchOpen(true)}
+                >
+                  <SearchGlyph className="sa-ic" />
+                </button>
+              </div>
+            )}
+            {DEFAULT_SIDEBAR_NAV.map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                type="button"
+                className={view === id ? "side-act active-act" : "side-act"}
+                aria-pressed={view === id}
+                onClick={() => setView(id)}
+              >
+                <Icon className="sa-ic" />
+                {label}
+              </button>
+            ))}
             <div className="side-label">bb</div>
             <ul className="threads">
-              {HERO_THREADS.map((candidate, index) => {
+              {visibleThreads.map((candidate) => {
                 const isActive = view === "thread" && candidate.id === activeId;
-                const kids = spawned[candidate.id] ?? [];
                 return (
                   <li key={candidate.id}>
                     <button
@@ -1304,50 +1294,26 @@ function HeroAppMock() {
                       aria-pressed={isActive}
                       onClick={() => openThread(candidate.id)}
                     >
-                      <span className="trow-title">{candidate.title}</span>
+                      <span className="trow-title">
+                        {titleOverrides[candidate.id] ?? candidate.title}
+                      </span>
                       <ThreadStatus status={candidate.status} />
                     </button>
-                    {kids.length > 0 ? (
-                      <ul className="threads thread-kids">
-                        {kids.map((kid) => {
-                          const kidActive =
-                            view === "thread" && kid.id === activeId;
-                          return (
-                            <li key={kid.id} className="kid-li">
-                              <button
-                                type="button"
-                                className={
-                                  kidActive
-                                    ? "trow trow-kid active"
-                                    : "trow trow-kid"
-                                }
-                                aria-pressed={kidActive}
-                                onClick={() => openThread(kid.id)}
-                              >
-                                <span className="trow-title">{kid.title}</span>
-                                <ThreadStatus status={kid.status} />
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    ) : null}
                   </li>
                 );
               })}
+              {visibleThreads.length === 0 ? (
+                <li className="side-empty">No matching threads</li>
+              ) : null}
             </ul>
-            <div className="side-foot" aria-hidden>
+            <div className="side-foot" aria-hidden="true">
               <GearIcon className="sa-ic" />
             </div>
           </aside>
 
           {view === "thread" ? (
             <div className="main">
-              <ThreadFeed
-                key={thread.id}
-                thread={thread}
-                onSpawn={handleSpawn}
-              />
+              <ThreadFeed key={thread.id} thread={thread} />
               {thread.ask ? (
                 <AskQuestion ask={thread.ask} />
               ) : (
@@ -1360,9 +1326,7 @@ function HeroAppMock() {
             </div>
           ) : (
             <div className="main main-panel">
-              {view === "tasks" ? (
-                <TasksPanelMock />
-              ) : view === "extensions" ? (
+              {view === "extensions" ? (
                 <ExtensionsPanelMock />
               ) : (
                 <AutomationsPanelMock />
@@ -1371,7 +1335,7 @@ function HeroAppMock() {
           )}
 
           {view === "thread" && diffOpen ? (
-            <DiffPanel thread={thread} onClose={() => setDiffOpen(false)} />
+            <DiffPanel onClose={() => setDiffOpen(false)} />
           ) : null}
         </div>
       </div>
