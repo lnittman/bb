@@ -2288,17 +2288,17 @@ const FIELD_BACK = [
    which is correct, because those brands really are monochrome. Four in
    colour and four in ink is what bb itself shows. */
 const FIELD_MID = [
-  { Icon: OmpIcon, x: 2, y: 42, size: 182, tint: 10, brand: "var(--brand-omp)" },
-  { Icon: GrokIcon, x: 24, y: 31, size: 164, tint: 14, brand: "var(--ink)" },
-  { Icon: OpencodeIcon, x: 76, y: 33, size: 170, tint: 9, brand: "var(--brand-opencode)" },
-  { Icon: HermesAgentIcon, x: 99, y: 44, size: 186, tint: 13, brand: "var(--ink)" },
+  { Icon: OmpIcon, x: 3, y: 42, size: 150, fill: "var(--brand-omp)", ink: "var(--canvas)" },
+  { Icon: GrokIcon, x: 25, y: 31, size: 134, fill: "", ink: "" },
+  { Icon: OpencodeIcon, x: 75, y: 33, size: 140, fill: "var(--brand-opencode)", ink: "var(--canvas)" },
+  { Icon: HermesAgentIcon, x: 98, y: 44, size: 152, fill: "", ink: "" },
 ] as const;
 
 const FIELD_FRONT = [
-  { Icon: CursorIcon, x: 12, y: 62, size: 216, tint: 15, brand: "var(--ink)" },
-  { Icon: ClaudeIcon, x: 37, y: 68, size: 248, tint: 9, brand: "var(--brand-claude)" },
-  { Icon: OpenAiIcon, x: 63, y: 67, size: 240, tint: 17, brand: "var(--ink)" },
-  { Icon: PiIcon, x: 88, y: 61, size: 210, tint: 11, brand: "var(--brand-pi)" },
+  { Icon: CursorIcon, x: 13, y: 62, size: 176, fill: "", ink: "" },
+  { Icon: ClaudeIcon, x: 38, y: 68, size: 200, fill: "var(--brand-claude)", ink: "var(--canvas)" },
+  { Icon: OpenAiIcon, x: 62, y: 67, size: 194, fill: "", ink: "" },
+  { Icon: PiIcon, x: 87, y: 61, size: 172, fill: "var(--brand-pi)", ink: "var(--canvas)" },
 ] as const;
 
 function CloserMark() {
@@ -2320,7 +2320,7 @@ function CloserMark() {
         ))}
       </div>
       <div className="pf-tier pf-tier-2">
-        {FIELD_MID.map(({ Icon, x, y, size, tint, brand }, i) => (
+        {FIELD_MID.map(({ Icon, x, y, size, fill, ink }, i) => (
           <span
             key={i}
             className="pf"
@@ -2330,8 +2330,13 @@ function CloserMark() {
                 top: `${y}%`,
                 width: size,
                 height: size,
-                "--pf-tint": `${tint}%`,
-                "--pf-brand": brand,
+                /* A provider bb keeps in ink gets a light neutral disc, so
+                   the field alternates hue against value rather than colour
+                   against an absence of it. */
+                "--pf-fill":
+                  fill ||
+                  "color-mix(in oklab, var(--ink-strong) 26%, var(--canvas))",
+                "--pf-ink": ink || "var(--ink-strong)",
               } as CSSProperties
             }
           >
@@ -2340,7 +2345,7 @@ function CloserMark() {
         ))}
       </div>
       <div className="pf-tier pf-tier-1">
-        {FIELD_FRONT.map(({ Icon, x, y, size, tint, brand }, i) => (
+        {FIELD_FRONT.map(({ Icon, x, y, size, fill, ink }, i) => (
           <span
             key={i}
             className="pf"
@@ -2350,8 +2355,13 @@ function CloserMark() {
                 top: `${y}%`,
                 width: size,
                 height: size,
-                "--pf-tint": `${tint}%`,
-                "--pf-brand": brand,
+                /* A provider bb keeps in ink gets a light neutral disc, so
+                   the field alternates hue against value rather than colour
+                   against an absence of it. */
+                "--pf-fill":
+                  fill ||
+                  "color-mix(in oklab, var(--ink-strong) 26%, var(--canvas))",
+                "--pf-ink": ink || "var(--ink-strong)",
               } as CSSProperties
             }
           >

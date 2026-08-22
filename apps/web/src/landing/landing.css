@@ -4340,8 +4340,12 @@ button.sub-row:focus-visible {
      it fading at 66% and it took the bottoms off the four sharp discs and the
      marks on their shoulders. It fades the crowd out sideways and upward and
      leaves the foreground whole. */
-  -webkit-mask-image: radial-gradient(84% 104% at 50% 78%, black 58%, transparent 100%);
-  mask-image: radial-gradient(84% 104% at 50% 78%, black 58%, transparent 100%);
+  /* The mask must reach zero before `overflow: clip` does, or the clip shows
+     as a hard vertical seam where a half-faded disc is cut off — which is
+     what the right edge was doing. 50% from centre is the box edge exactly,
+     so ending the gradient there means the crop always lands on transparent. */
+  -webkit-mask-image: radial-gradient(50% 96% at 50% 74%, black 34%, transparent 98%);
+  mask-image: radial-gradient(50% 96% at 50% 74%, black 34%, transparent 98%);
 }
 
 .pf-tier {
@@ -4362,17 +4366,13 @@ button.sub-row:focus-visible {
      lightness across the field rather than one value repeated twenty times.
      Still mixed from the page's own anchors, so it re-tints with a custom
      palette. */
-  /* Two mixes, in order: the neutral step that sets this disc's distance,
-     then a wash of the provider's own colour over it. The wash is weak on
-     purpose — enough that four bubbles read as four different objects, not
-     so much that the closer turns into a row of coloured blobs. Discs with
-     no brand (the blurred carpet, and the providers the app keeps in ink)
-     fall through to the neutral step alone. */
-  background: color-mix(
-    in oklab,
-    var(--pf-brand, transparent) 14%,
-    color-mix(in oklab, var(--ink-strong) var(--pf-tint, 9%), var(--canvas))
-  );
+  /* The colour has to carry, not tint. A 14% wash of a brand colour over a
+     near-black canvas is mud — it reads as a dirty grey circle, which is
+     exactly what it looked like. `--pf-fill` is the disc's whole ground:
+     coloured providers pass their brand at a strength that survives the dark
+     page, and the ones bb itself keeps in ink pass a light neutral, so the
+     field alternates hue against value instead of colour against nothing. */
+  background: var(--pf-fill, color-mix(in oklab, var(--ink-strong) var(--pf-tint, 9%), var(--canvas)));
   /* Overlapping discs of similar value need an edge to stay separate. The
      ring reads the near one as in front; the drop gives it somewhere to be. */
   box-shadow:
@@ -4380,38 +4380,38 @@ button.sub-row:focus-visible {
     0 8px 22px -8px color-mix(in oklab, var(--shade) 42%, transparent);
 }
 
+/* On a filled disc the mark is the hole in the colour, not more colour: a
+   coral logo on a coral ground disappears. */
 .pf-logo {
-  width: 42%;
-  height: 42%;
-  color: var(--pf-brand, var(--ink));
+  width: 40%;
+  height: 40%;
+  color: var(--pf-ink, var(--ink));
 }
 
 /* The mark on the shoulder, hung off the lower right the way the reference
    hangs a second avatar there. Masked, so it takes the ground's own ink. */
 .pf-bb {
   position: absolute;
-  right: -7%;
-  bottom: -1%;
-  width: 43%;
-  height: 43%;
+  right: -5%;
+  bottom: 1%;
+  width: 29%;
+  height: 29%;
   border-radius: 50%;
   /* A step lighter than the disc it hangs off, not the raw canvas — against a
      near-black ground the canvas read as a hole punched in the shape rather
      than a second object in front of it. */
-  background: color-mix(in oklab, var(--ink-strong) 16%, var(--canvas));
+  background: color-mix(in oklab, var(--ink-strong) 88%, var(--canvas));
   /* A real ring in the ground's own colour, the way the reference rings its
      attached avatar — that outline is what makes it sit in front of the
      bubble instead of being a bite taken out of it. */
-  box-shadow:
-    0 0 0 3px var(--canvas),
-    inset 0 0 0 1px color-mix(in oklab, var(--ink-strong) 14%, transparent);
+  box-shadow: 0 0 0 3px var(--canvas);
 }
 
 .pf-bb::after {
   content: "";
   position: absolute;
   inset: 22%;
-  background: color-mix(in oklab, var(--ink-strong) 78%, transparent);
+  background: var(--canvas);
   -webkit-mask-image: url("../assets/bb-icon-dark.png");
   mask-image: url("../assets/bb-icon-dark.png");
   -webkit-mask-size: contain;
@@ -5912,6 +5912,18 @@ button.sub-row:focus-visible {
   justify-content: flex-start;
   align-items: center;
   padding-top: 20px;
+  /* The same bottom dissolve the two window demos carry. The device already
+     runs off the bottom of its card, so without it the phone ended on a hard
+     cut while the cards above it faded — two treatments for one idea. The
+     stops are further down than `.bento-window`'s because a phone's lower
+     screen is still content, where a window's is chrome. */
+  mask-image: linear-gradient(
+    to bottom,
+    black calc(100% - 46px),
+    rgb(0 0 0 / 0.45) calc(100% - 22px),
+    rgb(0 0 0 / 0.1) calc(100% - 8px),
+    transparent 100%
+  );
 }
 
 /* The device runs off the bottom of the card rather than fitting inside it.
