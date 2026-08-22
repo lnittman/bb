@@ -2206,31 +2206,43 @@ function AskPhone() {
           Four cases added. Before I pin the behaviour I need one decision.
         </p>
         <div className="ap-card">
-          <span className="ap-wait">
-            <HugeiconsIcon icon={MessageQuestionIcon} className="ap-wait-ic" />
-            Waiting for you
+          <span className={chosen ? "ap-wait answered" : "ap-wait"}>
+            {chosen ? (
+              <CheckIcon className="ap-wait-ic" />
+            ) : (
+              <HugeiconsIcon
+                icon={MessageQuestionIcon}
+                className="ap-wait-ic"
+              />
+            )}
+            {chosen ? "Answered" : "Waiting for you"}
           </span>
           <p className="ap-q">
             Should the promo engine support stacking codes, or one per cart?
           </p>
+          {/* Answering resolves the interrupt in place, dropping the options
+              it no longer needs. It also keeps the reply above the card's
+              lower edge — the device is clipped by the bento card, and a
+              payoff below that line is a payoff nobody sees. */}
           <div className="ap-opts">
-            {ASK_OPTIONS.slice(0, 3).map((o, i) => (
-              <button
-                key={o.label}
-                type="button"
-                className={picked === i ? "ap-opt on" : "ap-opt"}
-                aria-pressed={picked === i}
-                onClick={() => setPicked(i)}
-              >
-                <i className="ap-radio" />
-                <span className="ap-label">{o.label}</span>
-              </button>
-            ))}
+            {ASK_OPTIONS.slice(0, 3).map((o, i) =>
+              chosen && picked !== i ? null : (
+                <button
+                  key={o.label}
+                  type="button"
+                  className={picked === i ? "ap-opt on" : "ap-opt"}
+                  aria-pressed={picked === i}
+                  onClick={() => setPicked(i)}
+                >
+                  <i className="ap-radio" />
+                  <span className="ap-label">{o.label}</span>
+                </button>
+              ),
+            )}
           </div>
+          {chosen ? <p className="ap-reply">{chosen.outcome}</p> : null}
         </div>
-        {chosen ? (
-          <p className="ap-reply">{chosen.outcome}</p>
-        ) : (
+        {chosen ? null : (
           <p className="ap-hint">Tap an answer and the thread carries on.</p>
         )}
       </div>
@@ -2353,7 +2365,10 @@ function useCycle(holdMs: number, fadeMs: number) {
  * command it ran, and a thread card lands and goes spawning → running. The
  * shell stays put; only the messages cycle. */
 function AgentChat() {
-  const { cycle, leaving } = useCycle(6000, 600);
+  // The card ends on the live thread rather than on a "done" message: a
+  // fourth bubble pushed the conversation past the edge the bento clips at,
+  // so the payoff would have been written and never seen.
+  const { cycle, leaving } = useCycle(6500, 600);
   return (
     <div className="tg">
       <div className="tg-bar">
@@ -2377,9 +2392,7 @@ function AgentChat() {
           <div className="tg-msg tg-in" style={{ animationDelay: "1.4s" }}>
             <span className="tg-bubble">
               On it. Spawning a worker thread.
-              <span className="tg-cmd mono">
-                bb thread spawn &quot;audit promo code coverage&quot;
-              </span>
+              <span className="tg-cmd mono">bb thread spawn</span>
             </span>
           </div>
           <div className="tg-msg tg-in" style={{ animationDelay: "2.4s" }}>

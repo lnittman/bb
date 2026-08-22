@@ -5521,12 +5521,16 @@ button.sub-row:focus-visible {
   color: var(--dim);
 }
 
+/* Fills from the top, not the bottom. The bento card clips the lower third
+   of the device, so bottom-aligned content puts the thing you just answered
+   below the visible edge — the reply landed 22px past it. Top-aligned, the
+   whole exchange sits in the part of the screen you can actually see. */
 .ap-body {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 8px;
   padding: 12px 11px 10px;
 }
@@ -5894,11 +5898,14 @@ button.sub-row:focus-visible {
   display: none;
 }
 
-/* Messages stack from the bottom, the way every chat does. The feed was
-   top-aligned, so one bubble sat under the contact bar with the whole
-   wallpaper empty below it — the opposite of how a conversation looks. */
+/* Bottom-aligning a chat is right in general and wrong here: the bento card
+   clips the lower third of the device, so the newest message — the one that
+   says the work finished — lands under the edge. With four messages the
+   conversation fills the visible screen anyway, so filling from the top puts
+   the whole exchange where it can be read and leaves the empty wallpaper in
+   the part that is clipped. */
 .phone-app .tg-feed {
-  justify-content: flex-end;
+  justify-content: flex-start;
   min-height: 0;
   padding: 12px 10px;
 }
@@ -5955,4 +5962,22 @@ button.sub-row:focus-visible {
   .closer-mark-btn:active {
     transform: none;
   }
+}
+
+/* Answered: the badge stops asking and starts reporting. */
+.ap-wait.answered {
+  color: var(--ok);
+}
+
+/* The reply sits inside the card, under the answer it responds to, so it
+   lands above the edge where the bento clips the device. */
+.ap-card .ap-reply {
+  margin: 0;
+  padding-top: 2px;
+}
+
+/* The chat's closing message shows the work finished; give the loop long
+   enough to reach it before it replays. */
+.phone-app .tg-msgs {
+  gap: 7px;
 }
