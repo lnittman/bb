@@ -5669,9 +5669,12 @@ button.sub-row:focus-visible {
   gap: 20px;
   padding: 28px;
   border-radius: 28px;
-  /* The shell is a step off the page ground in whichever direction the theme
-     runs — that part does re-tint. It is the plates inside it that cannot. */
-  background: color-mix(in oklab, var(--ink-strong) 6%, var(--canvas));
+  /* A step you can actually see. At 6% the shell was invisible and each
+     card's title and description read as loose text on the page rather than
+     as part of the card they belong to; the reference's shell is a clear
+     light grey against white and that legibility is the point of it. This
+     still re-tints with the theme — it is the plates inside that cannot. */
+  background: color-mix(in oklab, var(--ink-strong) 13%, var(--canvas));
   text-align: left;
 }
 
@@ -7198,7 +7201,24 @@ button.sub-row:focus-visible {
 .bento-phone .bento-chat {
   align-items: stretch;
   justify-content: flex-start;
-  padding-top: 18px;
+  /* Removing the bezel left the messages floating directly on the card while
+     the two demos above them sat in framed windows — one section, two
+     treatments. They get the same inset surface: a real border, the panel
+     ground, and the bottom dissolve, so all four cards read as a window onto
+     the product rather than two windows and two loose fragments. */
+  margin-top: 22px;
+  padding: 16px 16px 0;
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  mask-image: linear-gradient(
+    to bottom,
+    black calc(100% - 54px),
+    rgb(0 0 0 / 0.45) calc(100% - 26px),
+    rgb(0 0 0 / 0.1) calc(100% - 9px),
+    transparent 100%
+  );
 }
 
 .bento-phone .bento-chat > * {

@@ -4491,6 +4491,7 @@ function LandingPage() {
       <section className="closer">
         <h2 className="sec-title">Put your agents to work</h2>
         <p>Free, open source, and local-first. Install in under a minute.</p>
+        <InstallOptions placement="closer" />
 
         {/* One slate shell holding three plates, the last of which carries
             the install row at its foot. A feature grid stacked above a CTA
@@ -4542,12 +4543,6 @@ function LandingPage() {
               Claude, Codex, Cursor and Pi fan out in parallel, in one mission
               control.
             </p>
-            {/* Bottom of the card, not the panel: `margin-top: auto` inside a
-                stretched grid row puts the row on the floor all three cards
-                share, so it reads as the end of the sequence. */}
-            <div className="cg-install">
-              <InstallOptions placement="closer" />
-            </div>
           </div>
         </div>
 
