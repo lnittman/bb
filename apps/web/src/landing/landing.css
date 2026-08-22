@@ -102,6 +102,11 @@
   --btn-h: 32px;
   --btn-pad-x: 12px;
 
+  /* The app's sidebar row is `h-8 p-2 gap-2` with a 16px glyph
+     (apps/app/src/components/ui/sidebar.tsx:2173) — a FIXED 32px with the
+     padding inside it, not a floor. Consumers used `min-height` for a while,
+     which let 8px of padding and a 21.6px line box stack to 37.6px and made
+     every sidebar in every demo five pixels too tall. */
   --row-h: 32px;
   --row-pad: 8px;
   --row-gap: 8px;
@@ -1225,7 +1230,7 @@ code,
 
 .bar-popover button {
   width: 100%;
-  min-height: var(--row-h);
+  height: var(--row-h);
   border: 0;
   border-radius: var(--r-control);
   background: transparent;
@@ -1368,7 +1373,7 @@ code,
 .side-search-form {
   display: flex;
   align-items: center;
-  min-height: var(--row-h);
+  height: var(--row-h);
   gap: var(--row-gap);
   margin-bottom: 2px;
   padding-left: var(--row-pad);
@@ -1409,7 +1414,7 @@ code,
 .side-act {
   display: flex;
   align-items: center;
-  min-height: var(--row-h);
+  height: var(--row-h);
   gap: var(--row-gap);
   padding: var(--row-pad);
   border: 0;
@@ -1449,7 +1454,7 @@ code,
 }
 
 .trow {
-  min-height: var(--row-h);
+  height: var(--row-h);
   width: 100%;
   display: flex;
   align-items: center;
@@ -1623,7 +1628,7 @@ code,
 }
 
 .askq-opt {
-  min-height: var(--row-h);
+  height: var(--row-h);
   display: flex;
   align-items: flex-start;
   gap: var(--row-gap);
@@ -2121,7 +2126,7 @@ code,
   align-items: center;
   gap: 7px;
   width: 100%;
-  min-height: var(--row-h);
+  height: var(--row-h);
   padding: 0 10px;
   border: 0;
   font-size: 12px;
@@ -2647,7 +2652,7 @@ code,
 
 .board-chrome {
   gap: 7px;
-  min-height: var(--row-h);
+  height: var(--row-h);
   padding: 0 14px;
 }
 
@@ -2803,7 +2808,7 @@ code,
   display: flex;
   align-items: center;
   gap: 6px;
-  min-height: var(--row-h);
+  height: var(--row-h);
   padding: 0 4px 8px;
   color: var(--ink);
   font-size: 14px;
@@ -2982,7 +2987,7 @@ code,
 .board-lrow {
   display: flex;
   width: 100%;
-  min-height: var(--row-h);
+  height: var(--row-h);
   align-items: center;
   gap: var(--row-gap);
   padding: var(--row-pad);
@@ -3057,7 +3062,7 @@ code,
 .brail-row {
   display: flex;
   width: 100%;
-  min-height: var(--row-h);
+  height: var(--row-h);
   align-items: center;
   gap: var(--row-gap);
   padding: var(--row-pad);
@@ -3120,7 +3125,7 @@ code,
 
 .board-detail-back {
   display: flex;
-  min-height: var(--row-h);
+  height: var(--row-h);
   align-items: center;
   gap: 6px;
   align-self: flex-start;
@@ -3152,7 +3157,7 @@ code,
 .board-detail-prop,
 .board-draft-status {
   display: flex;
-  min-height: var(--row-h);
+  height: var(--row-h);
   align-items: center;
   gap: 8px;
   color: var(--dim);
@@ -3302,7 +3307,7 @@ code,
 
   .board-seg button,
   .board-refresh {
-    min-height: var(--row-h);
+    height: var(--row-h);
   }
 
   .board-new {
@@ -3414,7 +3419,7 @@ code,
   align-items: center;
   gap: 7px;
   width: 100%;
-  min-height: var(--row-h);
+  height: var(--row-h);
   padding: 8px 10px;
   border: 0;
   background: none;
@@ -3433,7 +3438,7 @@ code,
   align-items: center;
   gap: 7px;
   width: 100%;
-  min-height: var(--row-h);
+  height: var(--row-h);
   padding: 4px 10px;
   border: 0;
   border-top: 1px solid var(--border-soft);
@@ -4378,7 +4383,7 @@ code,
 .ext-nav-row {
   display: flex;
   width: 100%;
-  min-height: var(--row-h);
+  height: var(--row-h);
   align-items: center;
   gap: var(--row-gap);
   padding: var(--row-pad);
@@ -5400,7 +5405,7 @@ code,
   align-items: center;
   justify-content: space-between;
   gap: var(--row-gap);
-  min-height: var(--row-h);
+  height: var(--row-h);
   padding: var(--row-pad);
   border-radius: var(--r-control);
   color: var(--ink);
