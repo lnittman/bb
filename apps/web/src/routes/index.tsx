@@ -2634,6 +2634,56 @@ function BuildDemo() {
  * at and then rests: settled for roughly two thirds.
  *   rest     everything settled — also the reduced-motion state
  * ──────────────────────────────────────────────── */
+/* Opening a rail row shows that agent's own thread. Without this the
+ * section asserts eight agents and only ever proves one — every row led to
+ * the same transcript. Only the finished threads carry one; the ones still
+ * working stay as status, which is what the app shows too. */
+const GANG_THREADS: Record<
+  string,
+  { branch: string; files: string; add: string; del: string; lines: readonly { kind: string; text: string }[] }
+> = {
+  "trace-order-checkout-flow": {
+    branch: "bb/trace-order-checkout",
+    files: "3 files",
+    add: "+61",
+    del: "-4",
+    lines: [
+      { kind: "step", text: "Read checkout.ts, cart.ts, tax.ts" },
+      {
+        kind: "say",
+        text: "Cart totals resolve before promo codes apply, so the discount always sees a settled subtotal rather than a running one.",
+      },
+      { kind: "step", text: "Spawned 1 subagent" },
+      {
+        kind: "say",
+        text: "Confirm the checkout totals came back clean: express checkout is the only path that builds its own total, and it calls promo after tax.",
+      },
+      {
+        kind: "say",
+        text: "Traced. The order is cart, then promo, then tax, and I left a comment at the one call site that could reorder them.",
+      },
+    ],
+  },
+  "summarize-service-route": {
+    branch: "bb/summarize-service-route",
+    files: "1 file",
+    add: "+24",
+    del: "0",
+    lines: [
+      { kind: "step", text: "Read routes/orders.ts" },
+      {
+        kind: "say",
+        text: "One POST handler doing four jobs: validation, idempotency, the write, and the webhook fan-out. Each has its own failure mode and they share one try block.",
+      },
+      { kind: "step", text: "Wrote docs/orders-route.md" },
+      {
+        kind: "say",
+        text: "Summarised, with the idempotency key's lifetime called out — it is the part that surprises people reading this route for the first time.",
+      },
+    ],
+  },
+};
+
 const GANG_BEATS = [700, 1350, 2000, 2650, 3300, 3950, 4600];
 const GANG_RESET = 12000;
 
@@ -2725,10 +2775,19 @@ function GangDemo() {
   const { ref, stage } = useLoopStage(GANG_BEATS, GANG_RESET);
   const settled = stage >= GANG_BEATS.length;
   const shown = settled ? GANG_STEPS.length : Math.min(stage + 1, GANG_STEPS.length);
+  // null = the codex thread the loop is playing; a key opens that agent's own.
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const open = openKey ? GANG_THREADS[openKey] : null;
   return (
     <div className="gang-demo" ref={ref} aria-hidden>
       <div className="dwin-bar">
-        <span className="dwin-title">Audit promo code coverage</span>
+        <span className="dwin-title">
+          {openKey === "trace-order-checkout-flow"
+            ? "Trace order checkout flow"
+            : openKey === "summarize-service-route"
+              ? "Summarize service route"
+              : "Audit promo code coverage"}
+        </span>
         <span
           className={
             stage >= 7 || settled ? "gang-commit armed" : "gang-commit"
@@ -2748,16 +2807,32 @@ function GangDemo() {
           <SearchGlyph className="sub-top-ic sub-search" />
         </div>
         <span className="sub-group">storefront</span>
-        <div className="sub-row gang-row is-open">
+        <button
+          type="button"
+          className={openKey ? "sub-row gang-row" : "sub-row gang-row is-open"}
+          aria-pressed={!openKey}
+          onClick={() => withViewTransition(() => setOpenKey(null))}
+        >
           <OpenAiIcon className="gang-pv" />
           <span className="sub-title">Audit promo code coverage</span>
           {stage >= 7 || settled ? null : <DemoSpinner />}
-        </div>
-        <div className="sub-row gang-row">
+        </button>
+        <button
+          type="button"
+          className={
+            openKey === "trace-order-checkout-flow"
+              ? "sub-row gang-row is-open"
+              : "sub-row gang-row"
+          }
+          aria-pressed={openKey === "trace-order-checkout-flow"}
+          onClick={() =>
+            withViewTransition(() => setOpenKey("trace-order-checkout-flow"))
+          }
+        >
           <ClaudeIcon className="gang-pv" />
           <span className="sub-title">Trace order checkout flow</span>
           {stage >= 4 || settled ? <i className="sub-dot" /> : <DemoSpinner />}
-        </div>
+        </button>
         {/* One hairline for the whole child group, as the real rail draws it. */}
         <div className="sub-kids">
           <i className="sub-guide" aria-hidden />
@@ -2789,11 +2864,22 @@ function GangDemo() {
           <i className="sub-dot" />
         </div>
         <span className="sub-group gang-gap">checkout-api</span>
-        <div className="sub-row gang-row">
+        <button
+          type="button"
+          className={
+            openKey === "summarize-service-route"
+              ? "sub-row gang-row is-open"
+              : "sub-row gang-row"
+          }
+          aria-pressed={openKey === "summarize-service-route"}
+          onClick={() =>
+            withViewTransition(() => setOpenKey("summarize-service-route"))
+          }
+        >
           <PiIcon className="gang-pv" />
           <span className="sub-title">Summarize service route</span>
           {stage >= 3 || settled ? <i className="sub-dot" /> : <DemoSpinner />}
-        </div>
+        </button>
         <div className="sub-row gang-row">
           <OmpIcon className="gang-pv" />
           <span className="sub-title">Describe order endpoint validation</span>
@@ -2816,9 +2902,9 @@ function GangDemo() {
           <i className="sub-dot" />
         </div>
       </div>
-      <div className="gang-thread">
-        <div className="gang-feed">
-          {GANG_STEPS.slice(0, shown).map((s, i) => (
+      <div className="gang-thread" style={{ viewTransitionName: "gang-pane" }}>
+        <div className="gang-feed" key={openKey ?? "codex"}>
+          {(open ? open.lines : GANG_STEPS.slice(0, shown)).map((s, i) => (
             <p
               key={s.text}
               className={s.kind === "step" ? "gang-step in" : "gang-say in"}
@@ -2831,9 +2917,9 @@ function GangDemo() {
         <div className="gang-pr">
           <GitMergeIcon className="gang-pr-ic" />
           <span className="gang-pr-strong">Uncommitted</span>
-          <span className="gang-pr-dim">· 2 files,</span>
-          <em className="review-add">+38</em>
-          <em className="review-del">-2</em>
+          <span className="gang-pr-dim">· {open ? open.files : "2 files"},</span>
+          <em className="review-add">{open ? open.add : "+38"}</em>
+          <em className="review-del">{open ? open.del : "-2"}</em>
           <ChevronDown className="gang-commit-chev" />
         </div>
         <div className="gang-composer">
@@ -2855,7 +2941,7 @@ function GangDemo() {
           </span>
           <span className="gang-ctx-item gang-ctx-branch">
             <GitBranchIcon className="gang-ctx-ic" />
-            bb/audit-promo-coverage
+            {open ? open.branch : "bb/audit-promo-coverage"}
           </span>
           {settled ? null : <Spinner className="gang-ctx-spin" />}
         </div>
