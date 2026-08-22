@@ -4915,11 +4915,6 @@ button.sub-row:focus-visible {
   opacity: 0.7;
 }
 
-/* The closer's bb mark ships in both themes; the light file is a white tile
-   and read as a lit chip against the dark page. */
-.dark .closer-mark {
-  content: url("../assets/bb-icon-dark.png");
-}
 /* ── Band visual: Telegram-style chat with the bb bot ───────────── */
 
 .tg {
