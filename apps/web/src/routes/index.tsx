@@ -575,7 +575,7 @@ type MockThread = {
   pr?: number;
   change: { files: number; add: number; del: number };
   transcript: Step[];
-  /** Endlessly-cycled work a running thread streams in after its transcript. */
+  /** Work a running thread streams in after its transcript has played. */
   stream?: Step[];
   /** A pending AskUserQuestion that replaces the prompt box (like the app). */
   ask?: Ask;
@@ -2329,42 +2329,13 @@ function Phone({
   );
 }
 
-/* Hold a state, fade it out, replay it. Used by the chat so the whole
- * conversation cycles as one rather than each message looping on its own. */
-function useCycle(holdMs: number, fadeMs: number) {
-  const [cycle, setCycle] = useState(0);
-  const [leaving, setLeaving] = useState(false);
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    let holdTimer = 0;
-    let fadeTimer = 0;
-    const schedule = () => {
-      holdTimer = window.setTimeout(() => {
-        setLeaving(true);
-        fadeTimer = window.setTimeout(() => {
-          setCycle((c) => c + 1);
-          setLeaving(false);
-          schedule();
-        }, fadeMs);
-      }, holdMs);
-    };
-    schedule();
-    return () => {
-      window.clearTimeout(holdTimer);
-      window.clearTimeout(fadeTimer);
-    };
-  }, [holdMs, fadeMs]);
-  return { cycle, leaving };
-}
-
 /* A Telegram chat with the bb bot: you text a request, the bot acks with the
  * command it ran, and a thread card lands and goes spawning → running. The
- * shell stays put; only the messages cycle. */
+ * shell stays put; the messages arrive once and stay. */
 function AgentChat() {
   // The card ends on the live thread rather than on a "done" message: a
   // fourth bubble pushed the conversation past the edge the bento clips at,
   // so the payoff would have been written and never seen.
-  const { cycle, leaving } = useCycle(6500, 600);
   return (
     <div className="tg">
       <div className="tg-bar">
@@ -2378,7 +2349,7 @@ function AgentChat() {
         </span>
       </div>
       <div className="tg-feed">
-        <div className={leaving ? "tg-msgs leaving" : "tg-msgs"} key={cycle}>
+        <div className="tg-msgs">
           <div className="tg-msg tg-out" style={{ animationDelay: "0.3s" }}>
             <span className="tg-bubble">
               spawn a thread: audit our promo code coverage
@@ -2771,28 +2742,22 @@ const GANG_STEPS = [
   },
 ] as const;
 
-/** Demos play themselves until the visitor touches one, then hand over.
- *  `takeOver()` stops the loop for good and settles the demo, so anything
- *  the visitor drives from that point is theirs, not a frame of a script
- *  that will overwrite them a second later. */
+/* Each demo tells its story once, the first time it scrolls into view, and
+   then stays in the state the story ended in. It used to loop forever, which
+   made the page restless and meant the surface was never yours — something
+   was always about to overwrite it.
+ 
+   The rest state is the complete state: `stage` starts at beats.length, the
+   run steps 0 -> beats.length, and the final beat lands back where it began.
+   That is what makes the no-JS, reduced-motion and single-screenshot renders
+   correct for free rather than as a special case, and it is what lets the
+   demo become an operable surface once the animation is done. */
 function useLoopStage(beats: number[], resetAt: number) {
+  void resetAt;
   const ref = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState(beats.length);
   const timers = useRef<number[]>([]);
-  const driven = useRef(false);
-  const [live, setLive] = useState(false);
-
-  const stop = useCallback(() => {
-    timers.current.forEach(clearTimeout);
-    timers.current = [];
-  }, []);
-
-  const takeOver = useCallback(() => {
-    driven.current = true;
-    stop();
-    setLive(false);
-    setStage(beats.length);
-  }, [beats.length, stop]);
+  const played = useRef(false);
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -2800,36 +2765,27 @@ function useLoopStage(beats: number[], resetAt: number) {
     }
     const el = ref.current;
     if (!el) return;
-    const run = () => {
-      if (driven.current) return;
-      setStage(0);
-      setLive(true);
-      timers.current = beats.map((at, i) =>
-        window.setTimeout(() => setStage(i + 1), at),
-      );
-      timers.current.push(window.setTimeout(run, resetAt));
-    };
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (driven.current) return;
-        if (entry?.isIntersecting) {
-          if (!timers.current.length) run();
-        } else {
-          stop();
-          setLive(false);
-          setStage(beats.length);
-        }
+        if (played.current || !entry?.isIntersecting) return;
+        played.current = true;
+        observer.disconnect();
+        setStage(0);
+        timers.current = beats.map((at, i) =>
+          window.setTimeout(() => setStage(i + 1), at),
+        );
       },
       { rootMargin: "0px 0px -18% 0px" },
     );
     observer.observe(el);
     return () => {
       observer.disconnect();
-      stop();
+      timers.current.forEach(clearTimeout);
+      timers.current = [];
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  return { ref, stage, live, takeOver };
+  return { ref, stage };
 }
 
 function GangDemo() {

@@ -5003,10 +5003,6 @@ button.sub-row:focus-visible {
   gap: 8px;
 }
 
-.tg-msgs.leaving {
-  animation: tg-leave 0.6s ease forwards;
-}
-
 @keyframes tg-leave {
   to {
     opacity: 0;
