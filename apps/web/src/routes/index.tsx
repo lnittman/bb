@@ -58,9 +58,6 @@ import renderLogo from "../assets/company-logos/render.svg";
 import shortcutLogo from "../assets/company-logos/shortcut.svg";
 import simileLogo from "../assets/company-logos/simile.svg";
 import bbIconLarge from "../assets/bb-icon.png";
-import bbStickerHolo from "../assets/stickers/bb-holo.webp";
-import bbStickerPlush from "../assets/stickers/bb-plush.webp";
-import bbStickerClay from "../assets/stickers/bb-claymation.webp";
 import bbStickerRiso from "../assets/stickers/bb-riso.webp";
 import hermesAvatar from "../assets/hermes-avatar.jpg";
 import phoneBezel from "../assets/phone-bezel.svg";
@@ -2256,12 +2253,11 @@ function AskPhone() {
  * returns to it, so the page's own identity is what a visitor sees unless
  * they go looking. Nothing depends on it: no copy refers to it, and a
  * reader who never clicks loses nothing. */
-const BB_STICKERS = [
-  { src: bbStickerHolo, name: "holographic" },
-  { src: bbStickerPlush, name: "felt" },
-  { src: bbStickerClay, name: "clay" },
-  { src: bbStickerRiso, name: "risograph" },
-] as const;
+// One sticker, not four. The holo, felt and clay passes read as a different
+// universe from a page built out of hairlines and flat tokens; the risograph
+// is flat and printed and belongs. A cycle of one is just a toggle, which is
+// enough of an easter egg until there are more that earn their place.
+const BB_STICKERS = [{ src: bbStickerRiso, name: "risograph" }] as const;
 
 function CloserMark() {
   const [index, setIndex] = useState(0);
