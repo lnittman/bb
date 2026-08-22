@@ -4767,7 +4767,6 @@ button.sub-row:focus-visible {
 
 /* ── Closer: one ending with the subscribe inline ────────────────── */
 
-
 .closer-subscribe {
   margin-top: 34px;
   display: flex;
@@ -5519,15 +5518,25 @@ button.sub-row:focus-visible {
 
 /* ── Band visual: Telegram-style chat with the bb bot ───────────── */
 
+/* Sized for a bento card rather than a 240px screen inside a drawn bezel.
+   The frame is gone, so the conversation gets the width it was being denied
+   and the type can sit at a size a reader does not lean into. */
+/* Not a window any more. The border, the ground and the drop shadow all
+   belonged to a client frame that no longer exists; the bubbles sit on the
+   bento card directly, and giving them a second card to sit in was the panel
+   inside a panel this section keeps trying to grow. */
 .tg {
   width: 100%;
-  max-width: 340px;
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  overflow: hidden;
-  background: var(--bg);
-  box-shadow: 0 18px 50px -26px
-    color-mix(in oklab, var(--shade) 32%, transparent);
+  max-width: 100%;
+  /* --tg-card is Telegram's own bubble surface, not a bb token: these bubbles
+     imitate a foreign app, so the value is deliberately literal in both
+     schemes. It used to live on `.tg-feed`, the wallpaper element, which no
+     longer exists — leaving the incoming bubbles with no ground at all. */
+  --tg-card: #fff;
+}
+
+.dark .tg {
+  --tg-card: oklch(0.28 0 0);
 }
 
 /* contact bar */
@@ -5643,11 +5652,86 @@ button.sub-row:focus-visible {
   align-self: flex-start;
 }
 
+/* The bot typing. Three dots on a stagger inside a bubble the same shape as
+   the reply that replaces it, so the reply reads as that message resolving
+   rather than a second one arriving. It runs once per loop and then leaves —
+   a permanent typing indicator says the bot is stuck. */
+.tg-typing {
+  animation: tg-typing-life 5.4s var(--ease-standard) infinite;
+}
+
+@keyframes tg-typing-life {
+  0%,
+  6% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  12%,
+  32% {
+    opacity: 1;
+    transform: none;
+  }
+  36%,
+  100% {
+    opacity: 0;
+    height: 0;
+    margin: 0;
+    overflow: hidden;
+  }
+}
+
+.tg-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+}
+
+.tg-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--ink) 45%, transparent);
+  animation: tg-dot 1.2s var(--ease-standard) infinite;
+}
+
+.tg-dots i:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.tg-dots i:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+@keyframes tg-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Nothing types; the reply is simply there. */
+  .tg-typing {
+    display: none;
+  }
+
+  .tg-dots i {
+    animation: none;
+  }
+}
+
 .tg-bubble {
-  padding: 7px 10px 7px 11px;
-  border-radius: 15px;
-  font-size: 13px;
-  line-height: 1.4;
+  padding: 9px 13px 9px 14px;
+  border-radius: 16px;
+  font-size: 14.5px;
+  line-height: 1.45;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
 }
 
@@ -5858,119 +5942,6 @@ button.sub-row:focus-visible {
     linear-gradient(165deg, oklch(0.26 0.025 155), oklch(0.2 0.03 140));
 }
 
-/* ── Phone ───────────────────────────────────────────────────────────
-   A real device frame: phone-bezel.svg draws the band, the metal rails
-   and the side buttons as one overlay, and the live demo sits behind its
-   aperture. An overlay rather than a background because the screen has to
-   be real DOM you can read and click; pointer-events are off so the
-   hardware never intercepts anything.
-
-   8px of band on a 47px inner radius — the concentric pair the asset is
-   drawn to. Change one and the bezel stops being an even width. */
-.phone {
-  position: relative;
-  width: 100%;
-  max-width: 264px;
-  aspect-ratio: 390 / 800;
-  margin-inline: auto;
-  border-radius: 37px;
-  isolation: isolate;
-}
-
-.phone-screen {
-  position: absolute;
-  inset: 5.4px;
-  border-radius: 32px;
-  overflow: hidden;
-  background: var(--bg);
-  display: flex;
-  flex-direction: column;
-}
-
-.phone-bezel {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 2;
-}
-
-/* Status bar and home indicator: the two pieces of iOS chrome that make a
-   rectangle read as a running phone rather than a cropped screenshot. */
-.phone-status {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 9px 18px 3px;
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--ink);
-  background: var(--surface);
-  flex: none;
-}
-
-.phone-status-right {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.phone-status-right svg {
-  width: 12px;
-  height: 12px;
-}
-
-/* The island sits over the status bar, inside the screen, as it does on the
-   device — not punched out of the bezel. */
-.phone-island {
-  position: absolute;
-  top: 6px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 62px;
-  height: 18px;
-  border-radius: 999px;
-  background: #000;
-  z-index: 3;
-  pointer-events: none;
-}
-
-.phone-home {
-  flex: none;
-  width: 92px;
-  height: 4px;
-  margin: 5px auto 7px;
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--ink) 45%, transparent);
-}
-
-/* The demo fills what is left between the status bar and the indicator. */
-.phone-app {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* Inside a phone the chat is the whole screen, so it drops the standalone
-   card treatment it carries as a band visual. */
-.phone-app .tg {
-  max-width: none;
-  height: 100%;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  display: flex;
-  flex-direction: column;
-}
-
-.phone-app .tg-feed {
-  flex: 1;
-  min-height: 0;
-}
-
 /* ── Ask, on a phone ─────────────────────────────────────────────────
    bb's thread at phone width: the header names the thread and its project,
    the transcript shows what the agent was doing when it stopped, and the
@@ -5978,10 +5949,7 @@ button.sub-row:focus-visible {
    app. Bottom-aligned, so the question is the thing at the bottom of the
    screen where your thumb already is. */
 .ap {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: var(--bg);
+  width: 100%;
 }
 
 .ap-bar {
@@ -6187,6 +6155,22 @@ button.sub-row:focus-visible {
    main axis pushed the over-tall device half its overflow ABOVE the box,
    straight through the heading. Start on the main axis, centre on the
    cross axis: the device hangs off the bottom only. */
+/* The chat cards hold a conversation, not a device: it starts at the top and
+   fills the width instead of being centred around a bezel. */
+/* `.bento-phone .bento-chat`, not `.bento-chat`: the rules that centred a
+   232px device around a bezel are two classes deep and a single-class
+   selector loses to them, which left the conversation at device width in a
+   card twice that wide. */
+.bento-phone .bento-chat {
+  align-items: stretch;
+  justify-content: flex-start;
+  padding-top: 18px;
+}
+
+.bento-phone .bento-chat > * {
+  width: 100%;
+}
+
 .bento-phone .bento-component {
   flex: 1;
   min-height: 0;
@@ -6215,115 +6199,21 @@ button.sub-row:focus-visible {
    content reads, and the card clips the lower third the way a device peeks
    into a frame. Sized by width because aspect-ratio can only derive one
    axis, and there is no definite parent height to resolve `height: 100%`
-   against here. */
-.bento-phone .phone {
-  flex: none;
-  width: 232px;
-  max-width: 100%;
-  height: auto;
-  margin-inline: 0;
-}
-
 /* Below the grid's single-column breakpoint the card grows to its content,
    so the device takes a sensible fixed width instead of an unbounded one. */
 @media (max-width: 960px) {
   .bento-phone .bento-component {
     padding-bottom: 18px;
   }
-
-  .bento-phone .phone {
-    width: min(240px, 70vw);
-    height: auto;
-  }
 }
 
 /* The chat was drawn as a 340px band visual; inside a 220px screen its
    bubbles run under the bezel. Everything below is the same layout at
    phone scale — type down a step, tighter padding, and bubbles capped as a
-   share of the screen rather than at a fixed width. */
-.phone-app .tg-bar {
-  padding: 7px 10px;
-}
-
-.phone-app .tg-name {
-  font-size: 12px;
-}
-
-.phone-app .tg-sub {
-  font-size: 9.5px;
-}
-
-.phone-app .tg-msg {
-  max-width: 82%;
-}
-
-.phone-app .tg-bubble {
-  padding: 6px 9px;
-  border-radius: 13px;
-  font-size: 11.5px;
-  line-height: 1.35;
-}
-
-.phone-app .tg-cmd {
-  margin-top: 5px;
-  padding: 4px 6px;
-  font-size: 9.5px;
-}
-
-.phone-app .tg-thread {
-  padding: 8px 9px;
-}
-
-.phone-app .tg-thread-eyebrow,
-.phone-app .tg-stat {
-  font-size: 9.5px;
-}
-
-.phone-app .tg-thread-title {
-  font-size: 11.5px;
-}
-
-.phone-app .tg-thread-branch {
-  font-size: 9.5px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.phone-app .tg-input {
-  padding: 6px 9px;
-}
-
-.phone-app .tg-field {
-  font-size: 11px;
-}
-
-/* The ask surface gets the same treatment for the same reason. */
-.phone-app .ap-q {
-  font-size: 11.5px;
-}
-
-.phone-app .ap-opt {
-  min-height: 36px;
-  font-size: 11.5px;
-  padding: 7px 9px;
-}
-
 /* .tg-msg caps itself at a share of the feed, but a flex item's default
    min-width is its content, and the command chip is nowrap — so the bubble
    grew past the cap to fit the command on one line and the ellipsis never
    engaged. Allowing the chain to shrink is what lets the cap hold and the
-   chip truncate. */
-.phone-app .tg-msg {
-  min-width: 0;
-}
-
-.phone-app .tg-bubble {
-  min-width: 0;
-  max-width: 100%;
-  overflow-wrap: anywhere;
-}
-
 /* Overscroll past the end of the page revealed the body's canvas behind the
    closing band, so the band appeared to lift off a seam.
 
@@ -6341,19 +6231,6 @@ button.sub-row:focus-visible {
    holds wherever the phone is sized. An iPhone 15 puts a 125x37pt island
    11pt below the screen edge on a 393pt-wide screen; these are those
    proportions. It was reading high because the status bar's own padding put
-   its text above the island's centre rather than on it. */
-.phone-island {
-  top: 4%;
-  width: 31%;
-  height: 4.6%;
-}
-
-.phone-status {
-  padding: 0 15px;
-  height: 10.4%;
-  align-items: center;
-}
-
 /* Lines that have not arrived yet are removed from flow, not just made
    transparent. They were holding their space, and because the feed is
    bottom-aligned that space sat between the last visible line and the
@@ -6378,13 +6255,6 @@ button.sub-row:focus-visible {
    says the work finished — lands under the edge. With four messages the
    conversation fills the visible screen anyway, so filling from the top puts
    the whole exchange where it can be read and leaves the empty wallpaper in
-   the part that is clipped. */
-.phone-app .tg-feed {
-  justify-content: flex-start;
-  min-height: 0;
-  padding: 12px 10px;
-}
-
 @keyframes mark-pop {
   0% {
     transform: scale(0.9) rotate(-6deg);
@@ -6410,12 +6280,6 @@ button.sub-row:focus-visible {
 .ap-card .ap-reply {
   margin: 0;
   padding-top: 2px;
-}
-
-/* The chat's closing message shows the work finished; give the loop long
-   enough to reach it before it replays. */
-.phone-app .tg-msgs {
-  gap: 7px;
 }
 
 /* ── Hover convention ────────────────────────────────────────────────

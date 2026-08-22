@@ -62,7 +62,6 @@ import pendoLogo from "../assets/company-logos/pendo.svg";
 import renderLogo from "../assets/company-logos/render.svg";
 import shortcutLogo from "../assets/company-logos/shortcut.svg";
 import simileLogo from "../assets/company-logos/simile.svg";
-import phoneBezel from "../assets/phone-bezel.svg";
 import vscodeIcon from "../assets/vscode.png";
 import { RELEASE_META, parseChangelog } from "../landing/changelog";
 import {
@@ -2091,35 +2090,7 @@ function ReviewDemo() {
 
 /** Signal bars and a battery. Not from the icon set — these are phone
  *  hardware chrome, not product iconography. */
-const SignalGlyph = () => (
-  <svg viewBox="0 0 16 12" fill="currentColor" aria-hidden>
-    <rect x="0" y="8" width="2.6" height="4" rx="0.8" />
-    <rect x="4.2" y="5.5" width="2.6" height="6.5" rx="0.8" />
-    <rect x="8.4" y="3" width="2.6" height="9" rx="0.8" />
-    <rect x="12.6" y="0.5" width="2.6" height="11.5" rx="0.8" />
-  </svg>
-);
 
-const BatteryGlyph = () => (
-  <svg viewBox="0 0 20 12" fill="none" aria-hidden>
-    <rect
-      x="0.6"
-      y="1.4"
-      width="15.6"
-      height="9.2"
-      rx="2.6"
-      stroke="currentColor"
-      strokeOpacity="0.5"
-      strokeWidth="1.1"
-    />
-    <rect x="2.3" y="3.1" width="11" height="5.8" rx="1.4" fill="currentColor" />
-    <path
-      d="M18 4.6v2.8c.9-.3 1.4-.8 1.4-1.4S18.9 4.9 18 4.6Z"
-      fill="currentColor"
-      fillOpacity="0.5"
-    />
-  </svg>
-);
 
 /* bb's own question, on a phone. The thread paused for a decision and it
  * reached you where you are — tapping an option answers it and the agent
@@ -2130,18 +2101,11 @@ function AskPhone() {
   const chosen = picked === null ? null : ASK_OPTIONS[picked];
   return (
     <div className="ap">
-      <div className="ap-bar">
-        <span className="ap-back" aria-hidden>
-          <ChevronLeft className="ap-back-ic" />
-        </span>
-        <span className="ap-head">
-          <span className="ap-thread">Audit promo code coverage</span>
-          <span className="ap-proj">storefront</span>
-        </span>
-        <span className="ap-av" aria-hidden>
-          <OpenAiIcon className="ap-av-ic" />
-        </span>
-      </div>
+      {/* The interrupt card and nothing around it. The thread header, the
+          provider avatar and the client chrome were a chat app drawn around
+          the one component that carries the idea — bb stopping to ask a real
+          question. The two lines above the card stay, because without them
+          the question has nowhere to have come from. */}
       <div className="ap-body">
         {/* What the thread was doing when it stopped, so the question has
             somewhere to have come from. */}
@@ -2214,31 +2178,6 @@ function AskPhone() {
  * ships a native app — what runs on these screens is Telegram, and bb's own
  * question arriving where you are.
  * ──────────────────────────────────────────────── */
-function Phone({
-  children,
-  label,
-}: {
-  children: ReactNode;
-  label: string;
-}) {
-  return (
-    <div className="phone" role="img" aria-label={label}>
-      <div className="phone-screen">
-        <div className="phone-status" aria-hidden>
-          <span>9:41</span>
-          <span className="phone-status-right">
-            <SignalGlyph />
-            <BatteryGlyph />
-          </span>
-        </div>
-        <div className="phone-app">{children}</div>
-        <span className="phone-home" aria-hidden />
-      </div>
-      <span className="phone-island" aria-hidden />
-      <img src={phoneBezel} alt="" className="phone-bezel" aria-hidden />
-    </div>
-  );
-}
 
 /* A Telegram chat with your own bb: the `connect` plugin puts this machine at
  * <handle>.getbb.app, so anything that can reach an HTTPS endpoint can call
@@ -2255,31 +2194,37 @@ function AgentChat() {
   // so the payoff would have been written and never seen.
   return (
     <div className="tg">
-      <div className="tg-bar">
-        <ChevronLeft className="tg-back" />
-        <span className="tg-contact">
-          <span className="tg-name">bb</span>
-          <span className="tg-sub">bot</span>
-        </span>
-        <span className="tg-av" aria-hidden>
-          <span className="bb-mark tg-av-mark" />
-        </span>
-      </div>
-      <div className="tg-feed">
-        <div className="tg-msgs">
+      {/* Bubbles only. The title bar, the wallpaper and the message field were
+          a Telegram client drawn around three messages — chrome standing in
+          for the thing itself. What matters is that you text a request in
+          plain language and a thread comes back, and the bubbles carry all of
+          that on their own. */}
+      <div className="tg-msgs">
           <div className="tg-msg tg-out" style={{ animationDelay: "0.3s" }}>
             <span className="tg-bubble">
               spawn a thread: audit our promo code coverage
               <span className="tg-time">9:41</span>
             </span>
           </div>
-          <div className="tg-msg tg-in" style={{ animationDelay: "1.4s" }}>
+          {/* Telegram shows the bot typing while it works, so the reply does
+              not simply appear. The indicator occupies the same row the reply
+              lands in and hands off to it, rather than the two stacking. */}
+          <div className="tg-msg tg-in tg-typing" aria-hidden>
+            <span className="tg-bubble">
+              <span className="tg-dots">
+                <i />
+                <i />
+                <i />
+              </span>
+            </span>
+          </div>
+          <div className="tg-msg tg-in" style={{ animationDelay: "1.9s" }}>
             <span className="tg-bubble">
               On it. Spawning a worker thread.
               <span className="tg-cmd mono">bb thread spawn</span>
             </span>
           </div>
-          <div className="tg-msg tg-in" style={{ animationDelay: "2.4s" }}>
+          <div className="tg-msg tg-in" style={{ animationDelay: "2.9s" }}>
             <div className="tg-thread">
               <div className="tg-thread-top">
                 <span aria-hidden="true" className="bb-mark tg-thread-mark" />
@@ -2287,14 +2232,14 @@ function AgentChat() {
                 <span className="tg-stat" aria-hidden>
                   <span
                     className="tg-stat-spawn"
-                    style={{ animationDelay: "3.5s" }}
+                    style={{ animationDelay: "4s" }}
                   >
                     <Spinner className="tg-spin" />
                     spawning
                   </span>
                   <span
                     className="tg-stat-run"
-                    style={{ animationDelay: "3.5s" }}
+                    style={{ animationDelay: "4s" }}
                   >
                     <span className="tg-rdot" />
                     running
@@ -2305,14 +2250,6 @@ function AgentChat() {
               <div className="tg-thread-branch mono">bb/audit-promo-coverage</div>
             </div>
           </div>
-        </div>
-      </div>
-      <div className="tg-input">
-        <Paperclip className="tg-attach" />
-        <span className="tg-field">Message</span>
-        <span className="tg-send" aria-hidden>
-          <PaperPlane className="tg-send-ic" />
-        </span>
       </div>
     </div>
   );
@@ -3387,19 +3324,19 @@ function LandingPage() {
           <li className="bento-phone">
             <h3>Text it to work</h3>
             <p>Message the bot and a thread spawns on your machine.</p>
-            <div className="bento-component">
-              <Phone label="Texting the bb bot, which spawns a thread">
-                <AgentChat />
-              </Phone>
+            {/* No device frame. The bezel was drawn furniture wrapped around
+                the only part anyone reads, and it cost the conversation half
+                its width to say "this is a phone" — which the content already
+                says, being a chat. */}
+            <div className="bento-component bento-chat">
+              <AgentChat />
             </div>
           </li>
           <li className="bento-phone">
             <h3>Answer from anywhere</h3>
             <p>The question finds you instead of waiting at your desk.</p>
-            <div className="bento-component">
-              <Phone label="An agent's question, answered from a phone">
-                <AskPhone />
-              </Phone>
+            <div className="bento-component bento-chat">
+              <AskPhone />
             </div>
           </li>
         </ul>
