@@ -44,6 +44,7 @@ import {
   TextWrapIcon,
   TimeScheduleIcon,
   ToolboxIcon,
+  UserAdd01Icon,
   WorkflowCircle03Icon,
   ZapIcon,
 } from "@hugeicons/core-free-icons";
@@ -2144,23 +2145,10 @@ function AutomationsPanelMock() {
   );
 }
 
-/* ────────────────────────────────────────────────
- * SUBAGENTS STORYBOARD (loops while in view)
- *
- *      0ms   parent row working (spinner); the rail rests around it
- *    900ms   child row slides in, nested, working
- *   3200ms   child completes; "reported back" lands under it
- *   4000ms   parent absorbs the report, completes
- *  11500ms   loop restarts (the rail rests settled ~65% of the loop)
- *   rest     both settled — also the reduced-motion state
- * ──────────────────────────────────────────────── */
-const SUB_BEATS = [900, 3200, 4000];
-const SUB_RESET = 11500;
+type TranscriptLine = { kind: "step" | "say" | "you"; text: string };
 
 function DemoSpinner() {
-  return (
-    <HugeiconsIcon icon={Loading03Icon} className="dm-spin" aria-hidden />
-  );
+  return <HugeiconsIcon icon={Loading03Icon} className="dm-spin" aria-hidden />;
 }
 
 function DemoCheck() {
@@ -2173,13 +2161,46 @@ function DemoCheck() {
   );
 }
 
-/** The real sidebar's quiet rows end in a small unread dot. */
-function QuietRow({ title }: { title: string }) {
+function TranscriptStepGlyph({ text }: { text: string }) {
+  if (/^(Read|Opened)/.test(text)) {
+    return (
+      <HugeiconsIcon icon={File01Icon} className="gang-step-ic" aria-hidden />
+    );
+  }
+  if (/^(Explored|Searched)/.test(text)) {
+    return (
+      <HugeiconsIcon icon={Search01Icon} className="gang-step-ic" aria-hidden />
+    );
+  }
+  if (/^(Added|Defined|Edited|Wrote)/.test(text)) {
+    return (
+      <HugeiconsIcon icon={Edit04Icon} className="gang-step-ic" aria-hidden />
+    );
+  }
+  if (/^(Reported|Spawned)/.test(text)) {
+    return (
+      <HugeiconsIcon
+        icon={UserAdd01Icon}
+        className="gang-step-ic"
+        aria-hidden
+      />
+    );
+  }
+  return <TerminalGlyph className="gang-step-ic" />;
+}
+
+function TranscriptLineView({ line }: { line: TranscriptLine }) {
+  if (line.kind === "you") {
+    return <p className="gang-you">{line.text}</p>;
+  }
+  if (line.kind === "say") {
+    return <p className="gang-say">{line.text}</p>;
+  }
   return (
-    <div className="sub-row sub-quiet">
-      <span className="sub-title">{title}</span>
-      <i className="sub-dot" />
-    </div>
+    <p className="gang-step">
+      <TranscriptStepGlyph text={line.text} />
+      <span>{line.text}</span>
+    </p>
   );
 }
 
@@ -2193,12 +2214,12 @@ const SUB_THREADS = [
     title: "Expand README testing documentation",
     kind: "parent",
     lines: [
-      { kind: "step", text: "Explored 2 files" },
+      { kind: "step", text: "Explored the testing documentation" },
       {
         kind: "say",
         text: "The Testing section never named the risky part. Spawning a thread to find the real edge cases.",
       },
-      { kind: "step", text: "Spawned 1 subagent" },
+      { kind: "step", text: "Spawned a subagent" },
       {
         kind: "say",
         text: "Rewrote the section around its report. Committed.",
@@ -2223,7 +2244,7 @@ const SUB_THREADS = [
     title: "Trace order checkout flow",
     kind: "quiet",
     lines: [
-      { kind: "step", text: "Explored 4 files" },
+      { kind: "step", text: "Explored the checkout flow" },
       {
         kind: "say",
         text: "Cart to promo to order. The confirmation reads the order, never the cart.",
@@ -2235,7 +2256,7 @@ const SUB_THREADS = [
     title: "Summarize checkout cart integration",
     kind: "quiet",
     lines: [
-      { kind: "step", text: "Explored 3 files" },
+      { kind: "step", text: "Explored the cart integration" },
       {
         kind: "say",
         text: "The cart owns totals; checkout only posts them. One source of truth.",
@@ -2250,7 +2271,7 @@ const SUB_THREADS = [
       { kind: "step", text: "Ran the suite" },
       {
         kind: "say",
-        text: "24 passing, but nothing covers stacked codes. That is the gap.",
+        text: "The suite passes, but nothing covers stacked codes. That is the gap.",
       },
     ],
   },
@@ -2288,23 +2309,31 @@ function SubagentsDemo() {
   const all = [...SUB_THREADS, ...SUB_API_THREADS];
   const open = all.find((t) => t.id === openId) ?? all[0];
   const row = (t: (typeof all)[number]) => (
-    <button
+    <a
       key={t.id}
-      type="button"
+      href={`#subagent-${t.id}`}
       className={
-        (t.kind === "child" ? "sub-row sub-child in" : "sub-row") +
+        (t.kind === "child" ? "sub-row sub-child" : "sub-row") +
         (t.kind === "quiet" ? " sub-quiet" : "") +
         (openId === t.id ? " is-open" : "")
       }
-      aria-pressed={openId === t.id}
-      onClick={() => withViewTransition(() => setOpenId(t.id))}
+      aria-current={openId === t.id ? "page" : undefined}
+      aria-label={`Open ${t.title}`}
+      onClick={(event) => {
+        event.preventDefault();
+        setOpenId(t.id);
+      }}
     >
       <span className="sub-title">{t.title}</span>
       {openId === t.id ? null : <i className="sub-dot" />}
-    </button>
+    </a>
   );
   return (
-    <div className="sub-demo">
+    <div
+      className="sub-demo"
+      role="group"
+      aria-label="Subagent threads and the selected conversation"
+    >
       <div className="sub-rail">
         <div className="sub-top" aria-hidden>
           <span className="sub-newthread">
@@ -2329,18 +2358,10 @@ function SubagentsDemo() {
         </span>
         {SUB_API_THREADS.map(row)}
       </div>
-      {/* Picking a thread replaces the pane wholesale, so it is the state
-          change that most wants a morph — the technique the retired board
-          toggle used to carry. */}
-      <div className="sub-main" style={{ viewTransitionName: "sub-pane" }}>
+      <div className="sub-main" id={`subagent-${open.id}`} aria-live="polite">
         <span className="sub-main-title">{open.title}</span>
-        {open.lines.map((l) => (
-          <p
-            key={l.text}
-            className={l.kind === "step" ? "gang-step in" : "gang-say in"}
-          >
-            {l.text}
-          </p>
+        {open.lines.map((line) => (
+          <TranscriptLineView key={line.text} line={line} />
         ))}
       </div>
     </div>
@@ -2932,101 +2953,278 @@ function TasksBoardDemo() {
   );
 }
 
-/* ────────────────────────────────────────────────
- * REVIEW STORYBOARD (loops while in view)
- *
- *      0ms   the changes header and the file card, no hunk
- *    400ms   diff lines land, 70ms apart, gutter bars with them
- *   2400ms   the second file card arrives below
- *   3400ms   Commit arms
- *  10000ms   loop restarts (the diff rests armed ~65% of the loop)
- *   rest     full diff, armed — also the reduced-motion state
- * ──────────────────────────────────────────────── */
-const REVIEW_BEATS = [400, 2400, 3400];
-const REVIEW_RESET = 10000;
-
 // One hunk of applyPromo.ts, numbered like the real Changes panel: the
 // deleted line keeps its old number; the replacement lines take over.
+type ReviewLine = {
+  sign: " " | "+" | "-";
+  no: string;
+  text: string;
+};
+
+type ReviewFile = {
+  id: "source" | "test";
+  name: string;
+  lines: readonly ReviewLine[];
+  hasContext: boolean;
+};
+
 const REVIEW_LINES = [
   { sign: " ", no: "21", text: "export function applyPromo(cart, code) {" },
   { sign: "-", no: "22", text: "  const percent = PERCENT_CODES[code] ?? 0;" },
   { sign: "+", no: "22", text: "  const percent = Object.hasOwn(" },
   { sign: "+", no: "23", text: "    PERCENT_CODES, code," },
   { sign: "+", no: "24", text: "  ) ? PERCENT_CODES[code] : 0;" },
-  { sign: " ", no: "25", text: "  const subtotal = cart.items.reduce(sum, 0);" },
+  {
+    sign: " ",
+    no: "25",
+    text: "  const subtotal = cart.items.reduce(sum, 0);",
+  },
   { sign: " ", no: "26", text: "  return round(subtotal * (1 - percent));" },
   { sign: " ", no: "27", text: "}" },
-] as const;
+] as const satisfies readonly ReviewLine[];
+
+const REVIEW_TEST_LINES = [
+  { sign: "+", no: "12", text: 'it("rejects prototype keys", () => {' },
+  {
+    sign: "+",
+    no: "13",
+    text: '  expect(applyPromo(cart, "toString")).toBe(100);',
+  },
+  { sign: "+", no: "14", text: "});" },
+  { sign: "+", no: "15", text: "" },
+] as const satisfies readonly ReviewLine[];
+
+const REVIEW_FILES: readonly ReviewFile[] = [
+  {
+    id: "source",
+    name: "applyPromo.ts",
+    lines: REVIEW_LINES,
+    hasContext: true,
+  },
+  {
+    id: "test",
+    name: "promo.test.ts",
+    lines: REVIEW_TEST_LINES,
+    hasContext: false,
+  },
+];
 
 function ReviewDemo() {
-  const { ref, stage } = useLoopStage(REVIEW_BEATS, REVIEW_RESET);
-  const settled = stage >= REVIEW_BEATS.length;
-  const landed = stage >= 1 || settled;
-  return (
-    <div className="review-demo" ref={ref} aria-hidden>
-      <div className="review-head">
-        <span className="review-scope">
-          All changes
-          <ChevronDown className="review-chev" />
-        </span>
-        <span className="review-count">
-          2 files,
-          <em className="review-add">+7</em>
-          <em className="review-del">-1</em>
-        </span>
-        <span
-          className={
-            stage >= 3 || settled ? "review-commit armed" : "review-commit"
-          }
-        >
-          Commit
-        </span>
-      </div>
-      <div className="review-file-card">
-        <div className="review-file-head">
-          <ChevronDown className="review-chev" />
-          <span className="review-file">applyPromo.ts</span>
-          <span className="review-count">
-            <em className="review-add">+3</em>
-            <em className="review-del">-1</em>
-          </span>
-        </div>
-        <div className="review-fold">
-          <ChevronDown className="review-chev review-fold-chev" />
-          20 unmodified lines
-        </div>
-        <div className="review-hunk">
-          {REVIEW_LINES.map((l, i) => (
-            <p
-              key={`${l.no}-${l.sign}`}
-              className={
-                (landed ? "review-line in" : "review-line") +
-                (l.sign === "+" ? " is-add" : l.sign === "-" ? " is-del" : "")
-              }
-              style={{ transitionDelay: `${i * 70}ms` }}
-            >
-              <span className="review-no">{l.no}</span>
-              <span className="review-sign">{l.sign}</span>
-              {l.text}
-            </p>
-          ))}
-        </div>
-      </div>
-      <div
+  const [selection, setSelection] = useState("all");
+  const [collapsed, setCollapsed] = useState({ source: false, test: true });
+  const [showContext, setShowContext] = useState(false);
+  const [wrapLines, setWrapLines] = useState(false);
+  const [displayMode, setDisplayMode] = useState<"unified" | "split">(
+    "unified",
+  );
+  const allCollapsed = collapsed.source && collapsed.test;
+  const totals = REVIEW_FILES.flatMap((file) => file.lines).reduce(
+    (count, line) => ({
+      additions: count.additions + (line.sign === "+" ? 1 : 0),
+      deletions: count.deletions + (line.sign === "-" ? 1 : 0),
+    }),
+    { additions: 0, deletions: 0 },
+  );
+
+  const renderLines = (lines: readonly ReviewLine[]) =>
+    lines.map((line, index) => (
+      <p
+        key={`${line.no}-${line.sign}-${index}`}
         className={
-          stage >= 2 || settled
-            ? "review-file-card review-file2 in"
-            : "review-file-card review-file2"
+          "review-line" +
+          (line.sign === "+" ? " is-add" : line.sign === "-" ? " is-del" : "")
         }
       >
-        <div className="review-file-head">
-          <ChevronRight className="review-chev" />
-          <span className="review-file">promo.test.ts</span>
-          <span className="review-count">
-            <em className="review-add">+4</em>
-          </span>
+        <span className="review-no">{line.no}</span>
+        <span className="review-sign">{line.sign}</span>
+        <span>{line.text || " "}</span>
+      </p>
+    ));
+
+  const renderHunk = (lines: readonly ReviewLine[], hasContext: boolean) => {
+    const visibleLines =
+      hasContext && !showContext
+        ? lines.filter((line) => line.sign !== " ")
+        : lines;
+    if (displayMode === "unified") return renderLines(visibleLines);
+    return (
+      <div className="review-split">
+        <div>
+          {renderLines(visibleLines.filter((line) => line.sign !== "+"))}
+        </div>
+        <div>
+          {renderLines(visibleLines.filter((line) => line.sign !== "-"))}
         </div>
       </div>
+    );
+  };
+
+  return (
+    <div
+      className="review-demo"
+      role="group"
+      aria-label="Changes panel"
+      data-wrap={wrapLines ? "wrap" : "scroll"}
+    >
+      <div className="review-head">
+        <label className="review-selector">
+          <span className="sr-only">Diff selection</span>
+          <select
+            className="review-scope"
+            value={selection}
+            onChange={(event) => setSelection(event.currentTarget.value)}
+          >
+            <option value="all">All changes</option>
+            <option value="uncommitted">Uncommitted changes</option>
+          </select>
+        </label>
+        <span className="review-count">
+          {REVIEW_FILES.length} files
+          <em className="review-add">+{totals.additions}</em>
+          <em className="review-del">-{totals.deletions}</em>
+        </span>
+        <div className="review-actions">
+          <button
+            type="button"
+            className="review-tool"
+            aria-label={
+              allCollapsed ? "Expand all files" : "Collapse all files"
+            }
+            onClick={() =>
+              setCollapsed(
+                allCollapsed
+                  ? { source: false, test: false }
+                  : { source: true, test: true },
+              )
+            }
+          >
+            <HugeiconsIcon
+              icon={allCollapsed ? ArrowDownDoubleIcon : ArrowUpDoubleIcon}
+              className="review-tool-ic"
+              aria-hidden
+            />
+          </button>
+          <button
+            type="button"
+            className="review-tool"
+            aria-label={
+              wrapLines ? "Disable diff line wrap" : "Wrap diff lines"
+            }
+            aria-pressed={wrapLines}
+            onClick={() => setWrapLines((current) => !current)}
+          >
+            <HugeiconsIcon
+              icon={TextWrapIcon}
+              className="review-tool-ic"
+              aria-hidden
+            />
+          </button>
+          <div
+            className="review-view-modes"
+            role="tablist"
+            aria-label="Diff view mode"
+          >
+            <button
+              type="button"
+              className="review-tool"
+              aria-label="Stacked diff view"
+              aria-pressed={displayMode === "unified"}
+              onClick={() => setDisplayMode("unified")}
+            >
+              <HugeiconsIcon
+                icon={LayoutTwoRowIcon}
+                className="review-tool-ic"
+                aria-hidden
+              />
+            </button>
+            <button
+              type="button"
+              className="review-tool"
+              aria-label="Split diff view"
+              aria-pressed={displayMode === "split"}
+              onClick={() => setDisplayMode("split")}
+            >
+              <HugeiconsIcon
+                icon={LayoutTwoColumnIcon}
+                className="review-tool-ic"
+                aria-hidden
+              />
+            </button>
+          </div>
+          <button type="button" className="review-commit" disabled>
+            Commit
+          </button>
+        </div>
+      </div>
+      {REVIEW_FILES.map((file, index) => {
+        const isCollapsed = collapsed[file.id];
+        const stats = file.lines.reduce(
+          (count, line) => ({
+            additions: count.additions + (line.sign === "+" ? 1 : 0),
+            deletions: count.deletions + (line.sign === "-" ? 1 : 0),
+          }),
+          { additions: 0, deletions: 0 },
+        );
+        return (
+          <div
+            key={file.id}
+            className={
+              index === 0 ? "review-file-card" : "review-file-card review-file2"
+            }
+          >
+            <button
+              type="button"
+              className="review-file-head"
+              aria-expanded={!isCollapsed}
+              onClick={() =>
+                setCollapsed((current) => ({
+                  ...current,
+                  [file.id]: !current[file.id],
+                }))
+              }
+            >
+              {isCollapsed ? (
+                <ChevronRight className="review-chev" />
+              ) : (
+                <ChevronDown className="review-chev" />
+              )}
+              <span className="review-file">{file.name}</span>
+              <span className="review-count">
+                {stats.additions > 0 ? (
+                  <em className="review-add">+{stats.additions}</em>
+                ) : null}
+                {stats.deletions > 0 ? (
+                  <em className="review-del">-{stats.deletions}</em>
+                ) : null}
+              </span>
+            </button>
+            {isCollapsed ? null : (
+              <>
+                {file.hasContext ? (
+                  <button
+                    type="button"
+                    className="review-fold"
+                    aria-expanded={showContext}
+                    onClick={() => setShowContext((current) => !current)}
+                  >
+                    {showContext ? (
+                      <ChevronDown className="review-chev" />
+                    ) : (
+                      <ChevronRight className="review-chev" />
+                    )}
+                    {showContext
+                      ? "Hide unmodified lines"
+                      : "Show unmodified lines"}
+                  </button>
+                ) : null}
+                <div className="review-hunk">
+                  {renderHunk(file.lines, file.hasContext)}
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -3203,195 +3401,312 @@ function AgentChat() {
   );
 }
 
-/* ────────────────────────────────────────────────
- * BUILD STORYBOARD (loops while in view)
- *
- * One window, because that is where this actually happens: you are in a
- * thread, and the thing the agent builds shows up in the sidebar beside
- * you. The old version split the story across two floating cards with a
- * skeleton panel hanging off the frame, which read as a mock of bb rather
- * than bb.
- *
- *      0ms   a thread titled "New thread", nothing in the pane
- *    300ms   the title morphs into the ask; the agent starts working
- *  0.8-2.8s  five build steps land, one every 500ms
- *   3400ms   the Review queue panel appears in the sidebar nav
- *   4000ms   the panel itself opens beside the thread
- *   4600ms   the thread reports back and the branch chip fills in
- *  12000ms   loop restarts
- *
- * The build runs briskly and then holds: complete for roughly two thirds of
- * the loop, so a capture taken at random is far more likely to show the
- * finished argument than a half-built one.
- *   rest     everything present — also the reduced-motion state
- *
- * The panel opens in the third column rather than replacing the thread, so
- * the resting frame holds the whole argument at once: what was asked, what
- * the agent did, the nav row it added, and the working panel behind it. The
- * section used to say "the panel is live in your sidebar" and then show a
- * label — evidence that a string was inserted, not that software was built.
- * ──────────────────────────────────────────────── */
-const BUILD_BEATS = [300, 800, 1300, 1800, 2300, 2800, 3400, 4000, 4600];
-const BUILD_RESET = 12000;
-const BUILD_PROMPT = "Add a review queue panel";
+const BUILD_PROMPT = "Add Tasks as a built-in plugin";
 
-const BUILD_STEPS = [
-  { kind: "step", text: "Read the plugin API" },
-  { kind: "step", text: "Scaffolded the plugin" },
-  { kind: "step", text: "Registered the CLI" },
-  { kind: "step", text: "Wrote the skill" },
-  { kind: "step", text: "Added it to the sidebar" },
+const BUILD_NEW_THREAD = {
+  id: "new",
+  project: "storefront",
+  title: "New thread",
+  lines: [] as readonly TranscriptLine[],
+} as const;
+
+const BUILD_THREADS = [
+  {
+    id: "build",
+    project: "storefront",
+    title: BUILD_PROMPT,
+    lines: [
+      { kind: "you", text: BUILD_PROMPT },
+      { kind: "step", text: "Read plugins/tasks/package.json" },
+      { kind: "step", text: "Opened the Tasks app entry" },
+      { kind: "step", text: "Opened the Tasks server entry" },
+      {
+        kind: "say",
+        text: "The manifest points to separate app, server, and skills entries. The app registers the Tasks panel, a Task thread action, and task cards.",
+      },
+      {
+        kind: "say",
+        text: "The server separately registers the bb tasks CLI, delegation, mentions, lifecycle, and RPC. Tasks is open in the sidebar.",
+      },
+    ] satisfies readonly TranscriptLine[],
+  },
+  {
+    id: "audit",
+    project: "storefront",
+    title: "Audit promo code coverage",
+    lines: [
+      { kind: "step", text: "Read promo.test.ts" },
+      {
+        kind: "say",
+        text: "The suite covers percent and fixed codes, but not a second code on an already-discounted cart.",
+      },
+    ] satisfies readonly TranscriptLine[],
+  },
+  {
+    id: "trace",
+    project: "storefront",
+    title: "Trace order checkout flow",
+    lines: [
+      { kind: "step", text: "Explored the checkout flow" },
+      {
+        kind: "say",
+        text: "The checkout path resolves the cart, applies the promo, then creates the order.",
+      },
+    ] satisfies readonly TranscriptLine[],
+  },
+  {
+    id: "cart",
+    project: "storefront",
+    title: "Summarize checkout cart integration",
+    lines: [
+      { kind: "step", text: "Explored the cart integration" },
+      {
+        kind: "say",
+        text: "The cart owns totals; checkout posts the resolved values.",
+      },
+    ] satisfies readonly TranscriptLine[],
+  },
+  {
+    id: "release",
+    project: "storefront",
+    title: "Cut the 1.4 release notes",
+    lines: [
+      { kind: "step", text: "Read CHANGELOG.md" },
+      {
+        kind: "say",
+        text: "The release notes now lead with checkout reliability and the promo fix.",
+      },
+    ] satisfies readonly TranscriptLine[],
+  },
+  {
+    id: "validation",
+    project: "checkout-api",
+    title: "Describe order endpoint validation",
+    lines: [
+      { kind: "step", text: "Read routes/orders.ts" },
+      {
+        kind: "say",
+        text: "The endpoint validates the request before it writes the order.",
+      },
+    ] satisfies readonly TranscriptLine[],
+  },
+  {
+    id: "route",
+    project: "checkout-api",
+    title: "Summarize service route",
+    lines: [
+      { kind: "step", text: "Read the route" },
+      {
+        kind: "say",
+        text: "One POST validates the cart and returns the created order.",
+      },
+    ] satisfies readonly TranscriptLine[],
+  },
 ] as const;
 
-/** What the built panel is for: every thread that stopped to ask you
- *  something, in one list. */
-const BUILD_QUEUE = [
-  { title: "Audit promo code coverage", ask: "Stack or replace?" },
-  { title: "Port pricing to TypeScript", ask: "Strict null checks?" },
-  { title: "Trace order checkout flow", ask: "Include tax lines?" },
-  { title: "Add Apple Pay to checkout", ask: "Sandbox or live keys?" },
-  { title: "Retire the legacy cart cookie", ask: "Migrate or drop sessions?" },
-  { title: "Split the order confirmation", ask: "One email or two?" },
-] as const;
+type BuildPanelKey = "extensions" | "automations" | "tasks";
+
+const BUILD_PANEL_ROWS = {
+  extensions: [
+    { id: "plugins-browse", meta: "Plugins", title: "Browse plugins" },
+    { id: "plugins-installed", meta: "Plugins", title: "Installed plugins" },
+    { id: "skills-browse", meta: "Skills", title: "Browse skills" },
+    { id: "skills-library", meta: "Skills", title: "My skills" },
+  ],
+  automations: [
+    { id: "automations-installed", meta: "Automations", title: "Installed" },
+    { id: "automations-browse", meta: "Automations", title: "Browse" },
+  ],
+  tasks: [
+    { id: "task-audit", meta: "Todo", title: "Audit promo code coverage" },
+    {
+      id: "task-checkout",
+      meta: "In Progress",
+      title: "Trace order checkout flow",
+    },
+    {
+      id: "task-release",
+      meta: "In Review",
+      title: "Cut the 1.4 release notes",
+    },
+  ],
+} as const;
+
+const BUILD_PANEL_DESCRIPTIONS: Record<BuildPanelKey, string | null> = {
+  extensions: null,
+  automations: "Schedule recurring and one-shot agent or script work.",
+  tasks:
+    "Plan and track work in BB, delegate tasks to agents, and keep task context connected to worker threads.",
+};
 
 function BuildDemo() {
-  const { ref, stage } = useLoopStage(BUILD_BEATS, BUILD_RESET);
-  const settled = stage >= BUILD_BEATS.length;
-  const asked = stage >= 1 || settled;
-  const steps = settled ? BUILD_STEPS.length : Math.max(0, stage - 1);
-  const navOn = stage >= 7 || settled;
-  const panelOn = stage >= 8 || settled;
-  const done = stage >= 9 || settled;
+  const [activeThreadId, setActiveThreadId] = useState("build");
+  const [activePanel, setActivePanel] = useState<BuildPanelKey>("tasks");
+  const [selectedPanelRow, setSelectedPanelRow] = useState("task-audit");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const activeThread =
+    activeThreadId === BUILD_NEW_THREAD.id
+      ? BUILD_NEW_THREAD
+      : (BUILD_THREADS.find((thread) => thread.id === activeThreadId) ??
+        BUILD_THREADS[0]);
+  const filteredThreads = BUILD_THREADS.filter((thread) =>
+    thread.title.toLowerCase().includes(query.trim().toLowerCase()),
+  );
+  const panelRows = BUILD_PANEL_ROWS[activePanel];
+  const panelDescription = BUILD_PANEL_DESCRIPTIONS[activePanel];
+
   return (
-    <div className="build-demo" ref={ref} aria-hidden>
+    <div
+      className="build-demo"
+      role="group"
+      aria-label="A bb thread beside the built-in Tasks plugin"
+    >
       <div className="dwin-bar">
-        <span className="dwin-title">
-          {asked ? BUILD_PROMPT : "New thread"}
-        </span>
-        <span className={done ? "gang-commit armed" : "gang-commit"}>
+        <span className="dwin-title">{activeThread.title}</span>
+        <button type="button" className="gang-commit" disabled>
           Commit
           <ChevronDown className="gang-commit-chev" />
-        </span>
+        </button>
       </div>
       <div className="gang-body">
         <div className="gang-side">
           <div className="side-row-new">
-            <span className="side-act">
+            <button
+              type="button"
+              className={
+                activeThread.id === BUILD_NEW_THREAD.id
+                  ? "side-act active-act"
+                  : "side-act"
+              }
+              aria-pressed={activeThread.id === BUILD_NEW_THREAD.id}
+              onClick={() => setActiveThreadId(BUILD_NEW_THREAD.id)}
+            >
               <NewThreadIcon className="sa-ic" />
               New thread
-            </span>
-            <span className="side-search">
+            </button>
+            <button
+              type="button"
+              className="side-search"
+              aria-label="Search threads"
+              aria-expanded={searchOpen}
+              onClick={() => setSearchOpen((current) => !current)}
+            >
               <SearchGlyph className="sa-ic" />
-            </span>
+            </button>
           </div>
-          <span className="side-act">
+          {searchOpen ? (
+            <input
+              className="build-search"
+              aria-label="Search threads"
+              value={query}
+              onChange={(event) => setQuery(event.currentTarget.value)}
+              placeholder="Search threads"
+            />
+          ) : null}
+          <button
+            type="button"
+            className={
+              activePanel === "extensions" ? "side-act active-act" : "side-act"
+            }
+            aria-pressed={activePanel === "extensions"}
+            onClick={() => {
+              setActivePanel("extensions");
+              setSelectedPanelRow("plugins-browse");
+            }}
+          >
             <ToolboxGlyph className="sa-ic" />
             Extensions
-          </span>
-          <span className="side-act">
+          </button>
+          <button
+            type="button"
+            className={
+              activePanel === "automations" ? "side-act active-act" : "side-act"
+            }
+            aria-pressed={activePanel === "automations"}
+            onClick={() => {
+              setActivePanel("automations");
+              setSelectedPanelRow("automations-installed");
+            }}
+          >
             <ClockIcon className="sa-ic" />
             Automations
-          </span>
-          <span className="side-act">
+          </button>
+          <button
+            type="button"
+            className={
+              activePanel === "tasks" ? "side-act active-act" : "side-act"
+            }
+            aria-pressed={activePanel === "tasks"}
+            onClick={() => {
+              setActivePanel("tasks");
+              setSelectedPanelRow("task-audit");
+            }}
+          >
             <ChecklistGlyph className="sa-ic" />
             Tasks
-          </span>
-          {/* The payoff: a plugin that adds a panel adds a nav row, and the
-              row arrives while you are still reading the thread that asked
-              for it. Space is reserved so the section never grows. */}
-          {navOn ? (
-            <span
-              className={
-                panelOn
-                  ? "side-act build-nav active-act"
-                  : "side-act build-nav"
-              }
-            >
-              <PanelIcon className="sa-ic" />
-              Review queue
-            </span>
-          ) : null}
-          <span className="sub-group gang-gap">storefront</span>
-          <div className="sub-row gang-row is-open">
-            <ClaudeIcon className="gang-pv" />
-            <span className="sub-title">
-              {asked ? BUILD_PROMPT : "New thread"}
-            </span>
-            {done ? null : <DemoSpinner />}
-          </div>
-          <div className="sub-row gang-row">
-            <OpenAiIcon className="gang-pv" />
-            <span className="sub-title">Audit promo code coverage</span>
-            <i className="sub-dot" />
-          </div>
-          <div className="sub-row gang-row">
-            <CursorIcon className="gang-pv" />
-            <span className="sub-title">Trace order checkout flow</span>
-            <i className="sub-dot" />
-          </div>
-          <div className="sub-row gang-row">
-            <GrokIcon className="gang-pv" />
-            <span className="sub-title">Summarize checkout cart integration</span>
-            <i className="sub-dot" />
-          </div>
-          <div className="sub-row gang-row">
-            <PiIcon className="gang-pv" />
-            <span className="sub-title">Cut the 1.4 release notes</span>
-            <i className="sub-dot" />
-          </div>
-          <span className="sub-group gang-gap">checkout-api</span>
-          <div className="sub-row gang-row">
-            <OmpIcon className="gang-pv" />
-            <span className="sub-title">Describe order endpoint validation</span>
-            <i className="sub-dot" />
-          </div>
-          <div className="sub-row gang-row">
-            <OpencodeIcon className="gang-pv" />
-            <span className="sub-title">Summarize service route</span>
-            <i className="sub-dot" />
-          </div>
+          </button>
+          {["storefront", "checkout-api"].map((project) => {
+            const projectThreads = filteredThreads.filter(
+              (thread) => thread.project === project,
+            );
+            if (projectThreads.length === 0) return null;
+            return (
+              <div className="build-thread-group" key={project}>
+                <span className="sub-group gang-gap">{project}</span>
+                {projectThreads.map((thread) => (
+                  <a
+                    key={thread.id}
+                    href={`#build-${thread.id}`}
+                    className={
+                      activeThread.id === thread.id
+                        ? "sub-row gang-row is-open"
+                        : "sub-row gang-row"
+                    }
+                    aria-current={
+                      activeThread.id === thread.id ? "page" : undefined
+                    }
+                    aria-label={`Open ${thread.title}`}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      setActiveThreadId(thread.id);
+                    }}
+                  >
+                    <span className="sub-title">{thread.title}</span>
+                    {activeThread.id === thread.id ? null : (
+                      <i className="sub-dot" aria-hidden />
+                    )}
+                  </a>
+                ))}
+              </div>
+            );
+          })}
         </div>
-        <div className="gang-thread">
-          <div className="gang-feed">
-            {/* A thread opens with what you asked for. It is the whole
-                premise of the section, so the pane says it out loud
-                instead of leaving the title to carry it. */}
-            <p className={asked ? "gang-you in" : "gang-you out"}>
-              {BUILD_PROMPT}
-            </p>
-            {BUILD_STEPS.map((s, i) => (
-              <p
-                key={s.text}
-                className={steps > i ? "gang-step in" : "gang-step out"}
-              >
-                {s.text}
-              </p>
+        <div className="gang-thread" id={`build-${activeThread.id}`}>
+          <div className="gang-feed" aria-live="polite">
+            {activeThread.lines.map((line) => (
+              <TranscriptLineView key={line.text} line={line} />
             ))}
-            <p className={done ? "gang-say in" : "gang-say out"}>
-              One manifest registers three surfaces: a panel that renders the
-              queue, a <code>bb review</code> command that prints the same list
-              to a shell, and a skill so any agent here checks it before asking
-              you something twice.
-            </p>
-            <p className={done ? "gang-say in" : "gang-say out"}>
-              The panel is live in your sidebar. bb building bb.
-            </p>
           </div>
-          <div className="gang-pr">
+          <div className="gang-pr" aria-hidden>
             <GitMergeIcon className="gang-pr-ic" />
-            <span className="gang-pr-strong">Uncommitted</span>
-            <span className="gang-pr-dim">· 6 files,</span>
-            <em className="review-add">+214</em>
-            <em className="review-del">-3</em>
-            <ChevronDown className="gang-commit-chev" />
+            <span className="gang-pr-strong">Uncommitted changes</span>
           </div>
           <div className="gang-composer">
-            <span className="gang-ph">Ask a follow-up</span>
-            <span className="gang-send">
+            <label className="sr-only" htmlFor="build-follow-up">
+              Ask a follow-up
+            </label>
+            <input id="build-follow-up" placeholder="Ask a follow-up" />
+            <button
+              type="button"
+              className="gang-send"
+              aria-label="Send"
+              disabled
+            >
               <SendIcon className="gang-send-ic" />
-            </span>
+            </button>
           </div>
-          <div className="gang-ctx">
+          <div className="gang-ctx" aria-hidden>
             <span className="gang-ctx-item">
               <ClaudeIcon className="gang-ctx-ic" />
               Opus 4.8
@@ -3402,378 +3717,358 @@ function BuildDemo() {
               Worktree
               <ChevronDown className="gang-commit-chev" />
             </span>
-            <span className="gang-ctx-item gang-ctx-branch">
-              <GitBranchIcon className="gang-ctx-ic" />
-              bb/review-queue-panel
-            </span>
-            {done ? null : <Spinner className="gang-ctx-spin" />}
           </div>
         </div>
-        {/* The plugin, running. Its column is in the grid from the first
-            frame — only the contents move — so opening it costs the section
-            no height and reflows nothing. */}
-        <div className={panelOn ? "build-panel in" : "build-panel"}>
+        <div
+          className="build-panel"
+          role="region"
+          aria-label={`${activePanel} panel`}
+        >
           <div className="build-panel-bar">
-            <PanelIcon className="build-panel-ic" />
-            Review queue
+            {activePanel === "tasks" ? (
+              <ChecklistGlyph className="build-panel-ic" />
+            ) : activePanel === "automations" ? (
+              <ClockIcon className="build-panel-ic" />
+            ) : (
+              <ToolboxGlyph className="build-panel-ic" />
+            )}
+            {activePanel === "tasks"
+              ? "Tasks"
+              : activePanel === "automations"
+                ? "Automations"
+                : "Extensions"}
           </div>
           <ul className="build-queue">
-            {BUILD_QUEUE.map((q) => (
-              <li key={q.title}>
-                <HugeiconsIcon
-                  icon={MessageQuestionIcon}
-                  className="build-queue-ic"
-                />
-                <span className="build-queue-body">
-                  <span className="build-queue-title">{q.title}</span>
-                  <span className="build-queue-ask">{q.ask}</span>
-                </span>
+            {panelRows.map((row) => (
+              <li key={row.id}>
+                <button
+                  type="button"
+                  className="build-queue-row"
+                  aria-pressed={selectedPanelRow === row.id}
+                  onClick={() => setSelectedPanelRow(row.id)}
+                >
+                  <span className="build-queue-ask">{row.meta}</span>
+                  <span className="build-queue-title">{row.title}</span>
+                </button>
               </li>
             ))}
           </ul>
-          <span className="build-queue-foot">
-            {BUILD_QUEUE.length} threads waiting on you
-          </span>
+          {panelDescription ? (
+            <p className="build-queue-foot">{panelDescription}</p>
+          ) : null}
         </div>
       </div>
     </div>
   );
 }
 
-/* ────────────────────────────────────────────────
- * GANG STORYBOARD (loops while in view)
- *
- *      0ms   four threads working across three projects
- *    700ms   the read lands in the open transcript
- *   1350ms   the finding lands
- *   2000ms   the gap is named; the claude thread completes, its child
- *            appears nested
- *   2650ms   the edit lands; the pi thread completes
- *   3300ms   the suite starts
- *   3950ms   "Ran 32 tests" lands
- *   4600ms   the suite passes; the open codex thread completes last,
- *            on screen
- *  12000ms   loop restarts
- *
- * The settled office used to hold only ~40% of the loop, so most captures
- * caught a half-finished room. The work now runs at the same pace it reads
- * at and then rests: settled for roughly two thirds.
- *   rest     everything settled — also the reduced-motion state
- * ──────────────────────────────────────────────── */
-/* Opening a rail row shows that agent's own thread. Without this the
- * section asserts eight agents and only ever proves one — every row led to
- * the same transcript. Only the finished threads carry one; the ones still
- * working stay as status, which is what the app shows too. */
-const GANG_THREADS: Record<
-  string,
-  { branch: string; files: string; add: string; del: string; lines: readonly { kind: string; text: string }[] }
-> = {
-  "trace-order-checkout-flow": {
+type GangThread = {
+  id: string;
+  project: "storefront" | "checkout-api" | "mobile";
+  title: string;
+  branch: string;
+  depth?: 1;
+  status: "done" | "running" | "waiting";
+  lines: readonly TranscriptLine[];
+};
+
+const GANG_THREADS: readonly GangThread[] = [
+  {
+    id: "audit-promo",
+    project: "storefront",
+    title: "Audit promo code coverage",
+    branch: "bb/audit-promo-coverage",
+    status: "done",
+    lines: [
+      { kind: "step", text: "Read promo.ts, cart.ts, checkout.ts" },
+      {
+        kind: "say",
+        text: "The suite covers percent and fixed codes, but not a second code on an already-discounted cart.",
+      },
+      { kind: "step", text: "Explored the promo call sites" },
+      {
+        kind: "say",
+        text: "PERCENT_CODES also needs an own-property check so a prototype key cannot become a discount rate.",
+      },
+      { kind: "step", text: "Edited promo.test.ts" },
+      {
+        kind: "say",
+        text: "The promo suite passes with stacked-code, prototype-key, empty-cart, and rounding coverage.",
+      },
+    ],
+  },
+  {
+    id: "trace-checkout",
+    project: "storefront",
+    title: "Trace order checkout flow",
     branch: "bb/trace-order-checkout",
-    files: "3 files",
-    add: "+61",
-    del: "-4",
+    status: "done",
     lines: [
       { kind: "step", text: "Read checkout.ts, cart.ts, tax.ts" },
       {
         kind: "say",
-        text: "Cart totals resolve before promo codes apply, so the discount always sees a settled subtotal rather than a running one.",
+        text: "Cart totals resolve before promo codes apply, so the discount sees a settled subtotal.",
       },
-      { kind: "step", text: "Spawned 1 subagent" },
+      { kind: "step", text: "Spawned a subagent" },
       {
         kind: "say",
-        text: "Confirm the checkout totals came back clean: express checkout is the only path that builds its own total, and it calls promo after tax.",
-      },
-      {
-        kind: "say",
-        text: "Traced. The order is cart, then promo, then tax, and I left a comment at the one call site that could reorder them.",
+        text: "The order is cart, then promo, then tax. Express checkout is the only path that assembles its own total.",
       },
     ],
   },
-  "summarize-service-route": {
+  {
+    id: "confirm-totals",
+    project: "storefront",
+    title: "Confirm the checkout totals",
+    branch: "bb/confirm-checkout-totals",
+    depth: 1,
+    status: "running",
+    lines: [
+      { kind: "step", text: "Read express-checkout.ts" },
+      {
+        kind: "say",
+        text: "Express checkout applies promo after tax. I am tracing the shared total before reporting back.",
+      },
+    ],
+  },
+  {
+    id: "promo-impact",
+    project: "storefront",
+    title: "Explain promo checkout impact",
+    branch: "bb/explain-promo-impact",
+    status: "waiting",
+    lines: [
+      { kind: "step", text: "Read checkout.ts" },
+      {
+        kind: "say",
+        text: "Should the explanation include express checkout, or stay with the standard cart path?",
+      },
+    ],
+  },
+  {
+    id: "cart-integration",
+    project: "storefront",
+    title: "Summarize checkout cart integration",
+    branch: "bb/summarize-cart-integration",
+    status: "done",
+    lines: [
+      { kind: "step", text: "Explored the cart integration" },
+      {
+        kind: "say",
+        text: "The cart owns totals; checkout posts the resolved values and reads the order back for confirmation.",
+      },
+    ],
+  },
+  {
+    id: "release-notes",
+    project: "storefront",
+    title: "Cut the 1.4 release notes",
+    branch: "bb/release-notes",
+    status: "done",
+    lines: [
+      { kind: "step", text: "Read CHANGELOG.md" },
+      {
+        kind: "say",
+        text: "The release notes now lead with checkout reliability and the promo fix.",
+      },
+    ],
+  },
+  {
+    id: "service-route",
+    project: "checkout-api",
+    title: "Summarize service route",
     branch: "bb/summarize-service-route",
-    files: "1 file",
-    add: "+24",
-    del: "0",
+    status: "done",
     lines: [
       { kind: "step", text: "Read routes/orders.ts" },
       {
         kind: "say",
-        text: "One POST handler doing four jobs: validation, idempotency, the write, and the webhook fan-out. Each has its own failure mode and they share one try block.",
+        text: "One POST owns validation, idempotency, the write, and webhook fan-out.",
       },
       { kind: "step", text: "Wrote docs/orders-route.md" },
       {
         kind: "say",
-        text: "Summarised, with the idempotency key's lifetime called out — it is the part that surprises people reading this route for the first time.",
+        text: "The summary calls out the idempotency key lifetime and each failure boundary.",
       },
     ],
   },
-};
-
-const GANG_BEATS = [700, 1350, 2000, 2650, 3300, 3950, 4600];
-const GANG_RESET = 12000;
-
-const GANG_STEPS = [
-  { kind: "step", text: "Read promo.ts, cart.ts, checkout.ts" },
   {
-    kind: "say",
-    text: "applyPromo handles percent and fixed codes, and the suite covers both. What nothing exercises is two codes on the same cart — the branch where a second code lands on an already-discounted subtotal.",
-  },
-  { kind: "step", text: "Explored 3 files" },
-  {
-    kind: "say",
-    text: "There is a second gap underneath it. PERCENT_CODES is read with a bare index, so a code that collides with a prototype key returns a function instead of a rate and the subtotal comes back NaN.",
-  },
-  { kind: "step", text: "Edited promo.test.ts" },
-  {
-    kind: "say",
-    text: "Added four cases: two codes on one cart, a code that collides with a prototype key, an empty cart, and a rounding boundary at a half cent.",
-  },
-  { kind: "step", text: "Ran 32 tests" },
-  {
-    kind: "say",
-    text: "All 32 passing. Promo coverage holds, and the prototype-key path is pinned so it cannot regress quietly.",
-  },
-] as const;
-
-/* Each demo tells its story once, the first time it scrolls into view, and
-   then stays in the state the story ended in. It used to loop forever, which
-   made the page restless and meant the surface was never yours — something
-   was always about to overwrite it.
- 
-   The rest state is the complete state: `stage` starts at beats.length, the
-   run steps 0 -> beats.length, and the final beat lands back where it began.
-   That is what makes the no-JS, reduced-motion and single-screenshot renders
-   correct for free rather than as a special case, and it is what lets the
-   demo become an operable surface once the animation is done. */
-function useLoopStage(beats: number[], resetAt: number) {
-  void resetAt;
-  const ref = useRef<HTMLDivElement>(null);
-  const [stage, setStage] = useState(beats.length);
-  const timers = useRef<number[]>([]);
-  const played = useRef(false);
-
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (played.current || !entry?.isIntersecting) return;
-        played.current = true;
-        observer.disconnect();
-        setStage(0);
-        timers.current = beats.map((at, i) =>
-          window.setTimeout(() => setStage(i + 1), at),
-        );
+    id: "endpoint-validation",
+    project: "checkout-api",
+    title: "Describe order endpoint validation",
+    branch: "bb/order-validation",
+    status: "done",
+    lines: [
+      { kind: "step", text: "Read the order schema" },
+      {
+        kind: "say",
+        text: "The route rejects an empty cart before it writes and validates each line before pricing.",
       },
-      { rootMargin: "0px 0px -18% 0px" },
-    );
-    observer.observe(el);
-    return () => {
-      observer.disconnect();
-      timers.current.forEach(clearTimeout);
-      timers.current = [];
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return { ref, stage };
-}
+    ],
+  },
+  {
+    id: "order-errors",
+    project: "checkout-api",
+    title: "Explain orders error handling",
+    branch: "bb/order-errors",
+    status: "done",
+    lines: [
+      { kind: "step", text: "Read the error branches" },
+      {
+        kind: "say",
+        text: "Validation errors return before the write; downstream failures share the route's guarded operation.",
+      },
+    ],
+  },
+  {
+    id: "readme",
+    project: "mobile",
+    title: "Suggest README improvement",
+    branch: "bb/readme-improvement",
+    status: "running",
+    lines: [
+      { kind: "step", text: "Read README.md" },
+      {
+        kind: "say",
+        text: "The setup guide names the command but not the expected first screen. I am adding that checkpoint.",
+      },
+    ],
+  },
+  {
+    id: "package-scripts",
+    project: "mobile",
+    title: "Explain package scripts",
+    branch: "bb/explain-package-scripts",
+    status: "done",
+    lines: [
+      { kind: "step", text: "Read package.json" },
+      {
+        kind: "say",
+        text: "The scripts separate local development, verification, and the release build.",
+      },
+    ],
+  },
+];
 
 function GangDemo() {
-  const { ref, stage } = useLoopStage(GANG_BEATS, GANG_RESET);
-  const settled = stage >= GANG_BEATS.length;
-  const shown = settled ? GANG_STEPS.length : Math.min(stage + 1, GANG_STEPS.length);
-  // null = the codex thread the loop is playing; a key opens that agent's own.
-  const [openKey, setOpenKey] = useState<string | null>(null);
-  const open = openKey ? GANG_THREADS[openKey] : null;
+  const [openId, setOpenId] = useState("audit-promo");
+  const open =
+    GANG_THREADS.find((thread) => thread.id === openId) ?? GANG_THREADS[0];
+
+  const renderThreadRow = (thread: GangThread) => {
+    const control = (
+      <a
+        key={thread.id}
+        href={`#gang-${thread.id}`}
+        className={
+          "sub-row gang-row" +
+          (thread.depth ? " gang-kid" : "") +
+          (open.id === thread.id ? " is-open" : "")
+        }
+        aria-current={open.id === thread.id ? "page" : undefined}
+        aria-label={`Open ${thread.title}`}
+        onClick={(event) => {
+          event.preventDefault();
+          setOpenId(thread.id);
+        }}
+      >
+        <span className="sub-title">{thread.title}</span>
+        {open.id === thread.id ? null : thread.status === "waiting" ? (
+          <HugeiconsIcon
+            icon={MessageQuestionIcon}
+            className="gang-wait"
+            aria-hidden
+          />
+        ) : thread.status === "running" ? (
+          <DemoSpinner />
+        ) : (
+          <i className="sub-dot" aria-hidden />
+        )}
+      </a>
+    );
+    if (!thread.depth) return control;
+    return (
+      <div className="sub-kids" key={thread.id}>
+        <i className="sub-guide" aria-hidden />
+        {control}
+      </div>
+    );
+  };
+
   return (
-    /* Not aria-hidden. Three of the thread rows here are real buttons that
-       swap the pane, and they were sitting inside a hidden root — reachable
-       by keyboard, announced as nothing. A surface with working controls has
-       to be a surface, so the window is a labelled group and the parts of it
-       that are only scenery are hidden individually below. */
     <div
       className="gang-demo"
-      ref={ref}
       role="group"
       aria-label="A bb window with one thread open and others running"
     >
       <div className="dwin-bar">
-        <span className="dwin-title">
-          {openKey === "trace-order-checkout-flow"
-            ? "Trace order checkout flow"
-            : openKey === "summarize-service-route"
-              ? "Summarize service route"
-              : "Audit promo code coverage"}
-        </span>
-        <span
-          className={
-            stage >= 7 || settled ? "gang-commit armed" : "gang-commit"
-          }
-        >
+        <span className="dwin-title">{open.title}</span>
+        <button type="button" className="gang-commit" disabled>
           Commit
           <ChevronDown className="gang-commit-chev" />
-        </span>
+        </button>
       </div>
       <div className="gang-body">
-      <div className="gang-side">
-        <div className="sub-top" aria-hidden>
-          <span className="sub-newthread">
-            <NewThreadIcon className="sub-top-ic" />
-            New thread
-          </span>
-          <SearchGlyph className="sub-top-ic sub-search" />
+        <div className="gang-side">
+          <div className="sub-top" aria-hidden>
+            <span className="sub-newthread">
+              <NewThreadIcon className="sub-top-ic" />
+              New thread
+            </span>
+            <SearchGlyph className="sub-top-ic sub-search" />
+          </div>
+          {(["storefront", "checkout-api", "mobile"] as const).map(
+            (project) => (
+              <div className="gang-project" key={project}>
+                <span className="sub-group">{project}</span>
+                {GANG_THREADS.filter(
+                  (thread) => thread.project === project,
+                ).map(renderThreadRow)}
+              </div>
+            ),
+          )}
         </div>
-        <span className="sub-group">storefront</span>
-        {/* Explicit labels: the provider icons render a <title> and the icon
-            components only forward className, so the computed name would be
-            "OpenAIAudit promo code coverage". A control should say what
-            pressing it does anyway. */}
-        <button
-          type="button"
-          className={openKey ? "sub-row gang-row" : "sub-row gang-row is-open"}
-          aria-pressed={!openKey}
-          aria-label="Show the thread: Audit promo code coverage"
-          onClick={() => withViewTransition(() => setOpenKey(null))}
-        >
-          <OpenAiIcon className="gang-pv" />
-          <span className="sub-title">Audit promo code coverage</span>
-          {stage >= 7 || settled ? null : <DemoSpinner />}
-        </button>
-        <button
-          type="button"
-          className={
-            openKey === "trace-order-checkout-flow"
-              ? "sub-row gang-row is-open"
-              : "sub-row gang-row"
-          }
-          aria-pressed={openKey === "trace-order-checkout-flow"}
-          aria-label="Show the thread: Trace order checkout flow"
-          onClick={() =>
-            withViewTransition(() => setOpenKey("trace-order-checkout-flow"))
-          }
-        >
-          <ClaudeIcon className="gang-pv" />
-          <span className="sub-title">Trace order checkout flow</span>
-          {stage >= 4 || settled ? <i className="sub-dot" /> : <DemoSpinner />}
-        </button>
-        {/* One hairline for the whole child group, as the real rail draws it. */}
-        <div className="sub-kids">
-          <i className="sub-guide" aria-hidden />
-          <div
-            className={
-              stage >= 3 || settled
-                ? "sub-row gang-row gang-kid in"
-                : "sub-row gang-row gang-kid"
-            }
-          >
-            <ClaudeIcon className="gang-pv" />
-            <span className="sub-title">Confirm the checkout totals</span>
-            <DemoSpinner />
+        <div className="gang-thread" id={`gang-${open.id}`}>
+          <div className="gang-feed" aria-live="polite">
+            {open.lines.map((line) => (
+              <TranscriptLineView key={line.text} line={line} />
+            ))}
+          </div>
+          <div className="gang-pr" aria-hidden>
+            <GitMergeIcon className="gang-pr-ic" />
+            <span className="gang-pr-strong">Uncommitted changes</span>
+          </div>
+          <div className="gang-composer">
+            <label className="sr-only" htmlFor="gang-follow-up">
+              Ask a follow-up
+            </label>
+            <input id="gang-follow-up" placeholder="Ask a follow-up" />
+            <button
+              type="button"
+              className="gang-send"
+              aria-label="Send"
+              disabled
+            >
+              <SendIcon className="gang-send-ic" />
+            </button>
+          </div>
+          <div className="gang-ctx" aria-hidden>
+            <span className="gang-ctx-item">
+              <OpenAiIcon className="gang-ctx-ic" />
+              Codex
+              <ChevronDown className="gang-commit-chev" />
+            </span>
+            <span className="gang-ctx-item">
+              <FolderGitIcon className="gang-ctx-ic" />
+              Worktree
+              <ChevronDown className="gang-commit-chev" />
+            </span>
+            <span className="gang-ctx-item gang-ctx-branch">
+              <GitBranchIcon className="gang-ctx-ic" />
+              {open.branch}
+            </span>
           </div>
         </div>
-        <div className="sub-row gang-row">
-          <CursorIcon className="gang-pv" />
-          <span className="sub-title">Explain promo checkout impact</span>
-          <HugeiconsIcon icon={MessageQuestionIcon} className="gang-wait" />
-        </div>
-        <div className="sub-row gang-row">
-          <GrokIcon className="gang-pv" />
-          <span className="sub-title">Summarize checkout cart integration</span>
-          <i className="sub-dot" />
-        </div>
-        <div className="sub-row gang-row">
-          <HermesAgentIcon className="gang-pv" />
-          <span className="sub-title">Cut the 1.4 release notes</span>
-          <i className="sub-dot" />
-        </div>
-        <span className="sub-group gang-gap">checkout-api</span>
-        <button
-          type="button"
-          className={
-            openKey === "summarize-service-route"
-              ? "sub-row gang-row is-open"
-              : "sub-row gang-row"
-          }
-          aria-pressed={openKey === "summarize-service-route"}
-          aria-label="Show the thread: Summarize service route"
-          onClick={() =>
-            withViewTransition(() => setOpenKey("summarize-service-route"))
-          }
-        >
-          <PiIcon className="gang-pv" />
-          <span className="sub-title">Summarize service route</span>
-          {stage >= 3 || settled ? <i className="sub-dot" /> : <DemoSpinner />}
-        </button>
-        <div className="sub-row gang-row">
-          <OmpIcon className="gang-pv" />
-          <span className="sub-title">Describe order endpoint validation</span>
-          <i className="sub-dot" />
-        </div>
-        <div className="sub-row gang-row">
-          <CursorIcon className="gang-pv" />
-          <span className="sub-title">Explain orders error handling</span>
-          <i className="sub-dot" />
-        </div>
-        <span className="sub-group gang-gap">mobile</span>
-        <div className="sub-row gang-row">
-          <OpencodeIcon className="gang-pv" />
-          <span className="sub-title">Suggest README improvement</span>
-          <DemoSpinner />
-        </div>
-        <div className="sub-row gang-row">
-          <ClaudeIcon className="gang-pv" />
-          <span className="sub-title">Explain package scripts</span>
-          <i className="sub-dot" />
-        </div>
-      </div>
-      <div className="gang-thread" style={{ viewTransitionName: "gang-pane" }}>
-        <div className="gang-feed" key={openKey ?? "codex"}>
-          {(open ? open.lines : GANG_STEPS.slice(0, shown)).map((s, i) => (
-            <p
-              key={s.text}
-              className={s.kind === "step" ? "gang-step in" : "gang-say in"}
-              style={{ animationDelay: `${i * 40}ms` }}
-            >
-              {s.text}
-            </p>
-          ))}
-        </div>
-        <div className="gang-pr" aria-hidden>
-          <GitMergeIcon className="gang-pr-ic" />
-          <span className="gang-pr-strong">Uncommitted</span>
-          <span className="gang-pr-dim">· {open ? open.files : "2 files"},</span>
-          <em className="review-add">{open ? open.add : "+38"}</em>
-          <em className="review-del">{open ? open.del : "-2"}</em>
-          <ChevronDown className="gang-commit-chev" />
-        </div>
-        <div className="gang-composer" aria-hidden>
-          <span className="gang-ph">Ask a follow-up</span>
-          <span className="gang-send">
-            <SendIcon className="gang-send-ic" />
-          </span>
-        </div>
-        <div className="gang-ctx" aria-hidden>
-          <span className="gang-ctx-item">
-            <OpenAiIcon className="gang-ctx-ic" />
-            Codex
-            <ChevronDown className="gang-commit-chev" />
-          </span>
-          <span className="gang-ctx-item">
-            <FolderGitIcon className="gang-ctx-ic" />
-            Worktree
-            <ChevronDown className="gang-commit-chev" />
-          </span>
-          <span className="gang-ctx-item gang-ctx-branch">
-            <GitBranchIcon className="gang-ctx-ic" />
-            {open ? open.branch : "bb/audit-promo-coverage"}
-          </span>
-          {settled ? null : <Spinner className="gang-ctx-spin" />}
-        </div>
-      </div>
       </div>
     </div>
   );
