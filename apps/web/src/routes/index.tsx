@@ -3337,47 +3337,36 @@ function SpawnDemo() {
 function PRFeed() {
   return (
     <div className="pr-feed rail" aria-label="Recently merged pull requests">
-      <div className="pr-feed-clip">
-        <div className="pr-feed-track" aria-hidden={undefined}>
-        {[0, 1].map((copy) => (
-          <ul key={copy} aria-hidden={copy === 1 || undefined}>
-            {PR_FEED.map((pr, i) => {
-              const url =
-                CONTRIBUTOR_AVATARS[`../assets/contributors/${pr.login}.webp`];
-              return (
-                <li key={`${copy}-${i}`}>
-                  <a
-                    href={pr.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    tabIndex={copy === 1 ? -1 : undefined}
-                  >
-                    {url ? (
-                      <img
-                        src={url}
-                        alt=""
-                        width={22}
-                        height={22}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <span className="pr-avatar-fallback" aria-hidden>
-                        {pr.login.slice(0, 1)}
-                      </span>
-                    )}
-                    <span className="pr-title">{pr.title}</span>
-                    <span className="pr-meta">
-                      #{pr.number} · {pr.date}
-                    </span>
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        ))}
-        </div>
-      </div>
+      <ul>
+        {PR_FEED.map((pr) => {
+          const url =
+            CONTRIBUTOR_AVATARS[`../assets/contributors/${pr.login}.webp`];
+          return (
+            <li key={pr.number}>
+              <a href={pr.url} target="_blank" rel="noreferrer">
+                {url ? (
+                  <img
+                    src={url}
+                    alt=""
+                    width={22}
+                    height={22}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <span className="pr-avatar-fallback" aria-hidden>
+                    {pr.login.slice(0, 1)}
+                  </span>
+                )}
+                <span className="pr-title">{pr.title}</span>
+                <span className="pr-meta">
+                  #{pr.number} · {pr.date}
+                </span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

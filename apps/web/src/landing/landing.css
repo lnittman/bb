@@ -4188,55 +4188,28 @@ button.sub-row:focus-visible {
   margin-top: clamp(14px, 1.6vw, 22px);
   border-radius: var(--r-tile);
   background: color-mix(in oklab, var(--ink-strong) 6%, var(--canvas));
-  padding: 10px 0;
-  height: 348px;
+  padding: 12px;
 }
 
-/* Only the scrolling list fades at its edges — the card itself stays crisp. */
-.pr-feed-clip {
-  height: 100%;
-  padding-inline: 22px;
-  overflow: hidden;
-  mask-image: linear-gradient(
-    to bottom,
-    transparent,
-    black 30px,
-    black calc(100% - 30px),
-    transparent
-  );
+/* Eighteen merged pull requests, all of them at once. This was a 46-second
+   marquee over two duplicated copies of the list, which meant about four
+   were legible at any moment and the other fourteen were a rumour. The
+   volume IS the argument in this section, so showing the whole set static
+   is both a stronger claim and the only version that survives a screenshot,
+   a prerender, or reduced motion. */
+.pr-feed ul {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2px;
 }
 
-.pr-feed-track {
-  animation: pr-scroll 46s linear infinite;
-}
-
-/* The one element on the page running an uninterrupted transform loop, so
-   the one place the compositor hint earns its memory. */
-.pr-feed-track {
-  will-change: transform;
-}
-
-.pr-feed:hover .pr-feed-track,
-.pr-feed:focus-within .pr-feed-track {
-  animation-play-state: paused;
-}
-
-/* The feed's rows are real links; a keyboard reader must be able to stop the
-   track and see where they are. */
+/* The feed's rows are real links, so the focus ring has to be visible
+   against the row's own hover tint. */
 .pr-feed li a:focus-visible {
   outline: 2px solid color-mix(in oklab, var(--ink-strong) 45%, transparent);
   outline-offset: -2px;
   border-radius: var(--r-control);
-}
-
-@keyframes pr-scroll {
-  to {
-    transform: translateY(-50%);
-  }
-}
-
-.pr-feed ul {
-  list-style: none;
 }
 
 /* The row tile is a real object: inset from the card wall, properly
@@ -4839,15 +4812,6 @@ button.sub-row:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .nav,
   .hero > * {
-    animation: none;
-  }
-
-  .bento > li {
-    transform: none;
-    transition: none;
-  }
-
-  .pr-feed-track {
     animation: none;
   }
 
