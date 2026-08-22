@@ -5692,14 +5692,18 @@ button.sub-row:focus-visible {
    ground with light strokes and dark fills; derived from `--canvas` it would
    go pale in light mode and the plates' depth ordering would invert. Same
    exception `--tg-card` takes for Telegram's own surface colour. */
-/* One box per plate. The reference nests a slate shell around a near-black
-   panel around a softer inner panel; three borders deep reads as packaging,
-   so the outer two are gone and the softer ground is the card itself, at the
-   full height the three of them used to share.
+/* One box per plate, and it follows the theme. It was a hard `#111` in both,
+   on the argument that the artwork is drawn for a near-black ground — but a
+   near-black card inside a light-mode page is a hole, so the panel takes
+   `--bg`, the app-surface token, which lands light against the shell's slate
+   in light mode and dark in dark mode.
 
-   The literal stays: this artwork is drawn with light strokes and near-black
-   fills, and derived from `--canvas` it would go pale in light mode and lose
-   its depth ordering. Same exception `--tg-card` takes for Telegram. */
+   That means the plates have to turn over with it. They are drawn as light
+   strokes over near-black fills, which is unreadable on a light ground, so in
+   light mode they invert: #08090A fills become near-white and the #D0D6E0
+   strokes become near-black, which is exactly the reference's own light-mode
+   rendering. The page already uses `grayscale(1) invert(1)` for the same
+   reason on art that cannot re-tint. */
 .cg-panel {
   height: 460px;
   flex: none;
@@ -5708,8 +5712,13 @@ button.sub-row:focus-visible {
   align-items: center;
   justify-content: center;
   border-radius: 22px;
-  background: #111;
+  background: var(--bg);
   overflow: clip;
+}
+
+/* Dark mode is the ground the artwork was drawn for, so it is left alone. */
+html:not(.dark) .cg-plate {
+  filter: invert(1);
 }
 
 .cg-plate {
