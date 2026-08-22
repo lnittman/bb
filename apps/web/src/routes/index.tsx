@@ -4196,6 +4196,105 @@ function StatNumber({ value }: { value: string }) {
   return <strong>{value}</strong>;
 }
 
+/**
+ * The closer's three plates.
+ *
+ * Supplied as finished artwork rather than derived from bb's tokens, so they
+ * are reproduced verbatim — stroke values included. They are drawn for a
+ * near-black ground with light strokes, which is why `--cg-plate` is a fixed
+ * dark literal in both themes rather than a step off `--canvas`: give this art
+ * a light ground and its depth ordering inverts. Same reasoning as
+ * `--tg-card`, which holds Telegram's own surface colour for the same reason.
+ */
+const PlateLocal = () => (
+  <svg viewBox="0 0 280 280" className="cg-plate" aria-hidden focusable="false">
+    <defs>
+      <filter id="cgLocalGlow" x="-60%" y="-60%" width="220%" height="220%">
+        <feDropShadow dx="0" dy="0" stdDeviation="16" floodColor="#08090A" />
+      </filter>
+      <filter id="cgLocalDrop" x="-60%" y="-60%" width="220%" height="220%">
+        <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#08090A" floodOpacity="0.6" />
+      </filter>
+    </defs>
+    <path d="M134.2 80.9 A13 13 0 0 1 145.8 80.9 L224.5 120.2 A6.3 6.3 0 0 1 228 125.9 L228 198.1 A6.3 6.3 0 0 1 224.5 203.8 L145.8 243.1 A13 13 0 0 1 134.2 243.1 L55.5 203.8 A6.3 6.3 0 0 1 52 198.1 L52 125.9 A6.3 6.3 0 0 1 55.5 120.2 L134.2 80.9 Z" fill="none" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" />
+    <path d="M54 123 L134.1 163 A13.2 13.2 0 0 0 145.9 163 L226 123" fill="none" stroke="#2E2E32" strokeWidth="0.5" strokeLinecap="round" />
+    <path d="M60 202L140 162" fill="none" stroke="#2E2E32" strokeWidth="0.5" strokeLinecap="round" opacity="0.9" />
+    <path d="M140 162L220 202" fill="none" stroke="#2E2E32" strokeWidth="0.5" strokeLinecap="round" opacity="0.9" />
+    <g filter="url(#cgLocalGlow)">
+      <path d="M137.2 134.4 A6.2 6.2 0 0 1 142.8 134.4 L180.3 153.2 A3 3 0 0 1 182 155.9 L182 198.1 A3 3 0 0 1 180.3 200.8 L142.8 219.6 A6.2 6.2 0 0 1 137.2 219.6 L99.7 200.8 A3 3 0 0 1 98 198.1 L98 155.9 A3 3 0 0 1 99.7 153.2 L137.2 134.4 Z" fill="#08090A" stroke="#D0D6E0" strokeWidth="0.5" strokeLinecap="round" />
+      <path d="M100 155 L137.2 173.6 A6.3 6.3 0 0 0 142.8 173.6 L180 155" fill="none" stroke="#2E2E32" strokeWidth="0.5" strokeLinecap="round" />
+    </g>
+    <g filter="url(#cgLocalDrop)">
+      <path d="M134.2 36.9 A13 13 0 0 1 145.8 36.9 L225.2 76.6 A5 5 0 0 1 228 81.1 L228 86.9 A5 5 0 0 1 225.2 91.4 L145.8 131.1 A13 13 0 0 1 134.2 131.1 L54.8 91.4 A5 5 0 0 1 52 86.9 L52 81.1 A5 5 0 0 1 54.8 76.6 L134.2 36.9 Z" fill="#08090A" stroke="#D0D6E0" strokeWidth="0.5" strokeLinecap="round" />
+    </g>
+    <path d="M54 79 L134.1 119 A13.2 13.2 0 0 0 145.9 119 L226 79" fill="none" stroke="#2E2E32" strokeWidth="0.5" strokeLinecap="round" />
+    <path d="M52 83v22" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" strokeDasharray="1 3" />
+    <path d="M228 83v22" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" strokeDasharray="1 3" />
+    <path d="M140 139v22" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" strokeDasharray="1 3" />
+  </svg>
+);
+
+const PlateStack = () => (
+  <svg viewBox="0 0 280 280" className="cg-plate" aria-hidden focusable="false">
+    <defs>
+      <filter id="cgStackGlow" x="-60%" y="-60%" width="220%" height="220%">
+        <feDropShadow dx="0" dy="0" stdDeviation="16" floodColor="#08090A" />
+      </filter>
+    </defs>
+    <g transform="translate(6 18)">
+      <path d="M40 81L40 200" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" strokeDasharray="1 3" opacity="0.6" />
+      <path d="M36.5 81L43.5 81" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" opacity="0.6" />
+      <path d="M36.5 200L43.5 200" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" opacity="0.6" />
+      <path d="M134.7 151.6 A11.8 11.8 0 0 1 145.3 151.6 L217.4 187.7 A4.6 4.6 0 0 1 220 191.9 L220 197.1 A4.6 4.6 0 0 1 217.4 201.3 L145.3 237.4 A11.8 11.8 0 0 1 134.7 237.4 L62.6 201.3 A4.6 4.6 0 0 1 60 197.1 L60 191.9 A4.6 4.6 0 0 1 62.6 187.7 L134.7 151.6 Z" fill="#08090A" stroke="#4A4A52" strokeWidth="0.5" strokeLinecap="round" />
+      <path d="M62 190 L134.6 226.3 A12 12 0 0 0 145.4 226.3 L218 190" fill="none" stroke="#26262A" strokeWidth="0.5" strokeLinecap="round" />
+      <path d="M134.7 133.6 A11.8 11.8 0 0 1 145.3 133.6 L217.4 169.7 A4.6 4.6 0 0 1 220 173.9 L220 179.1 A4.6 4.6 0 0 1 217.4 183.3 L145.3 219.4 A11.8 11.8 0 0 1 134.7 219.4 L62.6 183.3 A4.6 4.6 0 0 1 60 179.1 L60 173.9 A4.6 4.6 0 0 1 62.6 169.7 L134.7 133.6 Z" fill="#08090A" stroke="#4A4A52" strokeWidth="0.5" strokeLinecap="round" />
+      <path d="M62 172 L134.6 208.3 A12 12 0 0 0 145.4 208.3 L218 172" fill="none" stroke="#26262A" strokeWidth="0.5" strokeLinecap="round" />
+      <path d="M134.7 115.6 A11.8 11.8 0 0 1 145.3 115.6 L217.4 151.7 A4.6 4.6 0 0 1 220 155.9 L220 161.1 A4.6 4.6 0 0 1 217.4 165.3 L145.3 201.4 A11.8 11.8 0 0 1 134.7 201.4 L62.6 165.3 A4.6 4.6 0 0 1 60 161.1 L60 155.9 A4.6 4.6 0 0 1 62.6 151.7 L134.7 115.6 Z" fill="#08090A" stroke="#4A4A52" strokeWidth="0.5" strokeLinecap="round" />
+      <path d="M62 154 L134.6 190.3 A12 12 0 0 0 145.4 190.3 L218 154" fill="none" stroke="#26262A" strokeWidth="0.5" strokeLinecap="round" />
+      <path d="M134.7 97.6 A11.8 11.8 0 0 1 145.3 97.6 L217.4 133.7 A4.6 4.6 0 0 1 220 137.9 L220 143.1 A4.6 4.6 0 0 1 217.4 147.3 L145.3 183.4 A11.8 11.8 0 0 1 134.7 183.4 L62.6 147.3 A4.6 4.6 0 0 1 60 143.1 L60 137.9 A4.6 4.6 0 0 1 62.6 133.7 L134.7 97.6 Z" fill="#08090A" stroke="#4A4A52" strokeWidth="0.5" strokeLinecap="round" />
+      <path d="M62 136 L134.6 172.3 A12 12 0 0 0 145.4 172.3 L218 136" fill="none" stroke="#26262A" strokeWidth="0.5" strokeLinecap="round" />
+      <g filter="url(#cgStackGlow)">
+        <path d="M134.7 79.6 A11.8 11.8 0 0 1 145.3 79.6 L217.4 115.7 A4.6 4.6 0 0 1 220 119.9 L220 125.1 A4.6 4.6 0 0 1 217.4 129.3 L145.3 165.4 A11.8 11.8 0 0 1 134.7 165.4 L62.6 129.3 A4.6 4.6 0 0 1 60 125.1 L60 119.9 A4.6 4.6 0 0 1 62.6 115.7 L134.7 79.6 Z" fill="#08090A" stroke="#D0D6E0" strokeWidth="0.5" strokeLinecap="round" />
+        <path d="M62 118 L134.6 154.3 A12 12 0 0 0 145.4 154.3 L218 118" fill="none" stroke="#2E2E32" strokeWidth="0.5" strokeLinecap="round" />
+      </g>
+      <g filter="url(#cgStackGlow)">
+        <path d="M134.7 61.6 A11.8 11.8 0 0 1 145.3 61.6 L217.4 97.7 A4.6 4.6 0 0 1 220 101.9 L220 107.1 A4.6 4.6 0 0 1 217.4 111.3 L145.3 147.4 A11.8 11.8 0 0 1 134.7 147.4 L62.6 111.3 A4.6 4.6 0 0 1 60 107.1 L60 101.9 A4.6 4.6 0 0 1 62.6 97.7 L134.7 61.6 Z" fill="#08090A" stroke="#D0D6E0" strokeWidth="0.5" strokeLinecap="round" />
+        <path d="M62 100 L134.6 136.3 A12 12 0 0 0 145.4 136.3 L218 100" fill="none" stroke="#2E2E32" strokeWidth="0.5" strokeLinecap="round" />
+      </g>
+      <g filter="url(#cgStackGlow)">
+        <path d="M134.7 43.6 A11.8 11.8 0 0 1 145.3 43.6 L217.4 79.7 A4.6 4.6 0 0 1 220 83.9 L220 89.1 A4.6 4.6 0 0 1 217.4 93.3 L145.3 129.4 A11.8 11.8 0 0 1 134.7 129.4 L62.6 93.3 A4.6 4.6 0 0 1 60 89.1 L60 83.9 A4.6 4.6 0 0 1 62.6 79.7 L134.7 43.6 Z" fill="#08090A" stroke="#D0D6E0" strokeWidth="0.5" strokeLinecap="round" />
+        <path d="M62 82 L134.6 118.3 A12 12 0 0 0 145.4 118.3 L218 82" fill="none" stroke="#2E2E32" strokeWidth="0.5" strokeLinecap="round" />
+      </g>
+    </g>
+  </svg>
+);
+
+const PlateFleet = () => (
+  <svg viewBox="0 0 280 280" className="cg-plate" aria-hidden focusable="false">
+    <defs>
+      <filter id="cgFleetGlow" x="-60%" y="-60%" width="220%" height="220%">
+        <feDropShadow dx="0" dy="0" stdDeviation="16" floodColor="#08090A" />
+      </filter>
+    </defs>
+    <g transform="translate(5 -3)">
+      <path d="M22 84.6 A9 9 0 0 1 35 76.5 L101 109.5 A9 9 0 0 1 106 117.6 L106 157.4 A9 9 0 0 1 93 165.5 L27 132.5 A9 9 0 0 1 22 124.4 L22 84.6 Z" fill="#08090A" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" opacity="0.28" />
+      <path d="M41 70.1 A9 9 0 0 1 54 62 L120 95 A9 9 0 0 1 125 103.1 L125 166.9 A9 9 0 0 1 112 175 L46 142 A9 9 0 0 1 41 133.9 L41 70.1 Z" fill="#08090A" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" opacity="0.41" />
+      <path d="M60 57.6 A9 9 0 0 1 73 49.5 L139 82.5 A9 9 0 0 1 144 90.6 L144 176.4 A9 9 0 0 1 131 184.5 L65 151.5 A9 9 0 0 1 60 143.4 L60 57.6 Z" fill="#08090A" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" opacity="0.55" />
+      <path d="M79 49.1 A9 9 0 0 1 92 41 L158 74 A9 9 0 0 1 163 82.1 L163 185.9 A9 9 0 0 1 150 194 L84 161 A9 9 0 0 1 79 152.9 L79 49.1 Z" fill="#08090A" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" opacity="0.7" />
+      <g filter="url(#cgFleetGlow)">
+        <path d="M98 50.6 A9 9 0 0 1 111 42.5 L177 75.5 A9 9 0 0 1 182 83.6 L182 195.4 A9 9 0 0 1 169 203.5 L103 170.5 A9 9 0 0 1 98 162.4 L98 50.6 Z" fill="#08090A" stroke="#D0D6E0" strokeWidth="0.5" strokeLinecap="round" />
+      </g>
+      <path d="M117 66.1 A9 9 0 0 1 130 58 L196 91 A9 9 0 0 1 201 99.1 L201 204.9 A9 9 0 0 1 188 213 L122 180 A9 9 0 0 1 117 171.9 L117 66.1 Z" fill="#08090A" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" opacity="0.7" />
+      <path d="M136 91.6 A9 9 0 0 1 149 83.5 L215 116.5 A9 9 0 0 1 220 124.6 L220 214.4 A9 9 0 0 1 207 222.5 L141 189.5 A9 9 0 0 1 136 181.4 L136 91.6 Z" fill="#08090A" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" opacity="0.55" />
+      <path d="M155 123.1 A9 9 0 0 1 168 115 L234 148 A9 9 0 0 1 239 156.1 L239 223.9 A9 9 0 0 1 226 232 L160 199 A9 9 0 0 1 155 190.9 L155 123.1 Z" fill="#08090A" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" opacity="0.41" />
+      <path d="M174 156.6 A9 9 0 0 1 187 148.5 L253 181.5 A9 9 0 0 1 258 189.6 L258 233.4 A9 9 0 0 1 245 241.5 L179 208.5 A9 9 0 0 1 174 200.4 L174 156.6 Z" fill="#08090A" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" opacity="0.28" />
+      <path d="M12 141L184 227" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" strokeDasharray="1 3" opacity="0.55" />
+      <path d="M12 137L12 145" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" opacity="0.55" />
+      <path d="M184 223L184 231" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" opacity="0.55" />
+    </g>
+  </svg>
+);
+
 function LandingPage() {
   useFitMock();
   return (
@@ -4392,7 +4491,66 @@ function LandingPage() {
       <section className="closer">
         <h2 className="sec-title">Put your agents to work</h2>
         <p>Free, open source, and local-first. Install in under a minute.</p>
-        <InstallOptions placement="closer" />
+
+        {/* One slate shell holding three plates, the last of which carries
+            the install row at its foot. A feature grid stacked above a CTA
+            buries it; a grid whose final cell ends in the CTA gives the
+            buttons somewhere to land and lets the two claims beside them do
+            the arguing on the way down.
+
+            The plates are supplied artwork, reproduced verbatim. They are
+            drawn for a near-black ground with light strokes, which is why the
+            panel is a fixed dark literal in both themes rather than a step off
+            `--canvas` — give this art a light ground and its depth ordering
+            inverts. The same reasoning `--tg-card` already carries for
+            Telegram's own surface. */}
+        <div className="cg-shell rail">
+          <div className="cg-card">
+            <div className="cg-panel">
+              <div className="cg-inner">
+                <PlateLocal />
+              </div>
+            </div>
+            <h3>Stays on your machine</h3>
+            <p>
+              Local-first by default. Agents work in real worktrees beside the
+              code, and nothing leaves until you push it.
+            </p>
+          </div>
+
+          <div className="cg-card">
+            <div className="cg-panel">
+              <div className="cg-inner">
+                <PlateStack />
+              </div>
+            </div>
+            <h3>Every thread compounds</h3>
+            <p>
+              Runs, files, and the decisions you made stack into context the
+              next agent picks up without being told twice.
+            </p>
+          </div>
+
+          <div className="cg-card">
+            <div className="cg-panel">
+              <div className="cg-inner">
+                <PlateFleet />
+              </div>
+            </div>
+            <h3>A fleet from one prompt</h3>
+            <p>
+              Claude, Codex, Cursor and Pi fan out in parallel, in one mission
+              control.
+            </p>
+            {/* Bottom of the card, not the panel: `margin-top: auto` inside a
+                stretched grid row puts the row on the floor all three cards
+                share, so it reads as the end of the sequence. */}
+            <div className="cg-install">
+              <InstallOptions placement="closer" />
+            </div>
+          </div>
+        </div>
+
         <div className="closer-subscribe">
           <SubscribeCard placement="footer" title="Keep up with the build" />
         </div>
