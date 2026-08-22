@@ -31,7 +31,6 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { createFileRoute } from "@tanstack/react-router";
-import { TextMorph } from "torph/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
@@ -2464,9 +2463,7 @@ function BuildDemo() {
     <div className="build-demo" ref={ref} aria-hidden>
       <div className="dwin-bar">
         <span className="dwin-title">
-          <TextMorph as="span" duration={520} ease="cubic-bezier(0.19,1,0.22,1)">
-            {asked ? BUILD_PROMPT : "New thread"}
-          </TextMorph>
+          {asked ? BUILD_PROMPT : "New thread"}
         </span>
         <span className={done ? "gang-commit armed" : "gang-commit"}>
           Commit
@@ -2499,29 +2496,23 @@ function BuildDemo() {
           {/* The payoff: a plugin that adds a panel adds a nav row, and the
               row arrives while you are still reading the thread that asked
               for it. Space is reserved so the section never grows. */}
-          <span
-            className={
-              navOn
-                ? panelOn
-                  ? "side-act build-nav in active-act"
-                  : "side-act build-nav in"
-                : "side-act build-nav"
-            }
-          >
-            <PanelIcon className="sa-ic" />
-            Review queue
-          </span>
+          {navOn ? (
+            <span
+              className={
+                panelOn
+                  ? "side-act build-nav active-act"
+                  : "side-act build-nav"
+              }
+            >
+              <PanelIcon className="sa-ic" />
+              Review queue
+            </span>
+          ) : null}
           <span className="sub-group gang-gap">storefront</span>
           <div className="sub-row gang-row is-open">
             <ClaudeIcon className="gang-pv" />
             <span className="sub-title">
-              <TextMorph
-                as="span"
-                duration={520}
-                ease="cubic-bezier(0.19,1,0.22,1)"
-              >
-                {asked ? BUILD_PROMPT : "New thread"}
-              </TextMorph>
+              {asked ? BUILD_PROMPT : "New thread"}
             </span>
             {done ? null : <DemoSpinner />}
           </div>
@@ -3229,13 +3220,7 @@ function SpawnDemo() {
               >
                 <Glyph className="gang-pv" />
                 <span className="sub-title">
-                  <TextMorph
-                    as="span"
-                    duration={520}
-                    ease="cubic-bezier(0.19, 1, 0.22, 1)"
-                  >
-                    {st >= 3 ? c.title : "New thread"}
-                  </TextMorph>
+                  {st >= 3 ? c.title : "New thread"}
                 </span>
                 {st >= 4 ? (
                   open.id === c.id ? null : (

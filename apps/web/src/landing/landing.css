@@ -94,6 +94,13 @@
      sidebar.tsx). This file had six paddings, five radii and four gaps for
      that one object; the radius is just --r-control now, because that token
      IS the app's rounded-md. */
+  /* A small button is the same 32px as a list row in the app: Button
+     size="sm" is h-8 px-3 text-xs rounded-md, SidebarMenuButton is h-8 p-2
+     (packages/shared-ui/src/components/ui/button.tsx). The demos were
+     drawing this control at 24, 25 and 31px. */
+  --btn-h: 32px;
+  --btn-pad-x: 12px;
+
   --row-h: 32px;
   --row-pad: 8px;
   --row-gap: 8px;
@@ -641,10 +648,19 @@ code,
   grid-area: 1 / 1;
   width: 15px;
   height: 15px;
+  /* Colour was missing from this list, so hovering the button recoloured the
+     glyph instantly in both directions while the button itself eased out over
+     150ms. The swap between the two glyphs keeps its own longer timing —
+     that is a state change, not a hover. */
   transition:
     opacity 220ms var(--ease-out),
     transform 220ms var(--ease-out),
-    filter 220ms var(--ease-out);
+    filter 220ms var(--ease-out),
+    color var(--hover-out) var(--ease-standard);
+}
+
+.cmd-btn:hover .cmd-swap svg {
+  transition-duration: 220ms, 220ms, 220ms, 0ms;
 }
 
 .cmd-glyph-out {
@@ -1217,12 +1233,13 @@ code,
 }
 
 .editor-btn {
+  height: var(--btn-h);
   display: inline-flex;
   align-items: center;
   gap: 5px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 3px 7px;
+  border-radius: var(--r-control);
+  padding: 0 var(--btn-pad-x);
 }
 
 .editor-ic {
@@ -1239,10 +1256,11 @@ code,
 }
 
 .commit-btn {
+  height: var(--btn-h);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 4px 12px;
-  font-size: 13px;
+  border-radius: var(--r-control);
+  padding: 0 var(--btn-pad-x);
+  font-size: 12px;
   font-weight: 500;
   color: var(--ink);
 }
@@ -3000,19 +3018,15 @@ code,
   padding: 10px 2px 0;
 }
 
-/* The nav row the plugin adds. Its space is held from the first frame so
-   the sidebar — and the section — never changes height. */
+/* The nav row the plugin adds. It used to be present-but-invisible from the
+   first frame, holding an empty slot in the sidebar so the section could not
+   change height. No bb sidebar has a gap waiting for a plugin that has not
+   been installed yet, and a demo that animates something the app never does
+   is worse than one that animates nothing. The row is simply absent until it
+   exists. The window is a fixed --demo-window tall, so the sidebar gaining a
+   row costs the page no height either way. */
 .build-nav {
-  opacity: 0;
-  transform: translateY(-4px);
-  transition:
-    opacity 0.45s var(--ease-out),
-    transform 0.45s var(--ease-out);
-}
-
-.build-nav.in {
-  opacity: 1;
-  transform: none;
+  animation: gang-in 0.28s var(--ease-out) both;
 }
 
 .gang-step.out,
@@ -3039,14 +3053,15 @@ code,
 }
 
 .gang-commit {
+  height: var(--btn-h);
   display: flex;
   align-items: center;
   gap: 4px;
   margin-left: auto;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 550;
-  padding: 3px 10px;
-  border-radius: 6px;
+  padding: 0 var(--btn-pad-x);
+  border-radius: var(--r-control);
   background: var(--surface);
   color: var(--subtle);
   transition:
