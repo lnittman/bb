@@ -12,6 +12,9 @@ const REPO = "get-bb/bb";
 const OUT = fileURLToPath(
   new URL("../src/landing/github-stats.json", import.meta.url),
 );
+const FEED_OUT = fileURLToPath(
+  new URL("../src/landing/pr-feed.json", import.meta.url),
+);
 
 async function api(path) {
   const res = await fetch(`https://api.github.com${path}`, {
@@ -44,19 +47,45 @@ const merged = await (
   await api(
     `/search/issues?q=${encodeURIComponent(
       `repo:${REPO} is:pr is:merged merged:>${since}`,
-    )}`,
+    )}&sort=created&order=desc&per_page=40`,
   )
 ).json();
 
+// Of those, the ones an agent wrote. Both searches are ordered by creation
+// date so the two result sets cover the same window; the agent query pulls a
+// deeper page because the feed only needs its numbers as a membership test,
+// and a shallow best-match page shares almost nothing with the merged page.
 // Of those, the ones an agent wrote: the repo requires agent-created PRs to
 // carry an "AGENT GENERATED: by <model>" line, so the tag is countable.
 const agentMerged = await (
   await api(
     `/search/issues?q=${encodeURIComponent(
       `repo:${REPO} is:pr is:merged merged:>${since} "AGENT GENERATED"`,
-    )}`,
+    )}&sort=created&order=desc&per_page=100`,
   )
 ).json();
+
+// The feed itself, from the same two queries. A row is marked as agent-written
+// when its number appears in the "AGENT GENERATED" result set — the same tag
+// the aggregate count is built from, so the feed and the stat can never
+// disagree. lnittman is excluded: it is the author of this page.
+const agentNumbers = new Set(agentMerged.items.map((pr) => pr.number));
+const feed = merged.items
+  .filter((pr) => pr.user.login !== "lnittman")
+  .slice(0, 18)
+  .map((pr) => ({
+    title: pr.title,
+    login: pr.user.login,
+    number: pr.number,
+    url: pr.html_url,
+    date: new Date(pr.closed_at).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }),
+    agent: agentNumbers.has(pr.number),
+  }));
+writeFileSync(FEED_OUT, `${JSON.stringify(feed, null, 2)}\n`);
+console.log("Wrote", FEED_OUT, `${feed.length} rows,`, `${feed.filter((p) => p.agent).length} agent-written`);
 
 const stats = {
   stars: repo.stargazers_count,

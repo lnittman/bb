@@ -5,7 +5,7 @@ import {
   Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { DASHBOARD_PATH } from "../lib/connect-return-to";
 import {
@@ -160,26 +160,70 @@ export function SiteNav({ current }: { current?: SiteNavPage }) {
   );
 }
 
+/**
+ * Seven links used to sit on one line separated by middots, which made the
+ * footer a run-on sentence and gave every link a 17px-tall hit area — under
+ * any touch target worth the name. Grouping them into named columns is what
+ * lets each one become a real 28px row, and the group headings tell a reader
+ * scanning for "privacy" or "discord" where to look instead of making them
+ * read the whole string.
+ *
+ * The type is monospace and uppercase here and nowhere else on the page. The
+ * footer is the one place that is pure index — no argument, no product, just
+ * addresses — and giving it a different voice from the body copy above marks
+ * the end of the page more clearly than a rule would.
+ */
+function FooterGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="footer-group">
+      <h2>{title}</h2>
+      <ul>{children}</ul>
+    </div>
+  );
+}
+
 export function SiteFooter() {
   return (
     <footer className="footer">
-      <span>bb is free and open source (MIT)</span>
-      <span>
-        <a href="/blog">Blog</a>
-        {" · "}
-        <a href="/changelog">Changelog</a>
-        {" · "}
-        <a href="/privacy">Privacy</a>
-        {" · "}
-        <GitHubLink placement="footer">GitHub</GitHubLink>
-        {" · "}
-        <XLink placement="footer">X</XLink>
-        {" · "}
-        <DiscordLink placement="footer">Discord</DiscordLink>
-        {" · "}
-        <DownloadLink placement="footer">Download</DownloadLink>
-      </span>
-      <ThemeSwitch />
+      <nav className="footer-groups" aria-label="Footer">
+        <FooterGroup title="Product">
+          <li>
+            <DownloadLink placement="footer">Download</DownloadLink>
+          </li>
+          <li>
+            <a href="/changelog">Changelog</a>
+          </li>
+        </FooterGroup>
+        <FooterGroup title="Community">
+          <li>
+            <GitHubLink placement="footer">GitHub</GitHubLink>
+          </li>
+          <li>
+            <XLink placement="footer">X</XLink>
+          </li>
+          <li>
+            <DiscordLink placement="footer">Discord</DiscordLink>
+          </li>
+        </FooterGroup>
+        <FooterGroup title="More">
+          <li>
+            <a href="/blog">Blog</a>
+          </li>
+          <li>
+            <a href="/privacy">Privacy</a>
+          </li>
+        </FooterGroup>
+      </nav>
+      <div className="footer-base">
+        <span>bb is free and open source (MIT)</span>
+        <ThemeSwitch />
+      </div>
     </footer>
   );
 }

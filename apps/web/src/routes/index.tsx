@@ -56,7 +56,6 @@ import pendoLogo from "../assets/company-logos/pendo.svg";
 import renderLogo from "../assets/company-logos/render.svg";
 import shortcutLogo from "../assets/company-logos/shortcut.svg";
 import simileLogo from "../assets/company-logos/simile.svg";
-import bbIconLarge from "../assets/bb-icon.png";
 import bbStickerRiso from "../assets/stickers/bb-riso.webp";
 import phoneBezel from "../assets/phone-bezel.svg";
 import vscodeIcon from "../assets/vscode.png";
@@ -2242,40 +2241,27 @@ function AskPhone() {
 // universe from a page built out of hairlines and flat tokens; the risograph
 // is flat and printed and belongs. A cycle of one is just a toggle, which is
 // enough of an easter egg until there are more that earn their place.
-const BB_STICKERS = [{ src: bbStickerRiso, name: "risograph" }] as const;
-
+/**
+ * The riso print of the bb mark, and the last thing on the page.
+ *
+ * This used to rest on `bb-icon.png` and swap to the sticker on press. Two
+ * things were wrong with that. `bb-icon.png` is the 192px macOS app icon, so
+ * the rounded tile behind the mark is painted into the artwork itself — no
+ * amount of transparent CSS removes it, and the mark is never supposed to sit
+ * on a plaque. And it put the good drawing behind an interaction most readers
+ * would never perform, which is a strange place to hide the one piece of
+ * warmth on the page. The riso is the resting state now.
+ */
 function CloserMark() {
-  const [index, setIndex] = useState(0);
-  const [popping, setPopping] = useState(false);
-  const sticker = index === 0 ? null : BB_STICKERS[index - 1];
-
-  const next = () => {
-    setIndex((i) => (i + 1) % (BB_STICKERS.length + 1));
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    setPopping(true);
-    window.setTimeout(() => setPopping(false), 420);
-  };
-
   return (
-    <button
-      type="button"
-      className={popping ? "closer-mark-btn pop" : "closer-mark-btn"}
-      onClick={next}
-      aria-label={
-        sticker
-          ? `bb, as a ${sticker.name} sticker. Press for the next one.`
-          : "bb. Press to see it as a sticker."
-      }
-    >
-      <img
-        src={sticker ? sticker.src : bbIconLarge}
-        alt=""
-        className="closer-mark"
-        width={72}
-        height={72}
-        draggable={false}
-      />
-    </button>
+    <img
+      src={bbStickerRiso}
+      alt=""
+      className="closer-mark"
+      width={72}
+      height={72}
+      draggable={false}
+    />
   );
 }
 
@@ -3302,6 +3288,21 @@ function SpawnDemo() {
 /** The merged-PR feed: real recent merges (baked at authoring time),
  *  looping in a slow vertical marquee. Two copies of the list scroll as one
  *  track; reduced motion rests on the static list. */
+/**
+ * The merged-PR feed, and the page's most direct piece of evidence.
+ *
+ * The headline claims the IDE builds itself. This is where that stops being a
+ * claim: each row marked `agent` is a pull request whose body carries the
+ * "AGENT GENERATED" line the repo requires of agent-created PRs — the same tag
+ * the aggregate count in the stats block is computed from, so the feed and the
+ * stat are derived from one query and cannot disagree.
+ *
+ * Every row is rendered. An earlier version scrolled a duplicated copy of the
+ * list on a 46-second loop and showed about four of eighteen at a time, which
+ * spent motion to hide the argument: the volume IS the argument. The soft
+ * edges are a mask, not a marquee — they keep the block from reading as a
+ * hard rectangle without moving anything or concealing a row.
+ */
 function PRFeed() {
   return (
     <div className="pr-feed rail" aria-label="Recently merged pull requests">
@@ -3327,6 +3328,11 @@ function PRFeed() {
                   </span>
                 )}
                 <span className="pr-title">{pr.title}</span>
+                {pr.agent ? (
+                  <span className="pr-agent" title="Written by an agent running in bb">
+                    agent
+                  </span>
+                ) : null}
                 <span className="pr-meta">
                   #{pr.number} · {pr.date}
                 </span>
@@ -3520,16 +3526,22 @@ function LandingPage() {
             <span>Stars</span>
           </li>
           <li>
-            <StatNumber value={String(GITHUB_STATS.forks)} />
-            <span>Forks</span>
-          </li>
-          <li>
             <StatNumber value={String(GITHUB_STATS.contributors)} />
             <span>Contributors</span>
           </li>
           <li>
             <StatNumber value={String(GITHUB_STATS.mergedLastMonth)} />
             <span>PRs merged last month</span>
+          </li>
+          {/* This replaced the fork count, which said nothing a reader could
+              use. It is the page's headline restated as a measurement, and it
+              sits beside the total on purpose: 436 of 721 needs no percentage
+              because the two numbers are adjacent. Same source as the `agent`
+              markers in the feed below — the "AGENT GENERATED" tag the repo
+              requires — so the stat and the rows cannot disagree. */}
+          <li>
+            <StatNumber value={String(GITHUB_STATS.agentMergedLastMonth)} />
+            <span>of those, written by agents</span>
           </li>
         </ul>
         <PRFeed />

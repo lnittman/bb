@@ -3473,10 +3473,17 @@ code,
  * fills (one step deeper than the band, no borders); each fragment sits
  * in an inset white window that bleeds off the card's bottom edge. */
 
+/* Ten columns, so a tile can take six or four instead of an unvarying half.
+   A 2x2 of identical rectangles made every demo the same shape, which is why
+   the two phones sat in cards built for a window: 300px of device floating in
+   570px of card. Spans let the content pick its own width — the diff, which
+   needs room to be a diff, takes six; the tree and the narrower phone take
+   four — and the 4-6 / 6-4 diagonal supplies the rhythm the uniform grid
+   never had. */
 .bento {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(10, minmax(0, 1fr));
   gap: clamp(16px, 1.8vw, 24px);
 }
 
@@ -3489,6 +3496,15 @@ code,
   background: color-mix(in oklab, var(--ink-strong) 6%, var(--canvas));
   overflow: hidden;
 }
+
+/* Subagents leads wide. The tree is the section's opening argument and it was
+   reading as the small card next to the diff; the diff is legible at four
+   columns because a hunk is narrow by nature, while the tree needs room for
+   its indent guides to mean anything. Row two inverts to keep the diagonal. */
+.bento > li:nth-child(1) { grid-column: span 6; }
+.bento > li:nth-child(2) { grid-column: span 4; }
+.bento > li:nth-child(3) { grid-column: span 4; }
+.bento > li:nth-child(4) { grid-column: span 6; }
 
 /* Apple gives one grid rhythm by alternating the ground per tile — iPad Air
    light, MacBook Pro dark, Watch light, iPad Pro dark. On a 2x2 that reads
@@ -3506,24 +3522,55 @@ code,
   background: color-mix(in oklab, var(--ink-strong) 13%, var(--canvas));
 }
 
+/* The heading is a chip rather than a line of bold text. It reads as a label
+   on the thing below it instead of a title competing with the app's own
+   headings inside the mock, and being an inline-size box it stops the heading
+   and its description from behaving like a two-line paragraph. */
 .bento > li > h3 {
-  font-size: 15.5px;
-  font-weight: 600;
-  letter-spacing: -0.012em;
+  width: fit-content;
+  padding: 0 12px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.008em;
   color: var(--ink-strong);
 }
 
+/* Was `nowrap`, which truncated every description that did not happen to fit
+   its card. The tiles no longer have equal widths, so a fixed-width promise
+   was never keepable. */
 .bento > li > p {
-  margin-top: 5px;
+  margin-top: 12px;
   font-size: 14px;
   line-height: 1.5;
   color: var(--dim);
-  text-wrap: nowrap;
+  text-wrap: pretty;
+  max-width: 46ch;
 }
 
+/* Below the two-up threshold every tile takes the full ten columns. A 4-wide
+   card at phone width is not a narrow card, it is an unreadable one, so the
+   span rhythm is a desktop device and stacking is the mobile composition —
+   not a fallback. Cards also lose their fixed 440px, because a demo that was
+   sized for a half-width desk card has a different natural height when it
+   owns the full width. */
 @media (max-width: 900px) {
-  .bento > li > p {
-    text-wrap: pretty;
+  .bento > li:nth-child(1),
+  .bento > li:nth-child(2),
+  .bento > li:nth-child(3),
+  .bento > li:nth-child(4) {
+    grid-column: span 10;
+  }
+
+  .bento > li {
+    height: auto;
+    min-height: 380px;
+    padding: 22px 22px 0;
   }
 }
 
@@ -3531,6 +3578,13 @@ code,
    bottom edge — a window into the product, not a pasted crop. */
 .bento-window {
   margin-top: 22px;
+  /* One blur cannot describe a real elevation. Three stacked shadows at
+     rising offset and alpha give near-contact darkness, a mid falloff, and a
+     wide ambient pool, which is what makes a surface look lifted rather than
+     outlined. */
+  filter: drop-shadow(0 2px 4px color-mix(in oklab, var(--shade) 10%, transparent))
+    drop-shadow(0 18px 24px color-mix(in oklab, var(--shade) 12%, transparent))
+    drop-shadow(0 40px 64px color-mix(in oklab, var(--shade) 18%, transparent));
   flex: 1;
   min-height: 0;
   border-radius: 12px 12px 0 0;
@@ -4030,7 +4084,6 @@ button.sub-row:focus-visible {
   color: var(--ink-strong);
 }
 
-
 .ask-submit.armed {
   background: var(--ink);
   color: var(--bg);
@@ -4047,7 +4100,6 @@ button.sub-row:focus-visible {
 .open-act .act-head {
   margin-bottom: 56px;
 }
-
 
 /* Four slate stat cards — the bento material carrying the numbers. */
 .stat-cards {
@@ -4102,10 +4154,15 @@ button.sub-row:focus-visible {
    volume IS the argument in this section, so showing the whole set static
    is both a stronger claim and the only version that survives a screenshot,
    a prerender, or reduced motion. */
+/* Two columns, not three. At three the track was 320px and every row had to
+   fit an avatar, a title, the agent marker and "#2303 · Aug 22" inside it, so
+   the title — the only part that carries meaning — was the part that got the
+   ellipsis. Nine rows of readable title beat eighteen rows of truncation, and
+   the block is barely taller for it. */
 .pr-feed ul {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
   gap: 2px;
 }
 
@@ -4169,6 +4226,30 @@ button.sub-row:focus-visible {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Seventeen of the last eighteen rows carry this, and that is the point. A
+   marker that appeared on a handful of rows would be a differentiator; one
+   that appears on nearly all of them becomes a column the eye reads straight
+   down, which lands "the IDE that builds itself" harder than the percentage
+   above it does. So it is quiet by design — monospace, small, low contrast.
+   It is a fact in the margin, not a badge. */
+.pr-agent {
+  flex: none;
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  color: var(--subtle);
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: color-mix(in oklab, var(--ink-strong) 6%, transparent);
+}
+
+/* The marker takes the auto margin when present, so the meta follows it
+   rather than fighting it for the right edge. */
+.pr-agent + .pr-meta {
+  margin-left: 0;
 }
 
 .pr-meta {
@@ -4244,7 +4325,6 @@ button.sub-row:focus-visible {
     gap: 12px;
     margin-bottom: 26px;
   }
-
 
 }
 
@@ -4426,30 +4506,85 @@ button.sub-row:focus-visible {
   margin-inline: calc(
     (100% - min(var(--rail), 100vw - 2 * var(--gutter))) / 2
   );
-  padding: 32px 0 52px;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 16px;
+  padding: 56px 0 44px;
   color: var(--subtle);
   font-size: 14px;
 }
 
-.footer > :last-child {
-  justify-self: end;
+/* Auto-fit rather than a fixed count: three groups today, and a fourth can be
+   added without touching this rule. The 150px floor is what a group needs
+   before its longest link starts wrapping. */
+/* max-content columns, not 1fr. Three equal fractions of a 980px rail gave
+   each group a ~300px track to hold ~80px of links, so the footer read as
+   three islands in a lot of air rather than a set. Hugging them left at a
+   fixed 80px gap makes them a group; the space that frees up on the right is
+   deliberate margin instead of accidental gap. */
+.footer-groups {
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  gap: 28px 80px;
+}
+
+/* Monospace uppercase, used nowhere else on the page — see SiteFooter. The
+   tracking is what makes uppercase at this size readable; without it the
+   letterforms crowd and the label turns into a block. */
+.footer-group > h2 {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  /* Full ink against the links' --subtle. At identical size and tracking the
+     only thing separating a group name from its members is this step, and
+     without it the whole footer reads as one undifferentiated list. */
+  color: var(--ink-strong);
+}
+
+.footer-group > ul {
+  list-style: none;
+  margin-top: 10px;
+}
+
+.footer-group a:hover {
+  color: var(--ink-strong);
+}
+
+.footer-group a {
+  display: flex;
+  align-items: center;
+  /* 28px, so a link in the footer is an actual target on a phone. As a
+     one-line run of middots these were 17px tall. */
+  min-height: 28px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--subtle);
+  transition: color var(--duration-hover) var(--ease-standard);
+}
+
+.footer-base {
+  margin-top: 40px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 /* Stacked and centred once three columns stop fitting. */
+/* Two groups abreast rather than three once the row stops fitting, and the
+   base line stacks so the MIT note and the theme switch each get their own
+   row instead of squeezing. */
 @media (max-width: 720px) {
-  .footer {
-    grid-template-columns: 1fr;
-    justify-items: center;
-    text-align: center;
-    gap: 14px;
+  .footer-groups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .footer > :last-child {
-    justify-self: center;
+  .footer-base {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 
@@ -4748,7 +4883,6 @@ button.sub-row:focus-visible {
   .trun {
     animation: none;
   }
-
 
   .btn,
   .plogo,
@@ -5367,7 +5501,6 @@ button.sub-row:focus-visible {
   gap: 5px;
 }
 
-
 .ap-hint,
 /* 40px rows: a real thumb target, which is the point of showing this on a
    phone at all. */
@@ -5633,33 +5766,6 @@ button.sub-row:focus-visible {
   padding: 12px 10px;
 }
 
-/* ── Closer mark ─────────────────────────────────────────────────────
-   The page's last mark is a button. Pressing it cycles bb's wordmark
-   through stickers made by running the real icon through Kumori, and one
-   more press returns to the real mark — so the identity is what a visitor
-   sees unless they go looking for the rest. */
-.closer-mark-btn {
-  display: inline-grid;
-  place-items: center;
-  padding: 0;
-  border: 0;
-  background: none;
-  border-radius: var(--r-control);
-  cursor: pointer;
-  /* Only the press is animated; the swap itself is instant, so the new
-     sticker is never seen mid-fade. */
-  transition: transform var(--duration-press) var(--ease-standard);
-}
-
-.closer-mark-btn:active {
-  transform: scale(0.94);
-}
-
-/* The pop: a quick overshoot that settles, so a press feels answered. */
-.closer-mark-btn.pop .closer-mark {
-  animation: mark-pop 0.42s var(--ease-out);
-}
-
 @keyframes mark-pop {
   0% {
     transform: scale(0.9) rotate(-6deg);
@@ -5672,19 +5778,7 @@ button.sub-row:focus-visible {
   }
 }
 
-.closer-mark-btn:focus-visible {
-  outline: 2px solid color-mix(in oklab, var(--ink-strong) 45%, transparent);
-  outline-offset: 4px;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .closer-mark-btn.pop .closer-mark {
-    animation: none;
-  }
-
-  .closer-mark-btn:active {
-    transform: none;
-  }
 }
 
 /* Answered: the badge stops asking and starts reporting. */
@@ -5718,15 +5812,10 @@ button.sub-row:focus-visible {
 .nav-links a,
 .footer a,
 .pr-feed li a,
-.closer-mark-btn {
-  transition-duration: var(--hover-out);
-}
-
 /* :active as well as :hover — the press scale has to land on the frame the
    pointer goes down, and ease back over 150ms when it lifts. */
 .btn:active,
 .theme-seg:active,
-.closer-mark-btn:active,
 .btn:hover,
 .cmd-btn:hover .cmd-copy,
 .theme-seg:hover,
@@ -5737,10 +5826,6 @@ button.sub-row:focus-visible {
 .nav-links a:hover,
 .footer a:hover,
 .pr-feed li a:hover,
-.closer-mark-btn:hover {
-  transition-duration: 0ms;
-}
-
 /* Rows are on or off. A thread row that fades its tile reads as laggy next
    to the app, which repaints it instantly. */
 .trow,
