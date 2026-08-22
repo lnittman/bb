@@ -2175,6 +2175,13 @@ code,
   border-radius: var(--r-card) var(--r-card) 0 0;
 }
 
+.build-demo > .dwin-bar,
+.gang-demo > .dwin-bar {
+  gap: var(--row-gap);
+  height: 48px;
+  padding: 0 16px;
+}
+
 .dwin-title {
   font-size: 12px;
   font-weight: 550;
@@ -2554,7 +2561,7 @@ code,
   }
 }
 
-/* ── Bento demo: the Changes panel — files, gutter, Commit arming ── */
+/* ── Bento demo: the Changes panel ───────────────────────────────── */
 
 .review-demo {
   display: flex;
@@ -2565,18 +2572,27 @@ code,
 .review-head {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding-bottom: 11px;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+
+.review-selector {
+  flex: 1;
+  min-width: 0;
 }
 
 .review-scope {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  width: 100%;
+  min-width: 0;
+  height: var(--btn-h);
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-field);
+  background: transparent;
+  font: inherit;
   font-size: 12px;
-  font-weight: 550;
+  font-weight: 400;
   color: var(--ink-strong);
-  margin-right: auto;
 }
 
 .review-chev {
@@ -2637,7 +2653,14 @@ code,
   display: flex;
   align-items: center;
   gap: 7px;
+  width: 100%;
+  min-height: var(--row-h);
   padding: 8px 10px;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .review-file-head .review-count {
@@ -2649,11 +2672,17 @@ code,
   display: flex;
   align-items: center;
   gap: 7px;
+  width: 100%;
+  min-height: var(--row-h);
   padding: 4px 10px;
+  border: 0;
   border-top: 1px solid var(--border-soft);
+  font: inherit;
+  text-align: left;
   font-size: 10.5px;
   color: var(--subtle);
   background: var(--surface-1);
+  cursor: pointer;
 }
 
 .review-hunk {
@@ -2663,7 +2692,8 @@ code,
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 1.8;
-  overflow: hidden;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
 }
 
 .review-line {
@@ -2672,16 +2702,21 @@ code,
   padding-right: 6px;
   white-space: nowrap;
   color: var(--dim);
-  opacity: 1;
-  transform: none;
-  transition:
-    opacity 0.4s var(--ease-out),
-    transform 0.4s var(--ease-out);
 }
 
-.review-demo .review-line:not(.in) {
-  opacity: 0;
-  transform: translateX(-6px);
+.review-demo[data-wrap="wrap"] .review-line {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.review-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 100%;
+}
+
+.review-split > div + div {
+  border-left: 1px solid var(--border-soft);
 }
 
 /* Gutter: line number, then the +/- sign column. */
@@ -2704,7 +2739,8 @@ code,
 
 .review-line.is-add {
   background: color-mix(in oklab, var(--add, var(--ok)) 11%, var(--bg));
-  box-shadow: inset 2px 0 0 color-mix(in oklab, var(--add, var(--ok)) 55%, var(--bg));
+  box-shadow: inset 2px 0 0
+    color-mix(in oklab, var(--add, var(--ok)) 55%, var(--bg));
   color: var(--ink);
 }
 
@@ -2714,7 +2750,8 @@ code,
 
 .review-line.is-del {
   background: color-mix(in oklab, var(--del, var(--warn)) 10%, var(--bg));
-  box-shadow: inset 2px 0 0 color-mix(in oklab, var(--del, var(--warn)) 45%, var(--bg));
+  box-shadow: inset 2px 0 0
+    color-mix(in oklab, var(--del, var(--warn)) 45%, var(--bg));
   color: var(--ink);
 }
 
@@ -2722,37 +2759,106 @@ code,
   color: var(--del, var(--warn));
 }
 
-/* The second file, collapsed, arriving at its beat. */
 .review-file2 {
   margin-top: 8px;
-  opacity: 1;
-  transform: none;
-  transition:
-    opacity 0.45s var(--ease-out),
-    transform 0.45s var(--ease-out);
 }
 
-.review-demo .review-file2:not(.in) {
-  opacity: 0;
-  transform: translateY(6px);
+.review-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.review-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
+  color: var(--subtle);
+  cursor: pointer;
+  transition: background var(--hover-out) var(--ease-standard);
+}
+
+.review-tool[aria-pressed="true"] {
+  background: var(--state-hover);
+  color: var(--ink);
+}
+
+.review-tool-ic {
+  width: 14px;
+  height: 14px;
+}
+
+.review-view-modes {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-field);
 }
 
 .review-commit {
   flex: none;
-  padding: 4px 11px;
-  border-radius: 6px;
+  font: inherit;
+  height: var(--btn-h);
+  padding: 0 var(--btn-pad-x);
+  border: 0;
+  border-radius: var(--r-control);
   background: var(--surface);
   color: var(--subtle);
   font-size: 11.5px;
   font-weight: 550;
-  transition:
-    background var(--duration-state) var(--ease-standard),
-    color var(--duration-state) var(--ease-standard);
+  cursor: default;
+  transition: none;
 }
 
-.review-commit.armed {
-  background: var(--ink);
-  color: var(--bg);
+.review-tool:focus-visible,
+.review-file-head:focus-visible,
+.review-fold:focus-visible,
+.review-scope:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ink-strong) 45%, transparent);
+  outline-offset: -2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .review-tool:hover,
+  .review-file-head:hover,
+  .review-fold:hover {
+    background: var(--state-hover);
+  }
+
+  .review-tool:hover {
+    transition-duration: 0ms;
+  }
+}
+
+@media (max-width: 767px) {
+  .build-demo > .dwin-bar,
+  .gang-demo > .dwin-bar {
+    gap: 4px;
+  }
+
+  .review-head {
+    flex-wrap: wrap;
+  }
+
+  .review-selector {
+    flex-basis: calc(100% - var(--row-h));
+  }
+
+  .review-actions {
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
 }
 
 /* ── Build: one prompt, an Extensions window, a layered panel ────── */
@@ -2764,26 +2870,23 @@ code,
   min-height: var(--demo-window);
   border-radius: var(--r-card);
   background: var(--bg);
-  box-shadow:
-    var(--ring),
-    var(--shadow-window);
+  box-shadow: var(--ring), var(--shadow-window);
   font-size: 13.5px;
 }
 
-/* What you asked for. bb's transcript has no bubbles, so the visitor's own
-   words are set apart by weight and ink alone. */
+/* User turns use the same right-aligned bordered bubble as the app. */
 .gang-you {
+  width: fit-content;
+  max-width: 70%;
+  margin-left: auto;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  background: var(--surface-recessed);
   color: var(--ink-strong);
-  font-weight: 550;
-  line-height: 1.5;
-}
-
-.gang-you.in {
-  animation: gang-in 0.5s var(--ease-out) both;
-}
-
-.gang-you.out {
-  opacity: 0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.625;
 }
 
 /* Three panes, the way the app lays out a thread with a panel open beside
@@ -2793,20 +2896,40 @@ code,
   grid-template-columns: minmax(0, 3.4fr) minmax(0, 5.6fr) minmax(0, 4fr);
 }
 
-/* Three panes need a desktop. Narrower than this they stack, the way the
-   app gives one surface the screen at a time — sidebar, then the thread,
-   then the panel it built. This override has to be as specific as the rule
-   above it; the shared .gang-body mobile rule loses to it on specificity
-   no matter which media query it sits in. */
+/* At compact widths, each real pane becomes a scroll-snap card. */
 @media (max-width: 900px) {
-  .build-demo .gang-body {
-    grid-template-columns: minmax(0, 1fr);
+  .build-demo > .gang-body {
+    display: flex;
+    gap: var(--row-gap);
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
   }
 
-  .build-panel {
+  .build-demo > .gang-body::-webkit-scrollbar {
+    display: none;
+  }
+
+  .build-demo > .gang-body > .gang-side,
+  .build-demo > .gang-body > .gang-thread,
+  .build-demo > .gang-body > .build-panel {
+    flex: 0 0 calc(100% - var(--row-h));
+    scroll-snap-align: start;
+  }
+
+  .build-demo > .gang-body > .build-panel {
+    order: -2;
+  }
+
+  .build-demo > .gang-body > .gang-thread {
+    order: -1;
+  }
+
+  .build-demo .build-panel {
     border-left: 0;
-    border-top: 1px solid var(--border-soft);
-    border-radius: 0 0 var(--r-card) var(--r-card);
+    border-right: 1px solid var(--border-soft);
+    border-radius: 0;
   }
 }
 
@@ -2834,27 +2957,6 @@ code,
   border-radius: 0 0 var(--r-card) 0;
 }
 
-.build-panel > * {
-  opacity: 0;
-  transform: translateY(6px);
-  transition:
-    opacity var(--duration-panel) var(--ease-out),
-    transform var(--duration-panel) var(--ease-out);
-}
-
-.build-panel.in > * {
-  opacity: 1;
-  transform: none;
-}
-
-.build-panel.in > :nth-child(2) {
-  transition-delay: 60ms;
-}
-
-.build-panel.in > :nth-child(3) {
-  transition-delay: 120ms;
-}
-
 .build-panel-bar {
   display: flex;
   align-items: center;
@@ -2879,29 +2981,29 @@ code,
 }
 
 .build-queue li {
-  min-height: var(--row-h);
-  display: flex;
-  align-items: flex-start;
+  display: block;
+}
+
+.build-queue-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
   gap: var(--row-gap);
-  padding: var(--row-pad);
-  border-radius: var(--r-control);
-  background: var(--bg);
-  box-shadow: var(--ring);
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--border-soft);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: none;
 }
 
-.build-queue-ic {
-  flex: none;
-  width: 15px;
-  height: 15px;
-  margin-top: 1px;
-  color: var(--subtle);
-}
-
-.build-queue-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+.build-queue-row[aria-pressed="true"] {
+  background: var(--state-hover);
 }
 
 .build-queue-title {
@@ -2915,6 +3017,19 @@ code,
 .build-queue-ask {
   font-size: 11.5px;
   color: var(--subtle);
+  white-space: nowrap;
+}
+
+.build-search {
+  width: 100%;
+  height: var(--row-h);
+  padding: 0 var(--row-pad);
+  border: 1px solid var(--border);
+  border-radius: var(--r-field);
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
 }
 
 .build-queue-foot {
@@ -2923,21 +3038,38 @@ code,
   padding: 10px 2px 0;
 }
 
-/* The nav row the plugin adds. It used to be present-but-invisible from the
-   first frame, holding an empty slot in the sidebar so the section could not
-   change height. No bb sidebar has a gap waiting for a plugin that has not
-   been installed yet, and a demo that animates something the app never does
-   is worse than one that animates nothing. The row is simply absent until it
-   exists. The window is a fixed --demo-window tall, so the sidebar gaining a
-   row costs the page no height either way. */
-.build-nav {
-  animation: gang-in 0.28s var(--ease-out) both;
+.build-demo .side-search {
+  width: var(--row-h);
+  height: var(--row-h);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
-.gang-step.out,
-.gang-say.out {
-  opacity: 0;
-  animation: none;
+.build-demo .side-act {
+  width: 100%;
+  text-align: left;
+}
+
+.build-demo .side-search:focus-visible,
+.build-demo .side-act:focus-visible,
+.build-search:focus-visible,
+.build-queue-row:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ink-strong) 45%, transparent);
+  outline-offset: -2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .build-demo .side-search:hover,
+  .build-demo .side-act:not(.active-act):hover,
+  .build-queue-row:not([aria-pressed="true"]):hover {
+    background: var(--state-hover);
+  }
+}
+
+.build-thread-group {
+  display: contents;
 }
 
 /* ── The gang: one window — sidebar rail and the open thread ─────── */
@@ -2951,9 +3083,7 @@ code,
   min-height: var(--demo-window);
   border-radius: var(--r-card);
   background: var(--bg);
-  box-shadow:
-    var(--ring),
-    var(--shadow-window);
+  box-shadow: var(--ring), var(--shadow-window);
   font-size: 13.5px;
 }
 
@@ -2996,8 +3126,25 @@ code,
   border-radius: 0 0 0 var(--r-card);
 }
 
+.gang-demo .gang-commit,
+.build-demo .gang-commit {
+  border: 0;
+  font: inherit;
+  cursor: default;
+  transition: none;
+}
+
+.gang-project + .gang-project {
+  margin-top: var(--row-pad);
+}
+
 .gang-row {
   gap: 10px;
+}
+
+.gang-demo .gang-row,
+.build-demo .gang-row {
+  gap: var(--row-gap);
 }
 
 /* space-between would strand the title in the middle of the row; the title
@@ -3028,20 +3175,8 @@ code,
   color: var(--warn, var(--dim));
 }
 
-/* Indent lives with the other rail rules, after the .sub-row base, so the
-   base's padding shorthand can't win on source order. */
 .gang-kid {
-  transition:
-    opacity 0.45s var(--ease-out),
-    transform 0.45s var(--ease-out);
-}
-
-/* Same rule as the spawn rows: the nested child reserves its line so the
-   section height never moves. */
-.gang-demo .gang-kid:not(.in) {
-  opacity: 0;
-  transform: translateY(-6px);
-  pointer-events: none;
+  padding-left: var(--rail-indent);
 }
 
 .gang-gap {
@@ -3070,8 +3205,47 @@ code,
   padding-bottom: 14px;
 }
 
-.gang-step,
-.gang-say {
+.gang-demo .gang-feed,
+.build-demo .gang-feed {
+  gap: var(--row-gap);
+}
+
+.gang-demo .gang-step,
+.gang-demo .gang-say,
+.build-demo .gang-step,
+.build-demo .gang-say,
+.build-demo .gang-you,
+.sub-demo .gang-step,
+.sub-demo .gang-say {
+  animation: none;
+}
+
+.gang-demo .gang-step,
+.build-demo .gang-step,
+.sub-demo .gang-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 20px;
+  padding-inline: 8px;
+  line-height: 20px;
+}
+
+.gang-demo .gang-step::before,
+.build-demo .gang-step::before,
+.sub-demo .gang-step::before {
+  content: none;
+}
+
+.gang-step-ic {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--subtle);
+}
+
+.spawn-demo .gang-step,
+.spawn-demo .gang-say {
   animation: gang-in 0.5s var(--ease-out) both;
 }
 
@@ -3080,7 +3254,7 @@ code,
   color: var(--subtle);
 }
 
-.gang-step::before {
+.spawn-demo .gang-step::before {
   content: "› ";
   opacity: 0.6;
 }
@@ -3134,6 +3308,34 @@ code,
   .gang-side,
   .gang-thread {
     min-width: 0;
+  }
+
+  .gang-demo > .gang-body {
+    display: flex;
+    gap: var(--row-gap);
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .gang-demo > .gang-body::-webkit-scrollbar {
+    display: none;
+  }
+
+  .gang-demo > .gang-body > .gang-side,
+  .gang-demo > .gang-body > .gang-thread {
+    flex: 0 0 calc(100% - var(--row-h));
+    scroll-snap-align: start;
+  }
+
+  .gang-demo > .gang-body > .gang-thread {
+    order: -1;
+  }
+
+  .gang-demo .gang-you,
+  .build-demo .gang-you {
+    max-width: 100%;
   }
 
   .gang-feed {
@@ -3191,6 +3393,23 @@ code,
   box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink-strong) 9%, transparent);
 }
 
+.gang-composer input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.gang-composer input::placeholder {
+  color: var(--subtle);
+  opacity: 1;
+}
+
 .gang-ph {
   flex: 1;
   min-width: 0;
@@ -3211,10 +3430,29 @@ code,
   background: var(--ink);
 }
 
+.gang-demo button.gang-send,
+.build-demo button.gang-send {
+  width: var(--row-h);
+  height: var(--row-h);
+  padding: 0;
+  border: 0;
+}
+
+.gang-demo .gang-send:disabled,
+.build-demo .gang-send:disabled {
+  cursor: default;
+}
+
 .gang-send-ic {
   width: 12px;
   height: 12px;
   color: var(--bg);
+}
+
+.gang-demo .gang-send-ic,
+.build-demo .gang-send-ic {
+  width: var(--row-icon);
+  height: var(--row-icon);
 }
 
 /* The context row under the composer: model, workspace, branch. */
@@ -3610,18 +3848,33 @@ code,
   align-items: start;
 }
 
-/* Phones get one column: a 148px rail beside a 92px pane is two
-   unreadable columns, not a two-pane app. */
+/* Phones keep each pane legible in a scroll-snap rail with the next pane
+   peeking at the edge. */
 @media (max-width: 900px) {
   .sub-demo {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    display: flex;
+    gap: var(--row-gap);
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .sub-demo::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sub-rail,
+  .sub-main {
+    flex: 0 0 calc(100% - var(--row-h));
+    scroll-snap-align: start;
   }
 
   .sub-main {
-    padding: 12px 0 0;
+    order: -1;
+    padding: 0;
     border-left: 0;
-    border-top: 1px solid var(--border-soft);
   }
 }
 
@@ -3669,15 +3922,18 @@ code,
   white-space: nowrap;
 }
 
-/* Rail rows are real controls: they open their thread in the pane. */
-button.sub-row {
+/* Rail rows are real links, matching the app's navigable ThreadRow. */
+.sub-demo a.sub-row,
+.build-demo a.sub-row,
+.gang-demo a.sub-row {
   width: 100%;
   border: 0;
   background: none;
   font: inherit;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
-  transition: background var(--duration-hover) var(--ease-standard);
+  transition: none;
 }
 
 /* --state-active and --sidebar-accent, at the app's own strengths. The
@@ -3687,12 +3943,16 @@ button.sub-row {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  button.sub-row:not(.is-open):hover {
-    background: color-mix(in oklch, var(--ink) 8%, var(--bg));
+  .sub-demo a.sub-row:not(.is-open):hover,
+  .build-demo a.sub-row:not(.is-open):hover,
+  .gang-demo a.sub-row:not(.is-open):hover {
+    background: color-mix(in oklab, var(--ink) 8%, var(--bg));
   }
 }
 
-button.sub-row:focus-visible {
+.sub-demo a.sub-row:focus-visible,
+.build-demo a.sub-row:focus-visible,
+.gang-demo a.sub-row:focus-visible {
   outline: 2px solid color-mix(in oklab, var(--ink-strong) 45%, transparent);
   outline-offset: -2px;
 }
@@ -3809,16 +4069,6 @@ button.sub-row:focus-visible {
 
 .sub-child {
   padding-left: var(--rail-indent);
-  opacity: 1;
-  transform: none;
-  transition:
-    transform 0.5s var(--ease-out),
-    opacity 0.5s var(--ease-out);
-}
-
-.sub-demo .sub-child:not(.in) {
-  opacity: 0;
-  transform: translateY(-6px);
 }
 
 .sub-quiet {
@@ -4712,6 +4962,35 @@ button.sub-row:focus-visible {
   }
 }
 
+@media (pointer: coarse) {
+  .review-scope,
+  .build-search {
+    height: 40px;
+  }
+
+  .review-tool,
+  .build-demo .side-search {
+    width: 36px;
+    height: 36px;
+  }
+
+  .gang-demo .gang-send,
+  .build-demo .gang-send {
+    width: 40px;
+    height: 40px;
+  }
+
+  .review-file-head,
+  .review-fold,
+  .build-demo .side-act,
+  .build-demo a.sub-row,
+  .gang-demo a.sub-row,
+  .sub-demo a.sub-row,
+  .build-queue-row {
+    min-height: 36px;
+  }
+}
+
 /* ── Reduced motion ─────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
@@ -4724,11 +5003,6 @@ button.sub-row:focus-visible {
   .ctx-spin,
   .gang-ctx-spin {
     animation: none;
-  }
-
-  .sub-demo .sub-child:not(.in) {
-    opacity: 1;
-    transform: none;
   }
 
   .spawn-cmd {
@@ -5602,19 +5876,6 @@ button.sub-row:focus-visible {
   align-items: center;
 }
 
-/* Lines that have not arrived yet are removed from flow, not just made
-   transparent. They were holding their space, and because the feed is
-   bottom-aligned that space sat between the last visible line and the
-   composer — the "odd empty gap" in every thread demo. Nothing about the
-   window moves when they go: the demo carries a fixed min-height and the
-   feed is flex:1, so the transcript simply grows upward toward the
-   composer, which is how a real thread fills. */
-.gang-step.out,
-.gang-say.out,
-.gang-you.out {
-  display: none;
-}
-
 /* Same for rail rows that have not spawned yet: the reserved slots were
    leaving a hole under the project label. */
 .spawn-demo .spawn-new:not(.in) {
@@ -5712,7 +5973,6 @@ button.sub-row:focus-visible {
 .cmd-copy,
 .theme-seg,
 .gang-commit,
-.review-commit,
 .subscribe-form,
 .plogo,
 .nav-links a,
@@ -5731,7 +5991,6 @@ button.sub-row:focus-visible {
 .cmd-btn:hover .cmd-copy,
 .theme-seg:hover,
 .gang-commit:hover,
-.review-commit:hover,
 .subscribe-form:focus-within,
 .plogo:hover,
 .nav-links a:hover,
@@ -5746,7 +6005,6 @@ button.sub-row:focus-visible {
 .trow,
 .side-act,
 .sub-row,
-button.sub-row,
 .askq-opt,
 .ask-opt,
 .ap-opt,
