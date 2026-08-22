@@ -4580,11 +4580,13 @@ button.sub-row:focus-visible {
   border-color: var(--del);
 }
 
-/* Inset in the pill: a hair shorter than the container so the 4px of field
-   showing around it reads as inset rather than as a seam. */
+/* Inset evenly. At 32px the button left 7px above and below but only 5px to
+   its right, and an uneven inset reads as a misalignment even though the
+   button is perfectly centred — which is what it measured. 36px makes the
+   gap the capsule's own 4px padding on all four sides. */
 .subscribe-btn {
   flex: none;
-  height: 32px;
+  height: 36px;
   padding: 0 16px;
   border-radius: 999px;
   font-size: 14px;
