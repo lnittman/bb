@@ -73,10 +73,15 @@
      page's own surfaces — bento cards, stat cards, the PR feed — which sit
      a step above a product window because they hold one.
 
-     Two families live in this file and only one of them is this ladder.
-     Values inside a demo (6px rows, 7px cards, 12px frames) are the app's
-     own metrics, transcribed so the recreations match what ships. Those are
-     fidelity, not drift: change them only when the app changes. */
+     This ladder is the app's, not a parallel one. The app anchors on
+     --radius: 0.5rem and derives sm = r-4, md = r-2, lg = r, xl = r+4,
+     giving 4 / 6 / 8 / 12 (apps/app/src/components/ui/theme.css). This page
+     used to run 8 / 10 / 14 / 20 / 28 — every corner a step softer than the
+     product it advertises, which is most of why the demos read as close to
+     the app rather than as the app. Control, field and card now ARE the
+     app's md, lg and xl; tile and room continue the same 4px cadence for
+     surfaces larger than anything the app has, so the scale extends rather
+     than forking. */
   /* One window height for the three act demos. Without it each window is
      only as tall as the least content it happens to hold — a 1040px-wide
      frame landing at ~370px, a 2.8:1 letterbox that reads as a strip rather
@@ -84,11 +89,11 @@
      along, which is why it alone reads like a window. */
   --demo-window: 640px;
 
-  --r-control: 8px;
-  --r-field: 10px;
-  --r-card: 14px;
-  --r-tile: 20px;
-  --r-room: 28px;
+  --r-control: 6px;
+  --r-field: 8px;
+  --r-card: 12px;
+  --r-tile: 16px;
+  --r-room: 20px;
 
   /* Depth is its own colour. Shadows read as an absence of light, so they
      stay dark when the theme flips; rings and focus outlines are drawn WITH
