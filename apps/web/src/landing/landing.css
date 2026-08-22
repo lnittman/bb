@@ -113,6 +113,13 @@
     0 10px 26px -16px color-mix(in oklab, var(--shade) 24%, transparent);
 
   /* motion constants */
+  /* Hover convention, matching the app: a control answers on the frame the
+     pointer arrives and lets go over 150ms. Base rules carry --hover-out and
+     their :hover sets 0ms, so the asymmetry is one pair everywhere rather
+     than a judgement per rule. List and thread rows take neither — the app
+     puts transition-none on them, so a row's tile is simply on or off. */
+  --hover-out: 150ms;
+
   --duration-press: 90ms;
   --duration-hover: 160ms;
   --duration-state: 240ms;
@@ -2796,10 +2803,16 @@ code,
 
 /* Each touched file is its own card inside the panel, like the real
    Changes list. */
+/* A real border, not an outset ring. The ring paints outside the box, so
+   the diff rows filled the card edge to edge and left nothing between their
+   tint and the window behind — the rows read as breaking out of the card.
+   A border is part of the box: the rows clip inside it and every tinted
+   line keeps a visible edge on both sides. */
 .review-file-card {
   border-radius: var(--r-field);
   background: var(--bg);
-  box-shadow: var(--ring), var(--shadow-tile);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-tile);
   overflow: hidden;
 }
 
@@ -4537,9 +4550,11 @@ button.sub-row:focus-visible {
     box-shadow var(--duration-hover) var(--ease-standard);
 }
 
+/* A tighter ring that hugs the capsule instead of haloing it. The 3px
+   spread read as a soft glow sitting off the shape rather than as focus. */
 .subscribe-form:focus-within {
-  border-color: color-mix(in oklab, var(--ink) 30%, var(--bg));
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ink-strong) 8%, transparent);
+  border-color: color-mix(in oklab, var(--ink) 38%, var(--bg));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink) 26%, transparent);
 }
 
 .subscribe-form[data-status="error"] {
@@ -5980,4 +5995,70 @@ button.sub-row:focus-visible {
    enough to reach it before it replays. */
 .phone-app .tg-msgs {
   gap: 7px;
+}
+
+/* ── Hover convention ────────────────────────────────────────────────
+   Applied last so it wins over the per-rule durations these selectors
+   were each carrying. Controls: instant in, eased out. */
+.btn,
+.cmd-copy,
+.theme-seg,
+.gang-commit,
+.review-commit,
+.subscribe-form,
+.plogo,
+.nav-links a,
+.footer a,
+.pr-feed li a,
+.closer-mark-btn {
+  transition-duration: var(--hover-out);
+}
+
+/* :active as well as :hover — the press scale has to land on the frame the
+   pointer goes down, and ease back over 150ms when it lifts. */
+.btn:active,
+.theme-seg:active,
+.closer-mark-btn:active,
+.btn:hover,
+.cmd-btn:hover .cmd-copy,
+.theme-seg:hover,
+.gang-commit:hover,
+.review-commit:hover,
+.subscribe-form:focus-within,
+.plogo:hover,
+.nav-links a:hover,
+.footer a:hover,
+.pr-feed li a:hover,
+.closer-mark-btn:hover {
+  transition-duration: 0ms;
+}
+
+/* Rows are on or off. A thread row that fades its tile reads as laggy next
+   to the app, which repaints it instantly. */
+.trow,
+.side-act,
+.sub-row,
+button.sub-row,
+.askq-opt,
+.ask-opt,
+.ap-opt,
+.board-lrow,
+.build-queue li {
+  transition: none;
+}
+
+/* Inline code in section copy sits in its own tile rather than running as
+   bare monospace inside a sentence — the same slate step the page's other
+   nested surfaces use, so `bb review` reads as a thing you can type. */
+.act-lead code,
+.band-copy code,
+.closer code {
+  padding: 0.1em 0.42em 0.16em;
+  border-radius: 7px;
+  background: color-mix(in oklab, var(--ink-strong) 7%, var(--canvas));
+  box-shadow: var(--ring);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  color: var(--ink-strong);
+  white-space: nowrap;
 }

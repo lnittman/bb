@@ -3588,9 +3588,11 @@ function LandingPage() {
           <div className="act-lead">
             <p>
               The CLI your agents use is open to any program you write: a
-              shell script, a cron job, a bot in Telegram or Slack. Each can
-              put an agent to work while you&rsquo;re away, and it&rsquo;s
-              waiting in your sidebar when you are.
+              shell script, a cron job, a bot in Telegram or Slack.
+            </p>
+            <p className="act-claim">
+              Each can put an agent to work while you&rsquo;re away, and
+              it&rsquo;s waiting in your sidebar when you are.
             </p>
           </div>
         </div>
