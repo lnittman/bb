@@ -379,9 +379,9 @@ code,
 }
 
 /* The close band: the final CTA and the footer share one slate ground. */
-.band-close .footer {
-  border-top: 1px solid var(--border-soft);
-}
+/* No rule above the footer: the closer's band already changes ground here,
+   and a hairline on top of a background change is two separators doing one
+   job. */
 
 /* ── Nav ────────────────────────────────────────────────────────── */
 
@@ -4517,19 +4517,41 @@ button.sub-row:focus-visible {
   font-size: 14px;
 }
 
+/* One pill, the way the hero's install command is one pill: the field IS the
+   container and the action sits inset at its right end, rather than a box
+   with a separate button parked beside it. The form carries the border and
+   the focus ring so the two halves read as a single control. */
 .subscribe-form {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
+  align-items: center;
+  gap: 0;
   margin: 18px auto 0;
-  max-width: 440px;
+  max-width: 420px;
+  padding: 4px 4px 4px 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  transition:
+    border-color var(--duration-hover) var(--ease-standard),
+    box-shadow var(--duration-hover) var(--ease-standard);
+}
+
+.subscribe-form:focus-within {
+  border-color: color-mix(in oklab, var(--ink) 30%, var(--bg));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ink-strong) 8%, transparent);
+}
+
+.subscribe-form[data-status="error"] {
+  border-color: color-mix(in oklab, var(--del) 55%, var(--bg));
 }
 
 .subscribe-input {
-  flex: 1 1 240px;
+  flex: 1 1 auto;
   min-width: 0;
-  padding: 10px 14px;
+  padding: 8px 10px 8px 12px;
+  border: 0;
+  background: none;
+  border-radius: 999px;
   /* iOS Safari zooms the whole page when a focused input's text is under
      16px. The page's only field is the last thing a visitor touches, so it
      takes the full 16px on touch widths rather than capping maximum-scale
@@ -4537,12 +4559,10 @@ button.sub-row:focus-visible {
   font-size: 16px;
   font-family: inherit;
   color: var(--ink);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: calc(var(--radius) - 2px);
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+}
+
+.subscribe-input:focus {
+  outline: none;
 }
 
 .subscribe-input::placeholder {
@@ -4559,8 +4579,14 @@ button.sub-row:focus-visible {
   border-color: var(--del);
 }
 
+/* Inset in the pill: a hair shorter than the container so the 4px of field
+   showing around it reads as inset rather than as a seam. */
 .subscribe-btn {
-  flex: 0 0 auto;
+  flex: none;
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 14px;
   cursor: pointer;
 }
 
@@ -4593,15 +4619,40 @@ button.sub-row:focus-visible {
   flex-shrink: 0;
 }
 
+/* Same rail as the nav, so the page opens and closes on the same measure.
+   Three columns rather than space-between: with a flex row the links centre
+   inside the gap the two ends leave, which is not the middle of the page —
+   the equal 1fr ends put them there. */
 .footer {
+  width: min(var(--rail), calc(100vw - 2 * var(--gutter)));
+  margin-inline: calc(
+    (100% - min(var(--rail), 100vw - 2 * var(--gutter))) / 2
+  );
   padding: 32px 0 52px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
   gap: 16px;
   color: var(--subtle);
   font-size: 14px;
+}
+
+.footer > :last-child {
+  justify-self: end;
+}
+
+/* Stacked and centred once three columns stop fitting. */
+@media (max-width: 720px) {
+  .footer {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    gap: 14px;
+  }
+
+  .footer > :last-child {
+    justify-self: center;
+  }
 }
 
 /* Theme switch. Three segments rather than a button that opens a menu: the
@@ -4946,4 +4997,454 @@ button.sub-row:focus-visible {
    and read as a lit chip against the dark page. */
 .dark .closer-mark {
   content: url("../assets/bb-icon-dark.png");
+}
+/* ── Band visual: Telegram-style chat with the bb bot ───────────── */
+
+.tg {
+  width: 100%;
+  max-width: 340px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--bg);
+  box-shadow: 0 18px 50px -26px
+    color-mix(in oklab, var(--shade) 32%, transparent);
+}
+
+/* contact bar */
+.tg-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface);
+}
+
+.tg-back {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.tg-contact {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+}
+
+.tg-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.tg-sub {
+  font-size: 11px;
+  color: var(--subtle);
+}
+
+.tg-av {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-recessed);
+}
+
+.tg-av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* wallpaper + messages. --tg-card is Telegram's own surface colour, not a bb
+   token: the mock imitates a foreign app, so its values are deliberately
+   literal in both schemes, like the wallpaper and the outgoing green bubble. */
+.tg-feed {
+  --tg-card: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 12px;
+  min-height: 236px;
+  background-color: oklch(0.95 0.025 150);
+  background-image:
+    radial-gradient(
+      color-mix(in oklab, oklch(0.45 0.06 150) 9%, transparent) 1px,
+      transparent 1.5px
+    ),
+    linear-gradient(165deg, oklch(0.96 0.02 155), oklch(0.92 0.035 140));
+  background-size:
+    17px 17px,
+    100% 100%;
+}
+
+/* The messages live in their own layer so they can fade out together at the end
+   of the loop while the wallpaper underneath stays put (no reset flash). */
+.tg-msgs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tg-msgs.leaving {
+  animation: tg-leave 0.6s ease forwards;
+}
+
+@keyframes tg-leave {
+  to {
+    opacity: 0;
+  }
+}
+
+.tg-msg {
+  display: flex;
+  max-width: 86%;
+  animation: tg-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.tg-out {
+  align-self: flex-end;
+  justify-content: flex-end;
+}
+
+.tg-in {
+  align-self: flex-start;
+}
+
+.tg-bubble {
+  padding: 7px 10px 7px 11px;
+  border-radius: 15px;
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+}
+
+.tg-in .tg-bubble {
+  background: var(--tg-card);
+  color: var(--ink-strong);
+  border-bottom-left-radius: 5px;
+}
+
+.tg-out .tg-bubble {
+  background: linear-gradient(180deg, #4ec264, #38ab53);
+  color: #fff;
+  border-bottom-right-radius: 5px;
+}
+
+.tg-time {
+  margin-left: 8px;
+  font-size: 10px;
+  opacity: 0.55;
+  white-space: nowrap;
+}
+
+/* The bb spawn command the bot runs, shown inline in its message. */
+.tg-cmd {
+  display: block;
+  margin-top: 6px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: var(--surface-recessed);
+  color: var(--dim);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* the bb thread card the bot spawns */
+.tg-thread {
+  width: 100%;
+  background: var(--tg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  border-bottom-left-radius: 5px;
+  padding: 10px 11px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+}
+
+.tg-thread-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.tg-thread-mark {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.tg-thread-eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--subtle);
+}
+
+.tg-stat {
+  position: relative;
+  flex-shrink: 0;
+  width: 76px;
+  height: 18px;
+  margin-left: auto;
+}
+
+.tg-thread-title {
+  margin-top: 7px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.tg-thread-branch {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tg-stat-spawn,
+.tg-stat-run {
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tg-stat-spawn {
+  color: var(--accent);
+  animation: tg-fade-out 0.35s ease forwards;
+}
+
+.tg-stat-run {
+  opacity: 0;
+  color: var(--ok);
+  animation: tg-fade-in 0.35s ease forwards;
+}
+
+.tg-spin {
+  width: 12px;
+  height: 12px;
+  animation: spin 0.8s linear infinite;
+}
+
+.tg-rdot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+}
+
+/* composer */
+.tg-input {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  border-top: 1px solid var(--border-soft);
+  background: var(--surface);
+}
+
+.tg-attach {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--subtle);
+}
+
+.tg-field {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 12px;
+  border-radius: 99px;
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  font-size: 12.5px;
+  color: var(--subtle);
+}
+
+.tg-send {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+}
+
+.tg-send-ic {
+  width: 15px;
+  height: 15px;
+  color: #fff;
+}
+
+@keyframes tg-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tg-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes tg-fade-in {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Telegram mock, dark: the wallpaper and incoming bubbles follow Telegram's
+   own dark appearance (dark green-tinted wallpaper, graphite bubbles) so the
+   foreign app stays recognizable instead of glaring white on the dark page.
+   The outgoing green bubble is Telegram's in both schemes and stays put. */
+.dark .tg-feed {
+  --tg-card: oklch(0.28 0 0);
+  background-color: oklch(0.24 0.02 150);
+  background-image:
+    radial-gradient(
+      color-mix(in oklab, oklch(0.75 0.06 150) 10%, transparent) 1px,
+      transparent 1.5px
+    ),
+    linear-gradient(165deg, oklch(0.26 0.025 155), oklch(0.2 0.03 140));
+}
+
+/* ── Phone ───────────────────────────────────────────────────────────
+   A real device frame: phone-bezel.svg draws the band, the metal rails
+   and the side buttons as one overlay, and the live demo sits behind its
+   aperture. An overlay rather than a background because the screen has to
+   be real DOM you can read and click; pointer-events are off so the
+   hardware never intercepts anything.
+
+   8px of band on a 47px inner radius — the concentric pair the asset is
+   drawn to. Change one and the bezel stops being an even width. */
+.phone {
+  position: relative;
+  width: 100%;
+  max-width: 264px;
+  aspect-ratio: 390 / 800;
+  margin-inline: auto;
+  border-radius: 37px;
+  isolation: isolate;
+}
+
+.phone-screen {
+  position: absolute;
+  inset: 5.4px;
+  border-radius: 32px;
+  overflow: hidden;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.phone-bezel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Status bar and home indicator: the two pieces of iOS chrome that make a
+   rectangle read as a running phone rather than a cropped screenshot. */
+.phone-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 18px 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--surface);
+  flex: none;
+}
+
+.phone-status-right {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.phone-status-right svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* The island sits over the status bar, inside the screen, as it does on the
+   device — not punched out of the bezel. */
+.phone-island {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 62px;
+  height: 18px;
+  border-radius: 999px;
+  background: #000;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.phone-home {
+  flex: none;
+  width: 92px;
+  height: 4px;
+  margin: 5px auto 7px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--ink) 45%, transparent);
+}
+
+/* The demo fills what is left between the status bar and the indicator. */
+.phone-app {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Inside a phone the chat is the whole screen, so it drops the standalone
+   card treatment it carries as a band visual. */
+.phone-app .tg {
+  max-width: none;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.phone-app .tg-feed {
+  flex: 1;
+  min-height: 0;
 }

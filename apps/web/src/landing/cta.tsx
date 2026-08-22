@@ -157,7 +157,12 @@ export function EmailSignup({ placement }: { placement: CtaPlacement }) {
   }
 
   return (
-    <form className="subscribe-form" onSubmit={submit} noValidate>
+    <form
+      className="subscribe-form"
+      data-status={status}
+      onSubmit={submit}
+      noValidate
+    >
       <input
         id={SUBSCRIBE_EMAIL_ID}
         className="subscribe-input"

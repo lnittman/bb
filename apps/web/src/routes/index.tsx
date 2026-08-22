@@ -59,6 +59,7 @@ import shortcutLogo from "../assets/company-logos/shortcut.svg";
 import simileLogo from "../assets/company-logos/simile.svg";
 import bbIconLarge from "../assets/bb-icon.png";
 import hermesAvatar from "../assets/hermes-avatar.jpg";
+import phoneBezel from "../assets/phone-bezel.svg";
 import vscodeIcon from "../assets/vscode.png";
 import { RELEASE_META, parseChangelog } from "../landing/changelog";
 import {
@@ -2132,6 +2133,173 @@ function ReviewDemo() {
             <em className="review-add">+4</em>
           </span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** Signal bars and a battery. Not from the icon set — these are phone
+ *  hardware chrome, not product iconography. */
+const SignalGlyph = () => (
+  <svg viewBox="0 0 16 12" fill="currentColor" aria-hidden>
+    <rect x="0" y="8" width="2.6" height="4" rx="0.8" />
+    <rect x="4.2" y="5.5" width="2.6" height="6.5" rx="0.8" />
+    <rect x="8.4" y="3" width="2.6" height="9" rx="0.8" />
+    <rect x="12.6" y="0.5" width="2.6" height="11.5" rx="0.8" />
+  </svg>
+);
+
+const BatteryGlyph = () => (
+  <svg viewBox="0 0 20 12" fill="none" aria-hidden>
+    <rect
+      x="0.6"
+      y="1.4"
+      width="15.6"
+      height="9.2"
+      rx="2.6"
+      stroke="currentColor"
+      strokeOpacity="0.5"
+      strokeWidth="1.1"
+    />
+    <rect x="2.3" y="3.1" width="11" height="5.8" rx="1.4" fill="currentColor" />
+    <path
+      d="M18 4.6v2.8c.9-.3 1.4-.8 1.4-1.4S18.9 4.9 18 4.6Z"
+      fill="currentColor"
+      fillOpacity="0.5"
+    />
+  </svg>
+);
+
+/* ────────────────────────────────────────────────
+ * PHONE
+ *
+ * A real device frame with live DOM behind its aperture: the bezel, rails
+ * and buttons are one SVG overlay, and the screen is a flex column holding
+ * the status bar, the app, and the home indicator. Nothing here claims bb
+ * ships a native app — what runs on these screens is Telegram, and bb's own
+ * question arriving where you are.
+ * ──────────────────────────────────────────────── */
+function Phone({
+  children,
+  label,
+}: {
+  children: ReactNode;
+  label: string;
+}) {
+  return (
+    <div className="phone" role="img" aria-label={label}>
+      <div className="phone-screen">
+        <div className="phone-status" aria-hidden>
+          <span>9:41</span>
+          <span className="phone-status-right">
+            <SignalGlyph />
+            <BatteryGlyph />
+          </span>
+        </div>
+        <div className="phone-app">{children}</div>
+        <span className="phone-home" aria-hidden />
+      </div>
+      <span className="phone-island" aria-hidden />
+      <img src={phoneBezel} alt="" className="phone-bezel" aria-hidden />
+    </div>
+  );
+}
+
+/* Hold a state, fade it out, replay it. Used by the chat so the whole
+ * conversation cycles as one rather than each message looping on its own. */
+function useCycle(holdMs: number, fadeMs: number) {
+  const [cycle, setCycle] = useState(0);
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let holdTimer = 0;
+    let fadeTimer = 0;
+    const schedule = () => {
+      holdTimer = window.setTimeout(() => {
+        setLeaving(true);
+        fadeTimer = window.setTimeout(() => {
+          setCycle((c) => c + 1);
+          setLeaving(false);
+          schedule();
+        }, fadeMs);
+      }, holdMs);
+    };
+    schedule();
+    return () => {
+      window.clearTimeout(holdTimer);
+      window.clearTimeout(fadeTimer);
+    };
+  }, [holdMs, fadeMs]);
+  return { cycle, leaving };
+}
+
+/* A Telegram chat with the bb bot: you text a request, the bot acks with the
+ * command it ran, and a thread card lands and goes spawning → running. The
+ * shell stays put; only the messages cycle. */
+function AgentChat() {
+  const { cycle, leaving } = useCycle(6000, 600);
+  return (
+    <div className="tg">
+      <div className="tg-bar">
+        <ChevronLeft className="tg-back" />
+        <span className="tg-contact">
+          <span className="tg-name">Hermes</span>
+          <span className="tg-sub">bot</span>
+        </span>
+        <span className="tg-av" aria-hidden>
+          <img src={hermesAvatar} alt="" />
+        </span>
+      </div>
+      <div className="tg-feed">
+        <div className={leaving ? "tg-msgs leaving" : "tg-msgs"} key={cycle}>
+          <div className="tg-msg tg-out" style={{ animationDelay: "0.3s" }}>
+            <span className="tg-bubble">
+              spawn a thread: audit our promo code coverage
+              <span className="tg-time">9:41</span>
+            </span>
+          </div>
+          <div className="tg-msg tg-in" style={{ animationDelay: "1.4s" }}>
+            <span className="tg-bubble">
+              On it. Spawning a worker thread.
+              <span className="tg-cmd mono">
+                bb thread spawn &quot;audit promo code coverage&quot;
+              </span>
+            </span>
+          </div>
+          <div className="tg-msg tg-in" style={{ animationDelay: "2.4s" }}>
+            <div className="tg-thread">
+              <div className="tg-thread-top">
+                <span aria-hidden="true" className="bb-mark tg-thread-mark" />
+                <span className="tg-thread-eyebrow">Worker thread</span>
+                <span className="tg-stat" aria-hidden>
+                  <span
+                    className="tg-stat-spawn"
+                    style={{ animationDelay: "3.5s" }}
+                  >
+                    <Spinner className="tg-spin" />
+                    spawning
+                  </span>
+                  <span
+                    className="tg-stat-run"
+                    style={{ animationDelay: "3.5s" }}
+                  >
+                    <span className="tg-rdot" />
+                    running
+                  </span>
+                </span>
+              </div>
+              <div className="tg-thread-title">Audit promo code coverage</div>
+              <div className="tg-thread-branch mono">bb/audit-promo-coverage</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="tg-input">
+        <Paperclip className="tg-attach" />
+        <span className="tg-field">Message</span>
+        <span className="tg-send" aria-hidden>
+          <PaperPlane className="tg-send-ic" />
+        </span>
       </div>
     </div>
   );
