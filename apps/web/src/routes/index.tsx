@@ -2183,29 +2183,46 @@ function AskPhone() {
   return (
     <div className="ap">
       <div className="ap-bar">
-        <span className="ap-thread">Audit promo code coverage</span>
-        <span className="ap-wait">
-          <HugeiconsIcon icon={MessageQuestionIcon} className="ap-wait-ic" />
-          Waiting for you
+        <span className="ap-back" aria-hidden>
+          <ChevronLeft className="ap-back-ic" />
+        </span>
+        <span className="ap-head">
+          <span className="ap-thread">Audit promo code coverage</span>
+          <span className="ap-proj">storefront</span>
+        </span>
+        <span className="ap-av" aria-hidden>
+          <OpenAiIcon className="ap-av-ic" />
         </span>
       </div>
       <div className="ap-body">
-        <p className="ap-q">
-          Should the promo engine support stacking codes, or one per cart?
+        {/* What the thread was doing when it stopped, so the question has
+            somewhere to have come from. */}
+        <p className="ap-step">Edited promo.test.ts</p>
+        <p className="ap-say">
+          Four cases added. Before I pin the behaviour I need one decision.
         </p>
-        <div className="ap-opts">
-          {ASK_OPTIONS.slice(0, 3).map((o, i) => (
-            <button
-              key={o.label}
-              type="button"
-              className={picked === i ? "ap-opt on" : "ap-opt"}
-              aria-pressed={picked === i}
-              onClick={() => setPicked(i)}
-            >
-              <i className="ap-radio" />
-              <span className="ap-label">{o.label}</span>
-            </button>
-          ))}
+        <div className="ap-card">
+          <span className="ap-wait">
+            <HugeiconsIcon icon={MessageQuestionIcon} className="ap-wait-ic" />
+            Waiting for you
+          </span>
+          <p className="ap-q">
+            Should the promo engine support stacking codes, or one per cart?
+          </p>
+          <div className="ap-opts">
+            {ASK_OPTIONS.slice(0, 3).map((o, i) => (
+              <button
+                key={o.label}
+                type="button"
+                className={picked === i ? "ap-opt on" : "ap-opt"}
+                aria-pressed={picked === i}
+                onClick={() => setPicked(i)}
+              >
+                <i className="ap-radio" />
+                <span className="ap-label">{o.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
         {chosen ? (
           <p className="ap-reply">{chosen.outcome}</p>
@@ -3390,20 +3407,20 @@ function LandingPage() {
               app: one is a third-party chat app talking to your machine, the
               other is bb's own question reaching you wherever you are. */}
           <li className="bento-phone">
-            <h3>Answer from anywhere</h3>
-            <p>The question finds you instead of waiting at your desk.</p>
-            <div className="bento-component">
-              <Phone label="An agent's question, answered from a phone">
-                <AskPhone />
-              </Phone>
-            </div>
-          </li>
-          <li className="bento-phone">
             <h3>Text it to work</h3>
             <p>Message the bot and a thread spawns on your machine.</p>
             <div className="bento-component">
               <Phone label="Texting the bb bot, which spawns a thread">
                 <AgentChat />
+              </Phone>
+            </div>
+          </li>
+          <li className="bento-phone">
+            <h3>Answer from anywhere</h3>
+            <p>The question finds you instead of waiting at your desk.</p>
+            <div className="bento-component">
+              <Phone label="An agent's question, answered from a phone">
+                <AskPhone />
               </Phone>
             </div>
           </li>

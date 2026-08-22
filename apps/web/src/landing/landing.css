@@ -5451,9 +5451,11 @@ button.sub-row:focus-visible {
 }
 
 /* ── Ask, on a phone ─────────────────────────────────────────────────
-   bb's pending-question surface at phone width: a thread header saying who
-   is waiting, the question, and tappable answers. Sized for a thumb, not
-   scaled down from the desktop card. */
+   bb's thread at phone width: the header names the thread and its project,
+   the transcript shows what the agent was doing when it stopped, and the
+   pending question sits in its own card the way an interrupt does in the
+   app. Bottom-aligned, so the question is the thing at the bottom of the
+   screen where your thumb already is. */
 .ap {
   display: flex;
   flex-direction: column;
@@ -5464,15 +5466,31 @@ button.sub-row:focus-visible {
 .ap-bar {
   flex: none;
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 9px 14px 10px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 11px;
   border-bottom: 1px solid var(--border-soft);
   background: var(--surface);
 }
 
+.ap-back-ic {
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+}
+
+.ap-head {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+}
+
 .ap-thread {
-  font-size: 12.5px;
+  max-width: 100%;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--ink-strong);
   overflow: hidden;
@@ -5480,17 +5498,25 @@ button.sub-row:focus-visible {
   white-space: nowrap;
 }
 
-.ap-wait {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
+.ap-proj {
+  font-size: 9.5px;
   color: var(--subtle);
 }
 
-.ap-wait-ic {
-  width: 12px;
-  height: 12px;
+.ap-av {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface-3);
+}
+
+.ap-av-ic {
+  width: 13px;
+  height: 13px;
+  color: var(--dim);
 }
 
 .ap-body {
@@ -5498,22 +5524,120 @@ button.sub-row:focus-visible {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px 12px 10px;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 11px 10px;
+}
+
+.ap-step {
+  font-size: 10.5px;
+  color: var(--subtle);
+}
+
+.ap-step::before {
+  content: "› ";
+}
+
+.ap-say {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+/* The interrupt itself, raised off the transcript. */
+.ap-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  box-shadow: var(--ring);
+}
+
+.ap-wait {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--subtle);
+}
+
+.ap-wait-ic {
+  width: 11px;
+  height: 11px;
 }
 
 .ap-q {
-  font-size: 12.5px;
-  line-height: 1.45;
-  color: var(--ink-strong);
+  font-size: 11.5px;
+  line-height: 1.4;
   font-weight: 550;
+  color: var(--ink-strong);
   text-wrap: pretty;
 }
 
 .ap-opts {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
+}
+
+/* 36px rows: a real thumb target, which is the point of showing this on a
+   phone at all. */
+.ap-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 7px 9px;
+  text-align: left;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid transparent;
+  border-radius: 9px;
+  cursor: pointer;
+  transition:
+    background var(--duration-hover) var(--ease-standard),
+    border-color var(--duration-hover) var(--ease-standard);
+}
+
+.ap-opt.on {
+  background: color-mix(in oklab, var(--ink) 9%, var(--bg));
+  border-color: color-mix(in oklab, var(--ink) 22%, var(--bg));
+}
+
+.ap-radio {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-strong);
+  transition: border-color var(--duration-hover) var(--ease-standard);
+}
+
+.ap-opt.on .ap-radio {
+  border-width: 4px;
+  border-color: var(--ink-strong);
+}
+
+.ap-label {
+  min-width: 0;
+}
+
+.ap-hint,
+.ap-reply {
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--subtle);
+  text-wrap: pretty;
+}
+
+.ap-reply {
+  color: var(--ink);
+  animation: gang-in 0.45s var(--ease-out) both;
 }
 
 /* 40px rows: a real thumb target, which is the point of showing this on a
@@ -5717,4 +5841,67 @@ button.sub-row:focus-visible {
   min-width: 0;
   max-width: 100%;
   overflow-wrap: anywhere;
+}
+
+/* Overscroll past the end of the page revealed the body's canvas behind the
+   closing band, which is a different colour — the band appeared to lift off
+   a seam. The band paints its own colour on past the document instead, so
+   the rubber band shows more of the same surface. Half a viewport is more
+   than any overscroll reaches. */
+.band-close {
+  position: relative;
+}
+
+.band-close::after {
+  content: "";
+  position: absolute;
+  inset: 100% 0 auto;
+  height: 50vh;
+  background: inherit;
+  pointer-events: none;
+}
+
+/* Island geometry, as a share of the device rather than fixed pixels, so it
+   holds wherever the phone is sized. An iPhone 15 puts a 125x37pt island
+   11pt below the screen edge on a 393pt-wide screen; these are those
+   proportions. It was reading high because the status bar's own padding put
+   its text above the island's centre rather than on it. */
+.phone-island {
+  top: 4%;
+  width: 31%;
+  height: 4.6%;
+}
+
+.phone-status {
+  padding: 0 15px;
+  height: 10.4%;
+  align-items: center;
+}
+
+/* Lines that have not arrived yet are removed from flow, not just made
+   transparent. They were holding their space, and because the feed is
+   bottom-aligned that space sat between the last visible line and the
+   composer — the "odd empty gap" in every thread demo. Nothing about the
+   window moves when they go: the demo carries a fixed min-height and the
+   feed is flex:1, so the transcript simply grows upward toward the
+   composer, which is how a real thread fills. */
+.gang-step.out,
+.gang-say.out,
+.gang-you.out {
+  display: none;
+}
+
+/* Same for rail rows that have not spawned yet: the reserved slots were
+   leaving a hole under the project label. */
+.spawn-demo .spawn-new:not(.in) {
+  display: none;
+}
+
+/* Messages stack from the bottom, the way every chat does. The feed was
+   top-aligned, so one bubble sat under the contact bar with the whole
+   wallpaper empty below it — the opposite of how a conversation looks. */
+.phone-app .tg-feed {
+  justify-content: flex-end;
+  min-height: 0;
+  padding: 12px 10px;
 }
