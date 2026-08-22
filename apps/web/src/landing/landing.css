@@ -82,7 +82,7 @@
      frame landing at ~370px, a 2.8:1 letterbox that reads as a strip rather
      than an application. The hero mock has carried an explicit height all
      along, which is why it alone reads like a window. */
-  --demo-window: 500px;
+  --demo-window: 640px;
 
   --r-control: 8px;
   --r-field: 10px;

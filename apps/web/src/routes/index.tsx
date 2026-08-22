@@ -2185,6 +2185,9 @@ const BUILD_QUEUE = [
   { title: "Audit promo code coverage", ask: "Stack or replace?" },
   { title: "Port pricing to TypeScript", ask: "Strict null checks?" },
   { title: "Trace order checkout flow", ask: "Include tax lines?" },
+  { title: "Add Apple Pay to checkout", ask: "Sandbox or live keys?" },
+  { title: "Retire the legacy cart cookie", ask: "Migrate or drop sessions?" },
+  { title: "Split the order confirmation", ask: "One email or two?" },
 ] as const;
 
 function BuildDemo() {
@@ -2265,6 +2268,32 @@ function BuildDemo() {
             <span className="sub-title">Audit promo code coverage</span>
             <i className="sub-dot" />
           </div>
+          <div className="sub-row gang-row">
+            <CursorIcon className="gang-pv" />
+            <span className="sub-title">Trace order checkout flow</span>
+            <i className="sub-dot" />
+          </div>
+          <div className="sub-row gang-row">
+            <GrokIcon className="gang-pv" />
+            <span className="sub-title">Summarize checkout cart integration</span>
+            <i className="sub-dot" />
+          </div>
+          <div className="sub-row gang-row">
+            <PiIcon className="gang-pv" />
+            <span className="sub-title">Cut the 1.4 release notes</span>
+            <i className="sub-dot" />
+          </div>
+          <span className="sub-group gang-gap">checkout-api</span>
+          <div className="sub-row gang-row">
+            <OmpIcon className="gang-pv" />
+            <span className="sub-title">Describe order endpoint validation</span>
+            <i className="sub-dot" />
+          </div>
+          <div className="sub-row gang-row">
+            <OpencodeIcon className="gang-pv" />
+            <span className="sub-title">Summarize service route</span>
+            <i className="sub-dot" />
+          </div>
         </div>
         <div className="gang-thread">
           <div className="gang-feed">
@@ -2282,6 +2311,12 @@ function BuildDemo() {
                 {s.text}
               </p>
             ))}
+            <p className={done ? "gang-say in" : "gang-say out"}>
+              One manifest registers three surfaces: a panel that renders the
+              queue, a <code>bb review</code> command that prints the same list
+              to a shell, and a skill so any agent here checks it before asking
+              you something twice.
+            </p>
             <p className={done ? "gang-say in" : "gang-say out"}>
               The panel is live in your sidebar. bb building bb.
             </p>
@@ -2340,7 +2375,9 @@ function BuildDemo() {
               </li>
             ))}
           </ul>
-          <span className="build-queue-foot">3 threads waiting on you</span>
+          <span className="build-queue-foot">
+            {BUILD_QUEUE.length} threads waiting on you
+          </span>
         </div>
       </div>
     </div>
@@ -2374,17 +2411,23 @@ const GANG_STEPS = [
   { kind: "step", text: "Read promo.ts, cart.ts, checkout.ts" },
   {
     kind: "say",
-    text: "applyPromo covers percent and fixed codes. Nothing exercises two codes on one cart.",
+    text: "applyPromo handles percent and fixed codes, and the suite covers both. What nothing exercises is two codes on the same cart — the branch where a second code lands on an already-discounted subtotal.",
   },
   { kind: "step", text: "Explored 3 files" },
   {
     kind: "say",
-    text: "The promo engine has no test for stacked codes.",
+    text: "There is a second gap underneath it. PERCENT_CODES is read with a bare index, so a code that collides with a prototype key returns a function instead of a rate and the subtotal comes back NaN.",
   },
   { kind: "step", text: "Edited promo.test.ts" },
-  { kind: "say", text: "Added four cases. Running the suite." },
+  {
+    kind: "say",
+    text: "Added four cases: two codes on one cart, a code that collides with a prototype key, an empty cart, and a rounding boundary at a half cent.",
+  },
   { kind: "step", text: "Ran 32 tests" },
-  { kind: "say", text: "All 32 passing. Promo coverage holds." },
+  {
+    kind: "say",
+    text: "All 32 passing. Promo coverage holds, and the prototype-key path is pinned so it cannot regress quietly.",
+  },
 ] as const;
 
 /** Demos play themselves until the visitor touches one, then hand over.
@@ -2505,17 +2548,42 @@ function GangDemo() {
           <span className="sub-title">Explain promo checkout impact</span>
           <HugeiconsIcon icon={MessageQuestionIcon} className="gang-wait" />
         </div>
+        <div className="sub-row gang-row">
+          <GrokIcon className="gang-pv" />
+          <span className="sub-title">Summarize checkout cart integration</span>
+          <i className="sub-dot" />
+        </div>
+        <div className="sub-row gang-row">
+          <HermesAgentIcon className="gang-pv" />
+          <span className="sub-title">Cut the 1.4 release notes</span>
+          <i className="sub-dot" />
+        </div>
         <span className="sub-group gang-gap">checkout-api</span>
         <div className="sub-row gang-row">
           <PiIcon className="gang-pv" />
           <span className="sub-title">Summarize service route</span>
           {stage >= 3 || settled ? <i className="sub-dot" /> : <DemoSpinner />}
         </div>
+        <div className="sub-row gang-row">
+          <OmpIcon className="gang-pv" />
+          <span className="sub-title">Describe order endpoint validation</span>
+          <i className="sub-dot" />
+        </div>
+        <div className="sub-row gang-row">
+          <CursorIcon className="gang-pv" />
+          <span className="sub-title">Explain orders error handling</span>
+          <i className="sub-dot" />
+        </div>
         <span className="sub-group gang-gap">mobile</span>
         <div className="sub-row gang-row">
           <OpencodeIcon className="gang-pv" />
           <span className="sub-title">Suggest README improvement</span>
           <DemoSpinner />
+        </div>
+        <div className="sub-row gang-row">
+          <ClaudeIcon className="gang-pv" />
+          <span className="sub-title">Explain package scripts</span>
+          <i className="sub-dot" />
         </div>
       </div>
       <div className="gang-thread">
@@ -2605,13 +2673,24 @@ const SPAWN_CAUSES = [
     diff: { files: "3 files", add: "+61", del: "-4" },
     lines: [
       { kind: "step", text: "Read checkout.ts" },
-      { kind: "say", text: "Cart totals resolve before promo codes apply." },
+      {
+        kind: "say",
+        text: "Cart totals resolve before promo codes apply, so the discount always sees a settled subtotal rather than a running one.",
+      },
       { kind: "step", text: "Read 3 files" },
       {
         kind: "say",
-        text: "Tax reads the discounted subtotal, so promo has to land first.",
+        text: "Tax reads the discounted subtotal, which means promo has to land first or the line comes out high. The ordering is load-bearing and nothing in the code says so.",
       },
-      { kind: "say", text: "Traced. The order is cart, then promo, then tax." },
+      { kind: "step", text: "Read 2 call sites" },
+      {
+        kind: "say",
+        text: "Only the express-checkout path builds its own total, and it calls promo after tax. That is the one place this can go wrong.",
+      },
+      {
+        kind: "say",
+        text: "Traced. The order is cart, then promo, then tax, and I left a comment at the call site that could reorder them.",
+      },
     ],
   },
   {
@@ -2622,13 +2701,24 @@ const SPAWN_CAUSES = [
     diff: { files: "1 file", add: "+38", del: "-2" },
     lines: [
       { kind: "step", text: "Read promo.test.ts" },
-      { kind: "say", text: "The promo engine has no test for stacked codes." },
+      {
+        kind: "say",
+        text: "The promo engine has no test for stacked codes. Every existing case applies one code to a clean cart and stops there.",
+      },
       { kind: "step", text: "Edited promo.test.ts" },
       {
         kind: "say",
-        text: "Covered two codes on one cart, and a code that collides with a prototype key.",
+        text: "Covered two codes on one cart, a code that collides with a prototype key, an empty cart, and a half-cent rounding boundary.",
       },
-      { kind: "say", text: "Added four cases. All 32 passing." },
+      { kind: "step", text: "Ran 32 tests" },
+      {
+        kind: "say",
+        text: "The stacked-code case failed first time round: the second discount applied to the original subtotal instead of the discounted one.",
+      },
+      {
+        kind: "say",
+        text: "Added four cases. All 32 passing, and the prototype-key path is pinned.",
+      },
     ],
   },
   {
@@ -2639,13 +2729,24 @@ const SPAWN_CAUSES = [
     diff: { files: "14 files", add: "+126", del: "-118" },
     lines: [
       { kind: "step", text: "Read 14 package manifests" },
-      { kind: "say", text: "Fourteen manifests read. Seven are behind." },
       {
         kind: "say",
-        text: "Six are minors and group cleanly. The major is vite, so it goes on its own.",
+        text: "Fourteen manifests read, seven behind. Six are minors that group cleanly into one bump; the seventh is vite, and a major goes on its own branch.",
+      },
+      {
+        kind: "say",
+        text: "The vite bump moves esbuild under it, which is the peer warning the install has been printing, so that one wants a real look before it merges.",
       },
       { kind: "step", text: "Opened 3 pull requests" },
-      { kind: "say", text: "Sweep done. Three PRs are up for review." },
+      { kind: "step", text: "Ran the suite on each branch" },
+      {
+        kind: "say",
+        text: "The grouped minors are green. The vite branch fails two Playwright specs that look like a dev-server timing change rather than a real break.",
+      },
+      {
+        kind: "say",
+        text: "Sweep done. Three PRs are up, and the vite one is draft until someone reads the esbuild note.",
+      },
     ],
   },
 ] as const;
@@ -2810,6 +2911,27 @@ function SpawnDemo() {
           <div className="sub-row gang-row sub-quiet">
             <OpencodeIcon className="gang-pv" />
             <span className="sub-title">Summarize service route</span>
+            <i className="sub-dot" />
+          </div>
+          <div className="sub-row gang-row sub-quiet">
+            <GrokIcon className="gang-pv" />
+            <span className="sub-title">Explain orders error handling</span>
+            <i className="sub-dot" />
+          </div>
+          <span className="sub-group gang-gap">mobile</span>
+          <div className="sub-row gang-row sub-quiet">
+            <OmpIcon className="gang-pv" />
+            <span className="sub-title">Suggest README improvement</span>
+            <i className="sub-dot" />
+          </div>
+          <div className="sub-row gang-row sub-quiet">
+            <CursorIcon className="gang-pv" />
+            <span className="sub-title">Explain package scripts</span>
+            <i className="sub-dot" />
+          </div>
+          <div className="sub-row gang-row sub-quiet">
+            <ClaudeIcon className="gang-pv" />
+            <span className="sub-title">Summarize app purpose</span>
             <i className="sub-dot" />
           </div>
         </div>
