@@ -232,7 +232,7 @@ export function SubscribeCard({
   title: string;
 }) {
   return (
-    <div className="subscribe-card">
+    <div className="subscribe-card rail">
       <div className="subscribe-card-head">
         <h2>{title}</h2>
         <p>Product updates and what we&rsquo;re building next. No spam.</p>

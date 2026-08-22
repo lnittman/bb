@@ -4272,12 +4272,67 @@ button.sub-row:focus-visible {
 
 /* ── Closer: one ending with the subscribe inline ────────────────── */
 
-.closer-mark {
-  display: block;
-  margin: 0 auto 24px;
-  width: 56px;
-  height: 56px;
-  object-fit: contain;
+/* The field. A fixed-height stage the discs are placed into by percentage, so
+   the arc keeps its shape at any width. Nothing animates: depth is the whole
+   effect, and depth does not need to move to be read. */
+.closer-field {
+  position: relative;
+  /* Wider than the text it sits above, and the outer discs are placed at 2%
+     and 98% so they crop against the viewport rather than stopping politely
+     inside it — the reference reads as a field continuing past the frame, not
+     a row of eight things. */
+  width: min(760px, 100%);
+  height: 250px;
+  margin: 0 auto 34px;
+  /* The back tier is blurred, and a blur samples past its own box; without
+     this the soft edges clip against the stage instead of fading. */
+  overflow: visible;
+}
+
+.pf {
+  position: absolute;
+  translate: -50% -50%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  /* A flat disc mixed from the page's own anchors, so it re-tints with a
+     custom palette instead of sitting on a fixed grey. */
+  background: color-mix(in oklab, var(--ink-strong) 8%, var(--canvas));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent);
+}
+
+.pf-logo {
+  width: 44%;
+  height: 44%;
+  color: var(--ink);
+}
+
+/* Three tiers of distance. Each step loses size, gains blur and drops ink —
+   the three things that actually happen to something further away. */
+.pf-1 {
+  opacity: 1;
+}
+
+.pf-2 {
+  opacity: 0.55;
+  filter: blur(1.5px);
+}
+
+.pf-3 {
+  opacity: 0.34;
+  filter: blur(5px);
+}
+
+@media (max-width: 620px) {
+  /* The arc is built for a 560px stage; at phone width the outer discs would
+     collide with the front pair, so the field keeps only what still reads. */
+  .closer-field {
+    height: 168px;
+  }
+
+  .pf-3 {
+    display: none;
+  }
 }
 
 .closer-subscribe {
@@ -4393,8 +4448,13 @@ button.sub-row:focus-visible {
    appears twice on the page, it has to hold its own composition — a bare
    form repeated reads as a repeated afterthought. */
 .subscribe-card {
-  width: min(var(--rail), calc(100vw - 2 * var(--gutter)));
-  margin-inline: auto;
+  /* Width comes from `.rail`, the same class the PR feed and the stat cards
+     use, so the card lines up with them instead of sitting inset by the
+     924px content box of `.wrap`. `.rail` reaches the full 1200px by
+     computing a negative inline margin explicitly — which is why an earlier
+     attempt at `width: min(var(--rail), …); margin-inline: auto` failed:
+     `auto` cannot distribute free space that is negative, so the card pinned
+     to its parent's left edge and read as off-centre. */
   padding: 44px 32px;
   display: flex;
   flex-direction: column;
@@ -4564,6 +4624,42 @@ button.sub-row:focus-visible {
   font-size: 14px;
 }
 
+/* Groups left, mark right. */
+.footer-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+/* A mask, not an image: the glyph takes --ink directly, so it follows a
+   custom palette instead of stranding a fixed-colour PNG on a tinted ground,
+   and one file serves both themes. bb-icon-dark.png is the source because the
+   light file has the rounded app-icon tile painted into its artwork; the dark
+   one is the bare letterform. Quiet enough to sign the page rather than
+   compete with the header. */
+.footer-mark {
+  flex: none;
+  width: 84px;
+  height: 84px;
+  background: color-mix(in oklab, var(--ink-strong) 16%, transparent);
+  -webkit-mask-image: url("../assets/bb-icon-dark.png");
+  mask-image: url("../assets/bb-icon-dark.png");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+@media (max-width: 620px) {
+  .footer-mark {
+    width: 56px;
+    height: 56px;
+  }
+}
+
 /* Auto-fit rather than a fixed count: three groups today, and a fourth can be
    added without touching this rule. The 150px floor is what a group needs
    before its longest link starts wrapping. */
@@ -4578,15 +4674,14 @@ button.sub-row:focus-visible {
   gap: 28px 80px;
 }
 
-/* Monospace uppercase, used nowhere else on the page — see SiteFooter. The
-   tracking is what makes uppercase at this size readable; without it the
-   letterforms crowd and the label turns into a block. */
+/* Sans, like the rest of the page. An earlier pass set this in monospace
+   uppercase to mark the footer as a different kind of surface; it read as a
+   costume rather than a distinction. A group name earns its separation from
+   its links through weight and ink, which is enough. */
 .footer-group > h2 {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
   /* Full ink against the links' --subtle. At identical size and tracking the
      only thing separating a group name from its members is this step, and
      without it the whole footer reads as one undifferentiated list. */
@@ -4608,18 +4703,16 @@ button.sub-row:focus-visible {
   /* 28px, so a link in the footer is an actual target on a phone. As a
      one-line run of middots these were 17px tall. */
   min-height: 28px;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 13.5px;
   color: var(--subtle);
   transition: color var(--duration-hover) var(--ease-standard);
 }
 
+/* No rule above this row. It could only ever be as wide as the rail, so it
+   read as a line that stopped short rather than a division of the page, and
+   the section grounds already do the dividing everywhere else. */
 .footer-base {
-  margin-top: 40px;
-  padding-top: 22px;
-  border-top: 1px solid var(--line);
+  margin-top: 44px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -5860,11 +5953,14 @@ button.sub-row:focus-visible {
 .theme-seg,
 .gang-commit,
 .review-commit,
-.subscribe-form,
+.subscribe-input,
 .plogo,
 .nav-links a,
 .footer a,
-.pr-feed li a,
+.pr-feed li a {
+  transition-duration: var(--hover-out);
+}
+
 /* :active as well as :hover — the press scale has to land on the frame the
    pointer goes down, and ease back over 150ms when it lifts. */
 .btn:active,
@@ -5874,11 +5970,14 @@ button.sub-row:focus-visible {
 .theme-seg:hover,
 .gang-commit:hover,
 .review-commit:hover,
-.subscribe-form:focus-within,
 .plogo:hover,
 .nav-links a:hover,
 .footer a:hover,
 .pr-feed li a:hover,
+.subscribe-input:focus {
+  transition-duration: 0ms;
+}
+
 /* Rows are on or off. A thread row that fades its tile reads as laggy next
    to the app, which repaints it instantly. */
 .trow,

@@ -2242,26 +2242,52 @@ function AskPhone() {
 // is flat and printed and belongs. A cycle of one is just a toggle, which is
 // enough of an easter egg until there are more that earn their place.
 /**
- * The riso print of the bb mark, and the last thing on the page.
+ * The closer's field of agents.
  *
- * This used to rest on `bb-icon.png` and swap to the sticker on press. Two
- * things were wrong with that. `bb-icon.png` is the 192px macOS app icon, so
- * the rounded tile behind the mark is painted into the artwork itself — no
- * amount of transparent CSS removes it, and the mark is never supposed to sit
- * on a plaque. And it put the good drawing behind an interaction most readers
- * would never perform, which is a strange place to hide the one piece of
- * warmth on the page. The riso is the resting state now.
+ * A shallow arc of provider marks receding into depth: the two bb is most used
+ * with sit forward and sharp, the rest fall back through two tiers of scale,
+ * blur and ink until they are atmosphere. It replaces a single 72px logo above
+ * "Put your agents to work", which is a line about many agents illustrated by
+ * one mark of the tool.
+ *
+ * Flat discs, not the glossy spheres of the reference. Depth here comes from
+ * blur, scale and opacity — the things distance actually does to a thing you
+ * are looking at — rather than from gloss and rim light, which would make this
+ * the 3D render the page does not allow itself.
+ *
+ * Every mark is a provider bb genuinely runs. The field is `aria-hidden`
+ * because the hero already lists these with real names; a second announcement
+ * of the same eight would be noise, and nothing here is stated only visually.
  */
+const CLOSER_FIELD = [
+  { Icon: OmpIcon, tier: 3, x: 2, y: 20, size: 82 },
+  { Icon: GrokIcon, tier: 3, x: 26, y: 6, size: 68 },
+  { Icon: OpencodeIcon, tier: 3, x: 74, y: 7, size: 72 },
+  { Icon: HermesAgentIcon, tier: 3, x: 98, y: 22, size: 78 },
+  { Icon: CursorIcon, tier: 2, x: 14, y: 52, size: 104 },
+  { Icon: PiIcon, tier: 2, x: 86, y: 54, size: 100 },
+  { Icon: ClaudeIcon, tier: 1, x: 37, y: 62, size: 132 },
+  { Icon: OpenAiIcon, tier: 1, x: 63, y: 66, size: 124 },
+] as const;
+
 function CloserMark() {
   return (
-    <img
-      src={bbStickerRiso}
-      alt=""
-      className="closer-mark"
-      width={72}
-      height={72}
-      draggable={false}
-    />
+    <div className="closer-field" aria-hidden>
+      {CLOSER_FIELD.map(({ Icon, tier, x, y, size }, i) => (
+        <span
+          key={i}
+          className={`pf pf-${tier}`}
+          style={{
+            left: `${x}%`,
+            top: `${y}%`,
+            width: `${size}px`,
+            height: `${size}px`,
+          }}
+        >
+          <Icon className="pf-logo" />
+        </span>
+      ))}
+    </div>
   );
 }
 

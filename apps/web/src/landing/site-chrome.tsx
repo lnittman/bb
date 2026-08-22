@@ -191,6 +191,7 @@ function FooterGroup({
 export function SiteFooter() {
   return (
     <footer className="footer">
+      <div className="footer-top">
       <nav className="footer-groups" aria-label="Footer">
         <FooterGroup title="Product">
           <li>
@@ -220,6 +221,13 @@ export function SiteFooter() {
           </li>
         </FooterGroup>
       </nav>
+        {/* bb-icon-dark.png rather than bb-icon.png: the light file has the
+            rounded app-icon tile painted into the artwork, the dark one is the
+            bare letterform. It is used as a mask rather than an image, so the
+            mark takes the theme's own ink instead of shipping a second file
+            and instead of being a cream glyph that vanishes on white. */}
+        <span className="footer-mark" aria-hidden />
+      </div>
       <div className="footer-base">
         <span>bb is free and open source (MIT)</span>
         <ThemeSwitch />
