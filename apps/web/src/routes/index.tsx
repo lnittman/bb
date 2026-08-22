@@ -2796,7 +2796,17 @@ function GangDemo() {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const open = openKey ? GANG_THREADS[openKey] : null;
   return (
-    <div className="gang-demo" ref={ref} aria-hidden>
+    /* Not aria-hidden. Three of the thread rows here are real buttons that
+       swap the pane, and they were sitting inside a hidden root — reachable
+       by keyboard, announced as nothing. A surface with working controls has
+       to be a surface, so the window is a labelled group and the parts of it
+       that are only scenery are hidden individually below. */
+    <div
+      className="gang-demo"
+      ref={ref}
+      role="group"
+      aria-label="A bb window with one thread open and others running"
+    >
       <div className="dwin-bar">
         <span className="dwin-title">
           {openKey === "trace-order-checkout-flow"
@@ -2816,7 +2826,7 @@ function GangDemo() {
       </div>
       <div className="gang-body">
       <div className="gang-side">
-        <div className="sub-top">
+        <div className="sub-top" aria-hidden>
           <span className="sub-newthread">
             <NewThreadIcon className="sub-top-ic" />
             New thread
@@ -2824,10 +2834,15 @@ function GangDemo() {
           <SearchGlyph className="sub-top-ic sub-search" />
         </div>
         <span className="sub-group">storefront</span>
+        {/* Explicit labels: the provider icons render a <title> and the icon
+            components only forward className, so the computed name would be
+            "OpenAIAudit promo code coverage". A control should say what
+            pressing it does anyway. */}
         <button
           type="button"
           className={openKey ? "sub-row gang-row" : "sub-row gang-row is-open"}
           aria-pressed={!openKey}
+          aria-label="Show the thread: Audit promo code coverage"
           onClick={() => withViewTransition(() => setOpenKey(null))}
         >
           <OpenAiIcon className="gang-pv" />
@@ -2842,6 +2857,7 @@ function GangDemo() {
               : "sub-row gang-row"
           }
           aria-pressed={openKey === "trace-order-checkout-flow"}
+          aria-label="Show the thread: Trace order checkout flow"
           onClick={() =>
             withViewTransition(() => setOpenKey("trace-order-checkout-flow"))
           }
@@ -2889,6 +2905,7 @@ function GangDemo() {
               : "sub-row gang-row"
           }
           aria-pressed={openKey === "summarize-service-route"}
+          aria-label="Show the thread: Summarize service route"
           onClick={() =>
             withViewTransition(() => setOpenKey("summarize-service-route"))
           }
@@ -2931,7 +2948,7 @@ function GangDemo() {
             </p>
           ))}
         </div>
-        <div className="gang-pr">
+        <div className="gang-pr" aria-hidden>
           <GitMergeIcon className="gang-pr-ic" />
           <span className="gang-pr-strong">Uncommitted</span>
           <span className="gang-pr-dim">· {open ? open.files : "2 files"},</span>
@@ -2939,13 +2956,13 @@ function GangDemo() {
           <em className="review-del">{open ? open.del : "-2"}</em>
           <ChevronDown className="gang-commit-chev" />
         </div>
-        <div className="gang-composer">
+        <div className="gang-composer" aria-hidden>
           <span className="gang-ph">Ask a follow-up</span>
           <span className="gang-send">
             <SendIcon className="gang-send-ic" />
           </span>
         </div>
-        <div className="gang-ctx">
+        <div className="gang-ctx" aria-hidden>
           <span className="gang-ctx-item">
             <OpenAiIcon className="gang-ctx-ic" />
             Codex
