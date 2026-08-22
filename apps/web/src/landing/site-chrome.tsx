@@ -106,7 +106,33 @@ export function SiteNav({ current }: { current?: SiteNavPage }) {
     <nav className="nav">
       {/* One element; landing.css picks the asset off html.dark, so only the
           variant in use is ever downloaded (see .bb-mark). */}
-      <a className="logo" href="/" aria-label="bb">
+      {/* On the landing page itself this is already home, so it returns to
+          the top instead of reloading the document. Everywhere else it is a
+          plain link, so middle-click and open-in-new-tab still work. */}
+      <a
+        className="logo"
+        href="/"
+        aria-label="bb"
+        onClick={(event) => {
+          if (
+            current !== undefined ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.shiftKey ||
+            event.button !== 0
+          ) {
+            return;
+          }
+          event.preventDefault();
+          window.scrollTo({
+            top: 0,
+            behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
+              .matches
+              ? "auto"
+              : "smooth",
+          });
+        }}
+      >
         <span className="bb-mark logo-mark" />
       </a>
       <div className="nav-links">

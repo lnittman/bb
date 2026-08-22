@@ -3397,57 +3397,19 @@ function PRFeed() {
   );
 }
 
-/** A stat numeral that rolls up to its value with a character morph (torph)
- *  the first time it scrolls into view.
+/** A stat numeral.
  *
- *  The numeral holds its REAL value at every moment except the ~600ms of the
- *  roll itself. An earlier version zeroed the number at hydration and waited
- *  for the reader, which meant a stat card could read "0" for seconds while
- *  scrolled out of view — long enough for a full-page capture, a crawler, or
- *  a social preview to record a false statement about the project. These are
- *  the page's proof; they are never allowed to lie while waiting to be seen.
- *  So the roll is armed on intersection and starts from 0 only then. */
+ *  This used to roll up from zero with a character morph on first view. Two
+ *  things were wrong with it. The numbers are the section's proof, and a
+ *  proof that reads "0" for any window at all — even the one frame before
+ *  the morph starts — is a false statement about the project. And morphing
+ *  between numerals of different widths ("0" to "2,382") re-lays the glyphs
+ *  mid-flight, which reads as a rendering fault rather than as motion.
+ *
+ *  The cards still enter; the numbers inside them just tell the truth from
+ *  the first frame. */
 function StatNumber({ value }: { value: string }) {
-  const [text, setText] = useState(value);
-  const ref = useRef<HTMLElement>(null);
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-    const el = ref.current;
-    if (!el) return;
-    // Already on screen (deep link, short page): keep the real value.
-    if (el.getBoundingClientRect().top < window.innerHeight) return;
-    let done = false;
-    let frame = 0;
-    const roll = () => {
-      if (done) return;
-      done = true;
-      observer.disconnect();
-      setText("0");
-      // One frame at 0, then morph to the truth. torph animates the change.
-      frame = window.requestAnimationFrame(() => setText(value));
-    };
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry?.isIntersecting) roll();
-    });
-    observer.observe(el);
-    return () => {
-      observer.disconnect();
-      window.cancelAnimationFrame(frame);
-    };
-  }, [value]);
-  return (
-    <strong ref={ref}>
-      <TextMorph
-        as="span"
-        duration={620}
-        ease="cubic-bezier(0.19, 1, 0.22, 1)"
-      >
-        {text}
-      </TextMorph>
-    </strong>
-  );
+  return <strong>{value}</strong>;
 }
 
 /** Transform-only entrance for the bento: cards settle up as the grid enters
