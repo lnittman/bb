@@ -256,36 +256,6 @@ function InstallOptions({ placement }: { placement: CtaPlacement }) {
   );
 }
 
-/** The app mock plays its assembly entrance once, shortly after hydration.
- *  Rendering law: the finished mock is the resting DOM state — prerender, no-JS,
- *  reduced motion, and any capture taken before or after the entrance all show
- *  the complete app. The animation only ever adds motion on top; nothing is
- *  held invisible waiting for a scroll event. After the entrance the class
- *  swaps to `.constructed` so later re-renders (switching threads, opening the
- *  diff) don't replay it. */
-function useConstructMock() {
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-    const mock = document.querySelector("[data-construct]");
-    if (!mock || mock.classList.contains("constructed")) {
-      return;
-    }
-    let settle = 0;
-    const start = window.setTimeout(() => {
-      mock.classList.add("constructing");
-      settle = window.setTimeout(() => {
-        mock.classList.remove("constructing");
-        mock.classList.add("constructed");
-      }, 1800);
-    }, 150);
-    return () => {
-      window.clearTimeout(start);
-      window.clearTimeout(settle);
-    };
-  }, []);
-}
 
 /** Scale the desktop app mock for narrow viewports. Below the mobile breakpoint
  *  the mock keeps its full desktop layout and is shrunk with `zoom` so a fixed
@@ -910,10 +880,12 @@ function ThreadFeed({
   return (
     <div className={isLive ? "feed feed-live" : "feed"}>
       {items.map(({ id, step, live }, index) => {
-        // Live rows ease in as they arrive; seed rows keep the construct cascade.
-        const style: CSSProperties = live
+        // A row that arrives while you watch eases up as it lands. Rows that
+        // were already there when the thread opened simply are there — the
+        // app does not replay its own history.
+        const style: CSSProperties | undefined = live
           ? { animation: "c-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both" }
-          : { animationDelay: `${0.66 + index * 0.09}s` };
+          : undefined;
         if (step.kind === "user") {
           return (
             <div key={id} className="msg-user" style={style}>
@@ -1150,7 +1122,7 @@ function DiffPanel({
  *
  * Read top-to-bottom. Times are ms after the mock scrolls into view.
  *
- *      0ms   window frame draws (useConstructMock adds .constructing)
+ *      0ms   the window is simply there, the way the app opens
  *  ~200ms   title bar, sidebar rows, feed, composer cascade in
  *  1800ms   construct class swaps to .constructed
  *  2400ms   on wide screens the Changes pane slides in, completing
@@ -1206,7 +1178,6 @@ function HeroAppMock() {
     <section className="mockup-wrap hero-stage">
       <div
         className="mock"
-        data-construct
         aria-label="Interactive preview of the bb app"
       >
         <div className="mock-bar">
@@ -1327,10 +1298,7 @@ function HeroAppMock() {
                 const isActive = view === "thread" && candidate.id === activeId;
                 const kids = spawned[candidate.id] ?? [];
                 return (
-                  <li
-                    key={candidate.id}
-                    style={{ animationDelay: `${0.6 + index * 0.06}s` }}
-                  >
+                  <li key={candidate.id}>
                     <button
                       type="button"
                       className={isActive ? "trow active" : "trow"}
@@ -3387,7 +3355,6 @@ function StatNumber({ value }: { value: string }) {
 }
 
 function LandingPage() {
-  useConstructMock();
   useFitMock();
   return (
     <div className="wrap">

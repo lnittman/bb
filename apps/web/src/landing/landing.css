@@ -1053,115 +1053,20 @@ code,
     0 30px 70px -32px color-mix(in oklab, var(--ink) 34%, transparent);
 }
 
-/* ── Self-constructing mock ───────────────────────────────────────────
-   On scroll-in the app assembles itself: frame drops in, title bar slides
-   down (dots pop), sidebar rows cascade from the left, then the
-   conversation rises and the composer settles in last. The `html.js` gate
-   holds it hidden from first paint; JS adds .constructing to play it.
-   Without JS the mock renders finished. */
-@keyframes c-frame {
-  from {
-    opacity: 0;
-    transform: translateY(26px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes c-down {
-  from {
-    opacity: 0;
-    transform: translateY(-12px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes c-left {
-  from {
-    opacity: 0;
-    transform: translateX(-14px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
+/* A row arriving in a live thread eases up as it lands. This is the one
+   piece of the old self-construction sequence that survives, because it
+   corresponds to something real: a message genuinely does appear while you
+   watch. The rest of that sequence animated the window assembling itself,
+   which the app has never done. */
 @keyframes c-up {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
     transform: none;
   }
-}
-
-/* When JS is available, hold the whole mock hidden from the first paint until
-   it scrolls into view and assembles. No-JS/prerender skip the `js` class, so
-   the finished mock stays visible. */
-
-.mock.constructing {
-  animation: c-frame 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-/* title bar drops down */
-.mock.constructing .mock-bar {
-  animation: c-down 0.44s cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: 0.16s;
-}
-
-/* sidebar rows cascade in from the left */
-.mock.constructing .side > *:not(.threads) {
-  animation: c-left 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.mock.constructing .side > *:nth-child(1) {
-  animation-delay: 0.34s;
-}
-
-.mock.constructing .side > *:nth-child(2) {
-  animation-delay: 0.4s;
-}
-
-.mock.constructing .side > *:nth-child(3) {
-  animation-delay: 0.46s;
-}
-
-.mock.constructing .side > *:nth-child(4) {
-  animation-delay: 0.52s;
-}
-
-.mock.constructing .side > *:nth-child(5) {
-  animation-delay: 0.58s;
-}
-
-/* gear in the footer lands last */
-.mock.constructing .side > *:nth-child(7) {
-  animation-delay: 0.88s;
-}
-
-.mock.constructing .threads li {
-  animation: c-left 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-  /* per-row delay set inline */
-}
-
-/* conversation rises message by message, composer settles in last */
-.mock.constructing .feed > * {
-  animation: c-up 0.46s cubic-bezier(0.16, 1, 0.3, 1) both;
-  /* per-message delay set inline */
-}
-
-.mock.constructing .main-new .composer,
-.mock.constructing .feed ~ .composer {
-  animation: c-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: 1s;
 }
 
 /* window title bar (mirrors the desktop app) */
@@ -4854,12 +4759,6 @@ button.sub-row:focus-visible {
 
   
 
-  .mock.constructing,
-  .mock.constructing .mock-bar,
-  .mock.constructing .side > *,
-  .mock.constructing .threads li,
-  .mock.constructing .feed > *,
-  .mock.constructing .composer,
   .kid-li {
     animation: none;
   }
