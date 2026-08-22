@@ -6077,47 +6077,13 @@ button.sub-row:focus-visible {
   margin-inline: calc(
     (100% - min(var(--rail), 100vw - 2 * var(--gutter))) / 2
   );
-  /* A band now, so it wants the vertical air of one. */
   padding: 68px 0 52px;
-
-  /* Full-bleed ground, starting exactly at the closer's bottom edge.
-
-     Measured rather than guessed. `.slate` was the obvious way to do this and
-     it does nothing here: `--band` is a 0.028 oklab step off `--canvas`, and
-     the first attempt at a 4% ink mix computed to 0.030 — the same step, so
-     the "alternation" was the ground repeating itself. 8% doubles it to about
-     0.06 in both themes, which is a section change you can actually see on
-     the dark canvas most of this page is read against.
-
-     The escape is the codebase's own trick: a 100vmax spread paints the
-     ground past the rail, and the clip-path holds it to this element's height
-     while letting it run the full width.
-
-     The rule is drawn in two halves that meet, because nothing else stays
-     inside the page. A pseudo-element stretched to -100vmax does render, but
-     `clip-path` only clips paint — the box still counts toward scrollable
-     overflow, and it put 1232px of horizontal scroll on the document.
-     Box-shadows never do that, so the wings are shadows: the line shadow sits
-     behind, and the ground shadow is pushed down by exactly its own spread
-     plus one pixel, which uncovers a single row of the line beneath it. An
-     outer shadow is clipped out from under its own border box, so that trick
-     cannot reach the middle — the `border-top` covers that span, and the two
-     meet at the rail edge as one continuous hairline. */
-  border-top: 1px solid var(--line);
-  /* The ground matches the closer above rather than stepping away from it.
-     An 8% step was tried and it separated the two too hard — the footer is
-     the same quiet end of the page, not a different room. The rule alone
-     marks the boundary. The shadows stay, because they are what carries that
-     rule out past the rail: the ground shadow is pushed down by its own
-     spread plus one pixel, uncovering a single row of the line shadow
-     beneath it, and the `border-top` covers the middle span an outer shadow
-     cannot reach. */
-  background: var(--canvas);
-  box-shadow:
-    0 calc(100vmax + 1px) 0 100vmax var(--canvas),
-    0 0 0 100vmax var(--line);
-  clip-path: inset(0 -100vmax);
-
+  /* No ground and no rule: the footer is the same canvas as the closer above
+     it, so it needs neither. Everything that used to live here — an 8% band,
+     a border-top, and a pair of 100vmax shadows carrying that rule out past
+     the rail — existed to draw a boundary between two sections that are not
+     actually separate. The section grounds do the dividing everywhere else on
+     the page; here there is nothing to divide. */
   color: var(--subtle);
   font-size: 14px;
 }
