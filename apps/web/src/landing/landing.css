@@ -4596,11 +4596,78 @@ button.sub-row:focus-visible {
 .footer {
   padding: 32px 0 52px;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
   color: var(--subtle);
   font-size: 14px;
+}
+
+/* Theme switch. Three segments rather than a button that opens a menu: the
+   choice is three items, and in the footer a popover would open off the
+   bottom of the page. Sized down to sit as a peer of the footer's 14px
+   links rather than as a control competing with them. */
+/* The track is a ring, not a fill. A filled track has to be a step away from
+   the thumb in BOTH themes, and --bg and --surface-2 land within 0.005 of
+   each other in dark, which made the thumb disappear. A ring plus an
+   ink-tinted thumb is the only model that survives the flip. */
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 2px;
+  border-radius: 999px;
+  box-shadow: var(--ring);
+}
+
+.theme-seg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--subtle);
+  cursor: pointer;
+  transition:
+    background var(--duration-hover) var(--ease-standard),
+    color var(--duration-hover) var(--ease-standard);
+}
+
+.theme-seg-ic {
+  width: 13px;
+  height: 13px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .theme-seg:not(.on):hover {
+    color: var(--ink);
+  }
+}
+
+/* The thumb is a tint of ink rather than a surface, so it lifts away from
+   the page in light and in dark alike — ink inverts with the theme, and the
+   mix follows it. Quiet on purpose: this is a footer control. */
+.theme-seg.on {
+  background: color-mix(in oklab, var(--ink) 12%, var(--bg));
+  color: var(--ink-strong);
+}
+
+.theme-seg:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ink-strong) 45%, transparent);
+  outline-offset: 1px;
+}
+
+/* Coarse pointers get a real target without changing the visual size. */
+@media (pointer: coarse) {
+  .theme-seg {
+    width: 34px;
+    height: 30px;
+  }
 }
 
 .footer a:hover {

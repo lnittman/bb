@@ -35,22 +35,20 @@ const THEME_OPTIONS: ReadonlyArray<{
   { value: "system", label: "System", icon: ComputerIcon },
 ];
 
-// Preference button (sun / moon / monitor for Light / Dark / System — all
-// three glyphs render and CSS keyed off html[data-theme-preference] picks
-// one, so SSR output is preference-independent and hydration can't
-// mismatch) that opens a Light / Dark / System menu. The menu only exists
-// while open, and its checked state comes from the effect below rather than
-// the server render, so it never has to agree with SSR.
-function ThemeMenu() {
-  const [open, setOpen] = useState(false);
-  const [preference, setPreference] = useState<ThemePreference>("system");
-  const rootRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+// A three-way segmented switch: Light / Dark / System, side by side, with
+// the active segment carrying a filled thumb. It replaces a button-plus-menu
+// because the choice is three items — a dropdown to reveal three glyphs
+// costs a click and a dismissal for nothing — and because it lives in the
+// footer now, where a popover would open off the bottom of the page.
+//
+// All three segments render on the server with no active state; the effect
+// below fills one in after mount. SSR output is therefore preference-
+// independent and hydration cannot mismatch.
+function ThemeSwitch() {
+  const [preference, setPreference] = useState<ThemePreference | null>(null);
 
   // Follow the OS while the preference is "system" (live, not just at load),
-  // and pick up a choice made in another tab. Both the document and this
-  // component's copy of the preference are refreshed together, so an open menu
-  // can't keep showing a checkmark the page no longer agrees with.
+  // and pick up a choice made in another tab.
   useEffect(() => {
     const media = matchMedia(DARK_SCHEME_QUERY);
     const sync = () => {
@@ -58,7 +56,7 @@ function ThemeMenu() {
       setPreference(next);
       applyThemePreference(next);
     };
-    // THEME_INIT normally did this pre-paint, but it gives up when storage
+    // THEME_INIT normally does this pre-paint, but it gives up when storage
     // access throws, which would otherwise leave the page light while this
     // control reported "System".
     sync();
@@ -76,69 +74,29 @@ function ThemeMenu() {
     };
   }, []);
 
-  // Dismiss on outside click or Escape; Escape returns focus to the button.
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        buttonRef.current?.focus();
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
-
   // A same-tab write fires no storage event, so this tab's copy is set here.
   const choose = (next: ThemePreference) => {
     setThemePreference(next);
     setPreference(next);
-    setOpen(false);
-    buttonRef.current?.focus();
   };
 
   return (
-    <div ref={rootRef} className="theme-menu-wrap">
-      <button
-        ref={buttonRef}
-        type="button"
-        className="theme-toggle"
-        aria-label="Theme"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <HugeiconsIcon icon={Sun03Icon} className="theme-ic-sun" />
-        <HugeiconsIcon icon={Moon02Icon} className="theme-ic-moon" />
-        <HugeiconsIcon icon={ComputerIcon} className="theme-ic-system" />
-      </button>
-      {open && (
-        <div className="theme-menu" role="menu" aria-label="Theme">
-          {THEME_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              role="menuitemradio"
-              aria-checked={preference === option.value}
-              className="theme-menu-item"
-              onClick={() => choose(option.value)}
-            >
-              <HugeiconsIcon icon={option.icon} className="theme-menu-ic" />
-              {option.label}
-              {preference === option.value && (
-                <HugeiconsIcon icon={Tick02Icon} className="theme-menu-check" />
-              )}
-            </button>
-          ))}
-        </div>
-      )}
+    <div className="theme-switch" role="group" aria-label="Theme">
+      {THEME_OPTIONS.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          className={
+            preference === option.value ? "theme-seg on" : "theme-seg"
+          }
+          aria-pressed={preference === option.value}
+          title={option.label}
+          onClick={() => choose(option.value)}
+        >
+          <HugeiconsIcon icon={option.icon} className="theme-seg-ic" />
+          <span className="sr-only">{option.label}</span>
+        </button>
+      ))}
     </div>
   );
 }
@@ -168,8 +126,7 @@ export function SiteNav({ current }: { current?: SiteNavPage }) {
         <a href={DASHBOARD_PATH}>Sign in</a>
         {/* Theme control sits before the CTA so the nav ends on the primary
             action. */}
-        <ThemeMenu />
-        <DownloadLink placement="nav" className="btn btn-primary btn-sm">
+          <DownloadLink placement="nav" className="btn btn-primary btn-sm">
           Download for macOS
         </DownloadLink>
       </div>
@@ -196,6 +153,7 @@ export function SiteFooter() {
         {" · "}
         <DownloadLink placement="footer">Download</DownloadLink>
       </span>
+      <ThemeSwitch />
     </footer>
   );
 }
