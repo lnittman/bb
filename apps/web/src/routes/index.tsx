@@ -58,6 +58,10 @@ import renderLogo from "../assets/company-logos/render.svg";
 import shortcutLogo from "../assets/company-logos/shortcut.svg";
 import simileLogo from "../assets/company-logos/simile.svg";
 import bbIconLarge from "../assets/bb-icon.png";
+import bbStickerHolo from "../assets/stickers/bb-holo.webp";
+import bbStickerPlush from "../assets/stickers/bb-plush.webp";
+import bbStickerClay from "../assets/stickers/bb-claymation.webp";
+import bbStickerRiso from "../assets/stickers/bb-riso.webp";
 import hermesAvatar from "../assets/hermes-avatar.jpg";
 import phoneBezel from "../assets/phone-bezel.svg";
 import vscodeIcon from "../assets/vscode.png";
@@ -2234,6 +2238,54 @@ function AskPhone() {
   );
 }
 
+/* The mark at the end of the page is a button, and pressing it cycles the
+ * bb wordmark through a set of stickers made by running the real icon
+ * through Kumori. It always starts on the real mark and one more press
+ * returns to it, so the page's own identity is what a visitor sees unless
+ * they go looking. Nothing depends on it: no copy refers to it, and a
+ * reader who never clicks loses nothing. */
+const BB_STICKERS = [
+  { src: bbStickerHolo, name: "holographic" },
+  { src: bbStickerPlush, name: "felt" },
+  { src: bbStickerClay, name: "clay" },
+  { src: bbStickerRiso, name: "risograph" },
+] as const;
+
+function CloserMark() {
+  const [index, setIndex] = useState(0);
+  const [popping, setPopping] = useState(false);
+  const sticker = index === 0 ? null : BB_STICKERS[index - 1];
+
+  const next = () => {
+    setIndex((i) => (i + 1) % (BB_STICKERS.length + 1));
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    setPopping(true);
+    window.setTimeout(() => setPopping(false), 420);
+  };
+
+  return (
+    <button
+      type="button"
+      className={popping ? "closer-mark-btn pop" : "closer-mark-btn"}
+      onClick={next}
+      aria-label={
+        sticker
+          ? `bb, as a ${sticker.name} sticker. Press for the next one.`
+          : "bb. Press to see it as a sticker."
+      }
+    >
+      <img
+        src={sticker ? sticker.src : bbIconLarge}
+        alt=""
+        className="closer-mark"
+        width={72}
+        height={72}
+        draggable={false}
+      />
+    </button>
+  );
+}
+
 /* ────────────────────────────────────────────────
  * PHONE
  *
@@ -3610,13 +3662,7 @@ function LandingPage() {
 
       <div className="slate band-close">
       <section className="closer">
-        <img
-          src={bbIconLarge}
-          alt=""
-          className="closer-mark"
-          width={72}
-          height={72}
-        />
+        <CloserMark />
         <h2 className="sec-title">Put your agents to work</h2>
         <p>Free, open source, and local-first. Install in under a minute.</p>
         <InstallOptions placement="closer" />

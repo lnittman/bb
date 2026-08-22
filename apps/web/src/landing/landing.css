@@ -5902,3 +5902,57 @@ button.sub-row:focus-visible {
   min-height: 0;
   padding: 12px 10px;
 }
+
+/* ── Closer mark ─────────────────────────────────────────────────────
+   The page's last mark is a button. Pressing it cycles bb's wordmark
+   through stickers made by running the real icon through Kumori, and one
+   more press returns to the real mark — so the identity is what a visitor
+   sees unless they go looking for the rest. */
+.closer-mark-btn {
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: var(--r-control);
+  cursor: pointer;
+  /* Only the press is animated; the swap itself is instant, so the new
+     sticker is never seen mid-fade. */
+  transition: transform var(--duration-press) var(--ease-standard);
+}
+
+.closer-mark-btn:active {
+  transform: scale(0.94);
+}
+
+/* The pop: a quick overshoot that settles, so a press feels answered. */
+.closer-mark-btn.pop .closer-mark {
+  animation: mark-pop 0.42s var(--ease-out);
+}
+
+@keyframes mark-pop {
+  0% {
+    transform: scale(0.9) rotate(-6deg);
+  }
+  55% {
+    transform: scale(1.08) rotate(3deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.closer-mark-btn:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ink-strong) 45%, transparent);
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .closer-mark-btn.pop .closer-mark {
+    animation: none;
+  }
+
+  .closer-mark-btn:active {
+    transform: none;
+  }
+}
