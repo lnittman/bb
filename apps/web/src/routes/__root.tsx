@@ -1,5 +1,14 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 
+// react-grab, dev only: hover any element on the page and press Cmd+C to copy
+// it along with its component stack and source location, ready to paste into
+// an agent. Browser-only because the SSR pass runs in workerd, which has no
+// DOM to attach to, and `import.meta.env.DEV` drops the whole branch — and
+// the dependency with it — from a production build.
+if (import.meta.env.DEV && typeof window !== "undefined") {
+  void import("react-grab");
+}
+
 // Route-level stylesheets are deliberate: the marketing page (/) imports
 // landing.css and the dashboard (/dashboard) imports styles.css (Tailwind +
 // theme.css). Both define :root tokens (e.g. --ink), so they must never load
