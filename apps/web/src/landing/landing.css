@@ -89,6 +89,16 @@
      along, which is why it alone reads like a window. */
   --demo-window: 640px;
 
+  /* One list row, the app's. SidebarMenuButton is h-8 with p-2, gap-2,
+     rounded-md, text-sm and size-4 icons (apps/app/src/components/ui/
+     sidebar.tsx). This file had six paddings, five radii and four gaps for
+     that one object; the radius is just --r-control now, because that token
+     IS the app's rounded-md. */
+  --row-h: 32px;
+  --row-pad: 8px;
+  --row-gap: 8px;
+  --row-icon: 16px;
+
   --r-control: 6px;
   --r-field: 8px;
   --r-card: 12px;
@@ -1308,10 +1318,21 @@ code,
   color: var(--subtle);
 }
 
+/* The app's list row, drawn once. This was split across two .side-act
+   blocks — a button reset here and the layout forty lines further down —
+   so half of any edit landed on a rule the other half overrode. */
 .side-act {
-  background: none;
+  display: flex;
+  align-items: center;
+  min-height: var(--row-h);
+  gap: var(--row-gap);
+  padding: var(--row-pad);
   border: 0;
+  border-radius: var(--r-control);
+  background: none;
   font: inherit;
+  font-size: 13.5px;
+  color: var(--ink);
   cursor: pointer;
 }
 
@@ -1324,16 +1345,6 @@ code,
   margin-top: auto;
   padding: 6px 8px 2px;
   color: var(--subtle);
-}
-
-.side-act {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 7px 8px;
-  border-radius: 7px;
-  font-size: 13.5px;
-  color: var(--ink);
 }
 
 .sa-ic {
@@ -1353,13 +1364,14 @@ code,
 }
 
 .trow {
+  min-height: var(--row-h);
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 8px;
+  gap: var(--row-gap);
+  padding: var(--row-pad);
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--r-control);
   background: none;
   cursor: pointer;
   text-align: left;
@@ -1574,13 +1586,14 @@ code,
 }
 
 .askq-opt {
+  min-height: var(--row-h);
   display: flex;
   align-items: flex-start;
-  gap: 9px;
+  gap: var(--row-gap);
   width: 100%;
-  padding: 7px 8px;
+  padding: var(--row-pad);
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--r-control);
   background: none;
   text-align: left;
   cursor: pointer;
@@ -2218,132 +2231,11 @@ code,
 
 /* ── Mock plugin panels (hero sidebar IA views) ──────────────────── */
 
-.main-panel {
-  padding: 18px 22px;
-  overflow: hidden;
-}
-
-.ppanel {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  height: 100%;
-}
-
-.ppanel-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.ppanel-name {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.ppanel-cta {
-  font-size: 12px;
-  padding: 5px 10px;
-  border-radius: var(--r-control);
-  background: var(--ink);
-  color: var(--bg);
-}
-
-.tboard {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  align-items: start;
-}
-
-.tcol {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.tcol-head {
-  font-size: 11.5px;
-  font-weight: 550;
-  color: var(--dim);
-  display: flex;
-  gap: 6px;
-  align-items: baseline;
-}
-
-.tcol-head em {
-  font-style: normal;
-  color: var(--subtle);
-}
-
-.tcard {
-  border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  background: var(--bg);
-  padding: 9px 10px;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--ink);
-  box-shadow: 0 1px 2px color-mix(in oklab, var(--ink) 5%, transparent);
-}
-
-.tcard-id {
-  display: block;
-  font-size: 10.5px;
-  color: var(--subtle);
-  margin-bottom: 3px;
-  font-variant-numeric: tabular-nums;
-}
-
-.plist {
-  display: flex;
-  flex-direction: column;
-}
-
-.plist-row {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  padding: 11px 2px;
-  border-bottom: 1px solid var(--border-soft);
-  font-size: 13px;
-}
-
 .plist-row:last-child {
   border-bottom: none;
 }
 
-.plist-name {
-  flex: none;
-  min-width: 118px;
-  font-weight: 550;
-  color: var(--ink);
-}
-
-.plist-blurb {
-  color: var(--dim);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .auto-ok,
-.auto-paused {
-  margin-left: auto;
-  flex: none;
-  font-size: 11.5px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--ok) 14%, var(--bg));
-  color: var(--ok);
-}
-
-.auto-paused {
-  background: var(--surface);
-  color: var(--subtle);
-}
-
 /* ── Shared demo window chrome ───────────────────────────────────── */
 
 /* One title-bar recipe for every crafted demo window: traffic dots on a
@@ -2457,12 +2349,13 @@ code,
 }
 
 .board-lrow {
+  min-height: var(--row-h);
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 8px 8px;
+  gap: var(--row-gap);
+  padding: var(--row-pad);
   margin-inline: -8px;
-  border-radius: 7px;
+  border-radius: var(--r-control);
   font-size: 12px;
   color: var(--ink);
   transition: background var(--duration-hover) var(--ease-standard);
@@ -2482,10 +2375,6 @@ code,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.board-card {
-  transition: box-shadow var(--duration-hover) var(--ease-standard);
 }
 
 .board-bar {
@@ -3067,11 +2956,12 @@ code,
 }
 
 .build-queue li {
+  min-height: var(--row-h);
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 7px 8px;
-  border-radius: 6px;
+  gap: var(--row-gap);
+  padding: var(--row-pad);
+  border-radius: var(--r-control);
   background: var(--bg);
   box-shadow: var(--ring);
 }
@@ -3167,12 +3057,6 @@ code,
 .gang-commit.armed {
   background: var(--ink);
   color: var(--bg);
-}
-
-.gang-commit-chev {
-  flex: none;
-  width: 11px;
-  height: 11px;
 }
 
 .gang-body {
@@ -3944,10 +3828,10 @@ button.sub-row:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  min-height: 28px;
-  padding: 5px 8px;
-  border-radius: 6px;
+  gap: var(--row-gap);
+  min-height: var(--row-h);
+  padding: var(--row-pad);
+  border-radius: var(--r-control);
   color: var(--ink);
 }
 
@@ -5609,63 +5493,8 @@ button.sub-row:focus-visible {
   gap: 5px;
 }
 
-/* 36px rows: a real thumb target, which is the point of showing this on a
-   phone at all. */
-.ap-opt {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 7px 9px;
-  text-align: left;
-  font: inherit;
-  font-size: 11.5px;
-  color: var(--ink);
-  background: var(--bg);
-  border: 1px solid transparent;
-  border-radius: 9px;
-  cursor: pointer;
-  transition:
-    background var(--duration-hover) var(--ease-standard),
-    border-color var(--duration-hover) var(--ease-standard);
-}
-
-.ap-opt.on {
-  background: color-mix(in oklab, var(--ink) 9%, var(--bg));
-  border-color: color-mix(in oklab, var(--ink) 22%, var(--bg));
-}
-
-.ap-radio {
-  flex: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 1.5px solid var(--line-strong);
-  transition: border-color var(--duration-hover) var(--ease-standard);
-}
-
-.ap-opt.on .ap-radio {
-  border-width: 4px;
-  border-color: var(--ink-strong);
-}
-
-.ap-label {
-  min-width: 0;
-}
 
 .ap-hint,
-.ap-reply {
-  font-size: 10.5px;
-  line-height: 1.45;
-  color: var(--subtle);
-  text-wrap: pretty;
-}
-
-.ap-reply {
-  color: var(--ink);
-  animation: gang-in 0.45s var(--ease-out) both;
-}
-
 /* 40px rows: a real thumb target, which is the point of showing this on a
    phone at all. */
 .ap-opt {
