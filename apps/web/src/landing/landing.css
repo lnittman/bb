@@ -90,21 +90,27 @@
   --r-tile: 20px;
   --r-room: 28px;
 
+  /* Depth is its own colour. Shadows read as an absence of light, so they
+     stay dark when the theme flips; rings and focus outlines are drawn WITH
+     ink and invert with it. Keeping the two on separate tokens is the whole
+     reason this file survives a dark port without hand-patching every rule. */
+  --shade: var(--ink-strong);
+
   /* layered window shadow — one recipe for every elevated product frame */
   --shadow-window:
-    0 2px 6px -2px color-mix(in oklab, var(--ink-strong) 10%, transparent),
-    0 28px 72px -34px color-mix(in oklab, var(--ink-strong) 28%, transparent),
-    0 90px 160px -100px color-mix(in oklab, var(--ink-strong) 18%, transparent);
+    0 2px 6px -2px color-mix(in oklab, var(--shade) 10%, transparent),
+    0 28px 72px -34px color-mix(in oklab, var(--shade) 28%, transparent),
+    0 90px 160px -100px color-mix(in oklab, var(--shade) 18%, transparent);
 
   /* demo depth ladder under --shadow-window: the hairline ring every
      product surface wears, the tile shadow for cards sitting on a panel,
      and the raise for floating artifacts one level below a full window. */
   --ring: 0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent);
   --shadow-tile:
-    0 1px 2px color-mix(in oklab, var(--ink-strong) 6%, transparent),
-    0 2px 6px -2px color-mix(in oklab, var(--ink-strong) 5%, transparent);
+    0 1px 2px color-mix(in oklab, var(--shade) 6%, transparent),
+    0 2px 6px -2px color-mix(in oklab, var(--shade) 5%, transparent);
   --shadow-raise:
-    0 10px 26px -16px color-mix(in oklab, var(--ink-strong) 24%, transparent);
+    0 10px 26px -16px color-mix(in oklab, var(--shade) 24%, transparent);
 
   /* motion constants */
   --duration-press: 90ms;
@@ -143,6 +149,72 @@
    purpose; clip it at the viewport so it never adds a horizontal scroll. `clip`
    (vs `hidden`) avoids creating a scroll container, so vertical scrolling and
    any sticky positioning are unaffected. */
+/* The nav and footer mark. One element with a background-image rather than a
+   pair of <img> toggled by display, so only the variant in use is ever
+   fetched — site-chrome.tsx renders <span class="bb-mark logo-mark" /> and
+   the theme picks the asset. */
+.bb-mark {
+  display: block;
+  flex-shrink: 0;
+  background-image: url("../assets/bb-icon.png");
+  background-size: 100% 100%;
+}
+
+.dark .bb-mark {
+  background-image: url("../assets/bb-icon-dark.png");
+}
+
+.logo-mark {
+  width: 36px;
+  height: 36px;
+}
+
+/* ── Dark ────────────────────────────────────────────────────────────
+   Only the anchors move. Every surface, line, band and state fill in this
+   file is a color-mix off --ink-strong and --canvas, so redefining the
+   anchors re-derives the whole ramp — the reason this port is a block
+   rather than a sweep through 80 rules.
+
+   Three things the anchors alone would get wrong, handled here:
+   --shade stays black so shadows remain an absence of light rather than
+   inverting into glows; --bg keeps sitting above --canvas so product
+   windows still lift off the page ground the way they do in light; and the
+   chromatic tokens are re-picked rather than mixed, because a diff green
+   legible on white is not the diff green legible on near-black. */
+.dark {
+  color-scheme: dark;
+
+  /* Page ground, and the window surface that lifts off it. */
+  --canvas: oklch(0.17 0 0);
+  --bg: oklch(0.205 0 0);
+
+  /* Text ramp. --ink-strong keeps the same distance from --ink it has in
+     light (0.13), so headings lead by the same amount in both themes. */
+  --ink: oklch(0.81 0 0);
+  --ink-strong: oklch(0.93 0 0);
+  --dim: oklch(0.75 0 0);
+  --subtle: oklch(0.68 0 0);
+
+  /* Depth, unflipped. */
+  --shade: oklch(0 0 0);
+
+  /* Mixes into a dark ground need more of the ink to register than the same
+     step does on white, so these percentages are not the light ones. */
+  --border: color-mix(in oklab, var(--ink) 19.4%, var(--bg));
+  --border-soft: color-mix(in oklab, var(--ink) 11%, var(--bg));
+  --surface: color-mix(in oklab, var(--ink) 4.3%, var(--bg));
+  --surface-recessed: color-mix(in oklab, var(--ink) 8%, var(--bg));
+  --state-hover: color-mix(in oklab, var(--ink) 9%, var(--bg));
+
+  /* Re-picked for a dark ground, matching the app's own dark tokens. */
+  --accent: oklch(0.72 0.09 250);
+  --ok: oklch(0.74 0.15 155);
+  --add: oklch(0.77 0.17 163);
+  --del: oklch(0.72 0.19 22);
+  --spark: oklch(0.75 0.16 50);
+  --ph: oklch(0.66 0.14 32);
+}
+
 html {
   overflow-x: clip;
   /* Reserve the scrollbar gutter on both sides so centered sections (hero,
@@ -429,14 +501,14 @@ code,
   color: var(--bg);
   box-shadow:
     inset 0 1px 0 color-mix(in oklab, var(--bg) 18%, transparent),
-    0 1px 2px color-mix(in oklab, var(--ink-strong) 22%, transparent);
+    0 1px 2px color-mix(in oklab, var(--shade) 22%, transparent);
 }
 
 .btn-primary:hover {
   background: color-mix(in oklab, var(--ink) 88%, var(--bg));
   box-shadow:
     inset 0 1px 0 color-mix(in oklab, var(--bg) 22%, transparent),
-    0 2px 6px color-mix(in oklab, var(--ink-strong) 26%, transparent);
+    0 2px 6px color-mix(in oklab, var(--shade) 26%, transparent);
 }
 
 .btn-ghost {
@@ -2338,7 +2410,7 @@ code,
 .board-seg button.on {
   background: var(--bg);
   color: var(--ink-strong);
-  box-shadow: 0 1px 2px color-mix(in oklab, var(--ink-strong) 12%, transparent);
+  box-shadow: 0 1px 2px color-mix(in oklab, var(--shade) 12%, transparent);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -2349,7 +2421,7 @@ code,
   .board-card:hover {
     box-shadow:
       0 0 0 1px color-mix(in oklab, var(--ink-strong) 14%, transparent),
-      0 2px 6px color-mix(in oklab, var(--ink-strong) 10%, transparent);
+      0 2px 6px color-mix(in oklab, var(--shade) 10%, transparent);
   }
 
   .board-lrow:hover {
@@ -4789,4 +4861,22 @@ button.sub-row:focus-visible {
   .kid-li {
     animation: none;
   }
+}
+
+/* ── Dark: what the anchors cannot reach ─────────────────────────────
+   Two things on this page are raster or vector art drawn for a white
+   ground, so no token swap touches them. */
+
+/* Customer marks are dark ink on transparent. Greyscaled at 62% they were
+   very nearly invisible on near-black, so dark inverts them to light ink and
+   gives back a little presence. */
+.dark .company-proof-company img {
+  filter: grayscale(1) invert(1);
+  opacity: 0.7;
+}
+
+/* The closer's bb mark ships in both themes; the light file is a white tile
+   and read as a lit chip against the dark page. */
+.dark .closer-mark {
+  content: url("../assets/bb-icon-dark.png");
 }
