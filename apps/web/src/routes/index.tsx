@@ -964,11 +964,12 @@ const DIFF_LINES: DiffLine[] = [
 // send, plus the project / environment / branch / permission context row.
 function Composer({ thread }: { thread?: MockThread }) {
   const isNew = !thread;
-  const attachmentInputRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState(false);
-  const [model, setModel] = useState("claude-opus-5[1m]");
-  const [voiceActive, setVoiceActive] = useState(false);
-  const [attachmentName, setAttachmentName] = useState<string | null>(null);
+  const [model, setModel] = useState<ComposerModel>("opus-5");
+  const [modelOpen, setModelOpen] = useState(false);
+  const modelRef = useRef<HTMLSpanElement>(null);
+
+  useDismiss(modelOpen, () => setModelOpen(false), modelRef);
 
   return (
     <div className={isNew ? "composer composer-new" : "composer"}>
@@ -976,15 +977,6 @@ function Composer({ thread }: { thread?: MockThread }) {
         className={expanded ? "composer-box composer-expanded" : "composer-box"}
         onSubmit={(event) => event.preventDefault()}
       >
-        <input
-          ref={attachmentInputRef}
-          className="composer-file"
-          type="file"
-          multiple
-          onChange={(event) =>
-            setAttachmentName(event.currentTarget.files?.[0]?.name ?? null)
-          }
-        />
         <div className="composer-top">
           <textarea
             className="composer-input"
@@ -1009,58 +1001,55 @@ function Composer({ thread }: { thread?: MockThread }) {
           </button>
         </div>
         <div className="composer-row">
-          <label className="model">
-            <ClaudeIcon className="model-ic" />
-            <span className="sr-only">Model</span>
-            <select
-              value={model}
-              onChange={(event) => setModel(event.target.value)}
+          <span className="model" ref={modelRef}>
+            <button
+              type="button"
+              className="model-trigger"
+              aria-haspopup="menu"
+              aria-expanded={modelOpen}
+              onClick={() => setModelOpen((value) => !value)}
             >
-              <option value="claude-opus-5[1m]">Opus 5 (1M)</option>
-              <option value="claude-opus-4-8[1m]">Opus 4.8 (1M)</option>
-            </select>
-          </label>
+              <ClaudeIcon className="model-ic" />
+              {COMPOSER_MODELS[model]}
+              <ChevronDown className="ctx-chev" />
+            </button>
+            {modelOpen ? (
+              <span className="model-menu" role="menu">
+                {(Object.keys(COMPOSER_MODELS) as ComposerModel[]).map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={model === id}
+                    onClick={() => {
+                      setModel(id);
+                      setModelOpen(false);
+                    }}
+                  >
+                    <HugeiconsIcon
+                      icon={Tick02Icon}
+                      className="model-tick"
+                      data-on={model === id}
+                      aria-hidden
+                    />
+                    {COMPOSER_MODELS[id]}
+                  </button>
+                ))}
+              </span>
+            ) : null}
+          </span>
           <span className="composer-actions">
-            <button
-              type="button"
-              className="composer-action"
-              aria-label="Attach files"
-              onClick={() => attachmentInputRef.current?.click()}
-            >
+            <span className="composer-action" aria-hidden="true">
               <Paperclip className="composer-clip" />
-            </button>
-            <button
-              type="button"
-              className={
-                voiceActive ? "composer-action active" : "composer-action"
-              }
-              aria-label={
-                voiceActive ? "Stop voice input" : "Start voice input"
-              }
-              aria-pressed={voiceActive}
-              onClick={() => setVoiceActive((value) => !value)}
-            >
+            </span>
+            <span className="composer-action" aria-hidden="true">
               <MicIcon className="composer-clip" />
-            </button>
-            <button
-              type="submit"
-              className="send-btn"
-              aria-label="Send message"
-              disabled
-            >
+            </span>
+            <span className="send-btn" aria-hidden="true">
               <SendIcon className="send-ic" />
-            </button>
+            </span>
           </span>
         </div>
-        {voiceActive ? (
-          <span className="composer-status" role="status">
-            Voice input active
-          </span>
-        ) : attachmentName ? (
-          <span className="composer-status" role="status">
-            {attachmentName}
-          </span>
-        ) : null}
       </form>
       <div className="context-row">
         <span className="ctx">
@@ -2306,6 +2295,14 @@ function useDismiss(
     };
   }, [open, ref]);
 }
+
+type ComposerModel = "opus-5" | "opus-4-8";
+
+/** The two models the mock offers, labelled as the app labels them. */
+const COMPOSER_MODELS: Record<ComposerModel, string> = {
+  "opus-5": "Opus 5 (1M)",
+  "opus-4-8": "Opus 4.8 (1M)",
+};
 
 function DemoSpinner() {
   return <HugeiconsIcon icon={Loading03Icon} className="dm-spin" aria-hidden />;

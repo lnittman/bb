@@ -2054,40 +2054,76 @@ code,
 }
 
 .model {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
   font-size: 13px;
   color: var(--ink);
 }
 
-.model select {
-  /* `appearance: none` is the whole fix. Without it the browser paints its
-     own control — on macOS a native popup button with its own arrow, corner
-     radius and focus ring — inside a recreation of the bb app, which is the
-     one place a piece of OS chrome cannot appear. The app's picker is a
-     button with a chevron, so the chevron is drawn here as a background
-     glyph and the box keeps the shared control metrics. */
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
-    linear-gradient(135deg, currentColor 50%, transparent 50%);
-  background-size: 4px 4px, 4px 4px;
-  background-repeat: no-repeat;
-  background-position:
-    right 10px center,
-    right 6px center;
-  max-width: 150px;
-  height: var(--btn-h);
+/* The app's picker: a button with a chevron, and a menu this page owns, so no
+   part of the control is drawn by the OS. */
+.model-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: var(--row-h);
+  padding: 0 8px;
+  margin-left: -8px;
   border: 0;
   border-radius: var(--r-control);
-  background-color: transparent;
-  padding: 0 20px 0 6px;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: background var(--duration-hover) var(--ease-standard);
+}
+
+.model-menu {
+  position: absolute;
+  z-index: 4;
+  bottom: calc(100% + 4px);
+  left: 0;
+  min-width: 168px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-field);
+  background: var(--surface);
+  box-shadow: 0 10px 26px color-mix(in oklab, var(--ink) 16%, transparent);
+}
+
+.model-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: var(--row-h);
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--r-control);
+  background: none;
   font: inherit;
   font-size: 13px;
   color: var(--ink);
+  text-align: left;
   cursor: pointer;
+  transition: none;
 }
+
+.model-tick {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  opacity: 0;
+}
+
+.model-tick[data-on="true"] {
+  opacity: 1;
+}
+
 
 .model-ic {
   width: 15px;
@@ -2119,6 +2155,7 @@ code,
   background: transparent;
   color: var(--subtle);
   cursor: pointer;
+  pointer-events: none;
 }
 
 .composer-action.active {
