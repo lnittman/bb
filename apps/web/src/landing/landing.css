@@ -2043,8 +2043,8 @@ code,
   resize: none;
   outline: none;
   font: inherit;
-  font-size: 13.5px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.7;
   color: var(--ink);
   min-height: 38px;
   padding-right: 42px;
@@ -2077,10 +2077,17 @@ code,
 }
 
 .picker-chev {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   flex: none;
   opacity: 0.6;
+}
+
+.picker-trigger > svg,
+.picker-trigger .model-ic {
+  width: 16px;
+  height: 16px;
+  flex: none;
 }
 
 /* The app's picker: a button with a chevron, and a menu this page owns, so no
@@ -2088,17 +2095,23 @@ code,
 .picker-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 4px;
   height: var(--row-h);
-  padding: 0 8px;
-  margin-left: -8px;
+  padding: 0 4px;
+  margin-left: -4px;
   border: 0;
   border-radius: var(--r-control);
   background: none;
   font: inherit;
-  color: inherit;
+  font-size: 12px;
+  color: var(--dim);
   cursor: pointer;
-  transition: background var(--duration-hover) var(--ease-standard);
+  /* LIST_HOVER_TRANSITION: the app's pickers do not animate. */
+  transition: none;
+}
+
+.picker-trigger:hover {
+  color: var(--ink);
 }
 
 .picker-menu {
@@ -2209,8 +2222,8 @@ code,
 }
 
 .send-ic {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
 }
 
 .composer-status {
@@ -2225,18 +2238,24 @@ code,
 .context-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-  font-size: 12.5px;
+  gap: 8px;
+  /* min-h-6 / max-h-6 / overflow-hidden: the app clips this row rather than
+     letting it wrap to a second line. */
+  flex-wrap: nowrap;
+  height: 24px;
+  overflow: hidden;
+  margin-top: 4px;
+  padding: 0 14px 0 15px;
+  font-size: 12px;
 }
 
 .ctx {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 6px;
-  border-radius: 6px;
+  gap: 6px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: var(--r-control);
   color: var(--dim);
 }
 
