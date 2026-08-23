@@ -231,15 +231,20 @@ export function EmailSignup({ placement }: { placement: CtaPlacement }) {
 export function SubscribeCard({
   placement,
   title,
+  description = "Product updates and what we\u2019re building next. No spam.",
+  id,
 }: {
   placement: CtaPlacement;
   title: string;
+  /** Each page keeps its own line; the container is what they share. */
+  description?: string;
+  id?: string;
 }) {
   return (
-    <div className="subscribe-card rail">
+    <div className="subscribe-card rail" id={id}>
       <div className="subscribe-card-head">
         <h2>{title}</h2>
-        <p>Product updates and what we&rsquo;re building next. No spam.</p>
+        <p>{description}</p>
       </div>
       <EmailSignup placement={placement} />
     </div>

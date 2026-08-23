@@ -7,8 +7,6 @@
 }
 
 .page-head {
-  max-width: var(--prose);
-  margin-inline: auto;
   padding: 72px 0 40px;
   border-bottom: 1px solid var(--border-soft);
 }
@@ -56,8 +54,6 @@
 }
 
 .post {
-  max-width: var(--prose);
-  margin-inline: auto;
   padding: 56px 0;
   border-bottom: 1px solid var(--border-soft);
 }
@@ -210,8 +206,6 @@
 }
 
 .article-head {
-  max-width: var(--prose);
-  margin-inline: auto;
   padding: 36px 0 0;
 }
 

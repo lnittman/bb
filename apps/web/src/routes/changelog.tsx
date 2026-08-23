@@ -10,9 +10,9 @@ import type { Release, ReleaseBlock } from "../landing/changelog";
 import { RELEASE_META, parseChangelog } from "../landing/changelog";
 import { ChangelogInline } from "../landing/changelog-inline";
 import {
-  EmailSignup,
   focusSubscribeEmail,
   SUBSCRIBE_EMAIL_ID,
+  SubscribeCard,
 } from "../landing/cta";
 import { SiteFooter, SiteNav } from "../landing/site-chrome";
 import { unfurlMeta } from "../landing/site";
@@ -145,7 +145,7 @@ function ReleaseEntry({ release }: { release: Release }) {
   const meta = RELEASE_META[release.version];
   const anchor = anchorId(release.version);
   return (
-    <article className="release" id={anchor}>
+    <article className="release rail" id={anchor}>
       <div className="release-rail">
         <div className="rail-sticky">
           <a className="version" href={`#${anchor}`}>
@@ -185,7 +185,7 @@ function ChangelogPage() {
     <div className="wrap">
       <SiteNav current="changelog" />
 
-      <header className="page-head">
+      <header className="page-head rail">
         <h1>Changelog</h1>
         <p className="sub">{PAGE_DESCRIPTION}</p>
         <div className="meta-row">
@@ -200,11 +200,14 @@ function ChangelogPage() {
         <ReleaseEntry key={release.version} release={release} />
       ))}
 
-      <section className="subscribe" id="subscribe">
-        <h2 className="subscribe-title">Stay in the loop</h2>
-        <p>Get release notes in your inbox. No spam.</p>
-        <EmailSignup placement="footer" />
-      </section>
+      <div className="page-subscribe">
+        <SubscribeCard
+          placement="footer"
+          id="subscribe"
+          title="Stay in the loop"
+          description="Get release notes in your inbox. No spam."
+        />
+      </div>
 
       <SiteFooter />
     </div>

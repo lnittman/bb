@@ -7,7 +7,7 @@ import { PostBlocks, PostHeader, PostLede } from "../blog/post-body";
 import { getPost } from "../blog/posts";
 import { stripMarkdown } from "../blog/parse-post";
 import { initAnalytics } from "../landing/analytics";
-import { EmailSignup } from "../landing/cta";
+import { SubscribeCard } from "../landing/cta";
 import { SiteFooter, SiteNav } from "../landing/site-chrome";
 import { unfurlMeta } from "../landing/site";
 import interWoff2 from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
@@ -61,14 +61,14 @@ function BlogPostRoute() {
     <div className="wrap">
       <SiteNav current="blog" />
 
-      <div className="article-head">
+      <div className="article-head rail">
         <a className="back-link" href="/blog">
           <HugeiconsIcon icon={ArrowLeft01Icon} className="ri" />
           Blog
         </a>
       </div>
 
-      <article className="post article">
+      <article className="post article rail">
         <div className="post-body">
           <time className="date-pill" dateTime={post.dateIso}>
             {post.date}
@@ -82,11 +82,14 @@ function BlogPostRoute() {
         </div>
       </article>
 
-      <section className="subscribe" id="subscribe">
-        <h2 className="subscribe-title">Stay in the loop</h2>
-        <p>Get new posts in your inbox. No spam.</p>
-        <EmailSignup placement="footer" />
-      </section>
+      <div className="page-subscribe">
+        <SubscribeCard
+          placement="footer"
+          id="subscribe"
+          title="Stay in the loop"
+          description="Get new posts in your inbox. No spam."
+        />
+      </div>
 
       <SiteFooter />
     </div>

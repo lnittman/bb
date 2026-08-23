@@ -62,10 +62,6 @@
 
   /* widths + rhythm */
   --rail: 1200px;
-  /* The reading measure. Blog posts, changelog release bodies and the
-     signup on those pages all sit on it, so the content pages agree with
-     each other instead of each picking a number. */
-  --prose: 680px;
   --stage: 1440px;
 
   --measure: 640px;
@@ -6467,6 +6463,12 @@ html:not(.dark) .cg-plate {
   }
 }
 
+/* Content pages seat the signup in the same card the closer uses, with the
+   band spacing those pages already run on. */
+.page-subscribe {
+  margin: 64px 0 8px;
+}
+
 .closer-subscribe {
   margin-top: 34px;
   display: flex;
@@ -6641,12 +6643,8 @@ html:not(.dark) .cg-plate {
   align-items: center;
   gap: 12px;
   margin: 0 auto;
-  width: min(var(--prose), 100%);
-}
-
-/* In the closer the pair takes the install card's measure instead, so the two
-   acquisition surfaces there line up. */
-.closer-subscribe .subscribe-form {
+  /* Centred at the install card's measure inside the signup card, on every
+     page that uses it -- the closer, the blog and the changelog. */
   width: min(660px, 100%);
 }
 

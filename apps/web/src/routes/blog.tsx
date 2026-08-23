@@ -7,9 +7,9 @@ import { POSTS } from "../blog/posts";
 import { PostHeader, PostLede } from "../blog/post-body";
 import { initAnalytics } from "../landing/analytics";
 import {
-  EmailSignup,
   focusSubscribeEmail,
   SUBSCRIBE_EMAIL_ID,
+  SubscribeCard,
 } from "../landing/cta";
 import { SiteFooter, SiteNav } from "../landing/site-chrome";
 import { unfurlMeta } from "../landing/site";
@@ -51,7 +51,7 @@ function BlogIndexRoute() {
     <div className="wrap">
       <SiteNav current="blog" />
 
-      <header className="page-head">
+      <header className="page-head rail">
         <h1>Blog</h1>
         <p className="sub">{PAGE_DESCRIPTION}</p>
         <div className="meta-row">
@@ -62,7 +62,7 @@ function BlogIndexRoute() {
         </div>
       </header>
 
-      <div className="post-index">
+      <div className="post-index rail">
         {POSTS.map((post, index) => (
           <article className="post" key={post.slug}>
             <div className="post-body">
@@ -87,11 +87,14 @@ function BlogIndexRoute() {
         ))}
       </div>
 
-      <section className="subscribe" id="subscribe">
-        <h2 className="subscribe-title">Stay in the loop</h2>
-        <p>Get new posts in your inbox. No spam.</p>
-        <EmailSignup placement="footer" />
-      </section>
+      <div className="page-subscribe">
+        <SubscribeCard
+          placement="footer"
+          id="subscribe"
+          title="Stay in the loop"
+          description="Get new posts in your inbox. No spam."
+        />
+      </div>
 
       <SiteFooter />
     </div>
