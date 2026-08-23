@@ -1058,9 +1058,28 @@ code,
 
 /* The economics in one quiet line under the install decision — bb's sharpest
    wedge, no longer buried at the bottom of the page. */
+/* Four terms, four tiles. The middots were doing the separating; the tiles do
+   it now, so the dots go. `corner-shape` is the real squircle where it is
+   supported and falls back to the radius everywhere else. */
 .hero-economics {
   margin: 20px auto 0;
-  font-size: 13px;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.hero-economics li {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 10px;
+  corner-shape: squircle;
+  background: color-mix(in oklab, var(--ink-strong) 5%, var(--canvas));
+  box-shadow: var(--ring);
+  font-size: 12.5px;
   letter-spacing: 0.01em;
   color: var(--subtle);
 }

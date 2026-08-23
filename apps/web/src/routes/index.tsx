@@ -4898,9 +4898,11 @@ function LandingPage() {
         </p>
         <InstallOptions placement="hero" />
 
-        <p className="hero-economics">
-          Free · MIT · Local-first · No subscriptions
-        </p>
+        <ul className="hero-economics">
+          {["Free", "MIT", "Local-first", "No subscriptions"].map((term) => (
+            <li key={term}>{term}</li>
+          ))}
+        </ul>
 
         <div className="providers">
           <span className="label">Works with</span>
