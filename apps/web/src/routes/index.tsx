@@ -3588,10 +3588,10 @@ function BuildDemo() {
     >
       <div className="dwin-bar">
         <span className="dwin-title">{activeThread.title}</span>
-        <button type="button" className="gang-commit" disabled>
+        <span className="gang-commit" aria-hidden="true">
           Commit
           <ChevronDown className="gang-commit-chev" />
-        </button>
+        </span>
       </div>
       <div className="gang-body">
         <div className="gang-side">
@@ -3756,11 +3756,23 @@ function BuildDemo() {
             ) : (
               <ToolboxGlyph className="build-panel-ic" />
             )}
-            {activePanel === "tasks"
-              ? "Tasks"
-              : activePanel === "automations"
-                ? "Automations"
-                : "Extensions"}
+            <span className="build-panel-title">
+              {activePanel === "tasks"
+                ? "Tasks"
+                : activePanel === "automations"
+                  ? "Automations"
+                  : "Extensions"}
+            </span>
+            <span className="build-panel-actions" aria-hidden>
+              <HugeiconsIcon
+                icon={ArrowExpand01Icon}
+                className="build-panel-ic"
+              />
+              <HugeiconsIcon
+                icon={SidebarRightIcon}
+                className="build-panel-ic"
+              />
+            </span>
           </div>
           <ul className="build-queue">
             {panelRows.map((row) => (
@@ -3786,6 +3798,31 @@ function BuildDemo() {
   );
 }
 
+type GangProvider =
+  | "claude"
+  | "codex"
+  | "cursor"
+  | "pi"
+  | "opencode"
+  | "grok"
+  | "omp"
+  | "hermes";
+
+/** The eight providers the section already claims, as the app labels them. */
+const GANG_PROVIDER_META: Record<
+  GangProvider,
+  { Icon: (props: { className?: string }) => ReactNode; label: string }
+> = {
+  claude: { Icon: ClaudeIcon, label: "Claude Code" },
+  codex: { Icon: OpenAiIcon, label: "Codex" },
+  cursor: { Icon: CursorIcon, label: "Cursor" },
+  pi: { Icon: PiIcon, label: "Pi" },
+  opencode: { Icon: OpencodeIcon, label: "OpenCode" },
+  grok: { Icon: GrokIcon, label: "Grok" },
+  omp: { Icon: OmpIcon, label: "omp" },
+  hermes: { Icon: HermesAgentIcon, label: "Hermes" },
+};
+
 type GangThread = {
   id: string;
   project: "storefront" | "checkout-api" | "mobile";
@@ -3793,6 +3830,7 @@ type GangThread = {
   branch: string;
   depth?: 1;
   status: "done" | "running" | "waiting";
+  provider: GangProvider;
   lines: readonly TranscriptLine[];
 };
 
@@ -3803,6 +3841,7 @@ const GANG_THREADS: readonly GangThread[] = [
     title: "Audit promo code coverage",
     branch: "bb/audit-promo-coverage",
     status: "done",
+    provider: "claude",
     lines: [
       { kind: "step", text: "Read promo.ts, cart.ts, checkout.ts" },
       {
@@ -3827,6 +3866,7 @@ const GANG_THREADS: readonly GangThread[] = [
     title: "Trace order checkout flow",
     branch: "bb/trace-order-checkout",
     status: "done",
+    provider: "codex",
     lines: [
       { kind: "step", text: "Read checkout.ts, cart.ts, tax.ts" },
       {
@@ -3847,6 +3887,7 @@ const GANG_THREADS: readonly GangThread[] = [
     branch: "bb/confirm-checkout-totals",
     depth: 1,
     status: "running",
+    provider: "pi",
     lines: [
       { kind: "step", text: "Read express-checkout.ts" },
       {
@@ -3861,6 +3902,7 @@ const GANG_THREADS: readonly GangThread[] = [
     title: "Explain promo checkout impact",
     branch: "bb/explain-promo-impact",
     status: "waiting",
+    provider: "cursor",
     lines: [
       { kind: "step", text: "Read checkout.ts" },
       {
@@ -3875,6 +3917,7 @@ const GANG_THREADS: readonly GangThread[] = [
     title: "Summarize checkout cart integration",
     branch: "bb/summarize-cart-integration",
     status: "done",
+    provider: "opencode",
     lines: [
       { kind: "step", text: "Explored the cart integration" },
       {
@@ -3889,6 +3932,7 @@ const GANG_THREADS: readonly GangThread[] = [
     title: "Cut the 1.4 release notes",
     branch: "bb/release-notes",
     status: "done",
+    provider: "grok",
     lines: [
       { kind: "step", text: "Read CHANGELOG.md" },
       {
@@ -3903,6 +3947,7 @@ const GANG_THREADS: readonly GangThread[] = [
     title: "Summarize service route",
     branch: "bb/summarize-service-route",
     status: "done",
+    provider: "omp",
     lines: [
       { kind: "step", text: "Read routes/orders.ts" },
       {
@@ -3922,6 +3967,7 @@ const GANG_THREADS: readonly GangThread[] = [
     title: "Describe order endpoint validation",
     branch: "bb/order-validation",
     status: "done",
+    provider: "hermes",
     lines: [
       { kind: "step", text: "Read the order schema" },
       {
@@ -3936,6 +3982,7 @@ const GANG_THREADS: readonly GangThread[] = [
     title: "Explain orders error handling",
     branch: "bb/order-errors",
     status: "done",
+    provider: "claude",
     lines: [
       { kind: "step", text: "Read the error branches" },
       {
@@ -3950,6 +3997,7 @@ const GANG_THREADS: readonly GangThread[] = [
     title: "Suggest README improvement",
     branch: "bb/readme-improvement",
     status: "running",
+    provider: "codex",
     lines: [
       { kind: "step", text: "Read README.md" },
       {
@@ -3964,6 +4012,7 @@ const GANG_THREADS: readonly GangThread[] = [
     title: "Explain package scripts",
     branch: "bb/explain-package-scripts",
     status: "done",
+    provider: "pi",
     lines: [
       { kind: "step", text: "Read package.json" },
       {
@@ -3975,9 +4024,10 @@ const GANG_THREADS: readonly GangThread[] = [
 ];
 
 function GangDemo() {
-  const [openId, setOpenId] = useState("audit-promo");
+  const [openId, setOpenId] = useState("trace-checkout");
   const open =
     GANG_THREADS.find((thread) => thread.id === openId) ?? GANG_THREADS[0];
+  const OpenProviderIcon = GANG_PROVIDER_META[open.provider].Icon;
 
   const renderThreadRow = (thread: GangThread) => {
     const control = (
@@ -4027,10 +4077,10 @@ function GangDemo() {
     >
       <div className="dwin-bar">
         <span className="dwin-title">{open.title}</span>
-        <button type="button" className="gang-commit" disabled>
+        <span className="gang-commit" aria-hidden="true">
           Commit
           <ChevronDown className="gang-commit-chev" />
-        </button>
+        </span>
       </div>
       <div className="gang-body">
         <div className="gang-side">
@@ -4066,7 +4116,13 @@ function GangDemo() {
             <label className="sr-only" htmlFor="gang-follow-up">
               Ask a follow-up
             </label>
-            <input id="gang-follow-up" placeholder="Ask a follow-up" />
+            <input
+              id="gang-follow-up"
+              placeholder="Ask a follow-up"
+              readOnly
+              tabIndex={-1}
+              aria-hidden
+            />
             <button
               type="button"
               className="gang-send"
@@ -4078,8 +4134,8 @@ function GangDemo() {
           </div>
           <div className="gang-ctx" aria-hidden>
             <span className="gang-ctx-item">
-              <OpenAiIcon className="gang-ctx-ic" />
-              Codex
+              <OpenProviderIcon className="gang-ctx-ic" />
+              {GANG_PROVIDER_META[open.provider].label}
               <ChevronDown className="gang-commit-chev" />
             </span>
             <span className="gang-ctx-item">
@@ -4861,15 +4917,14 @@ function LandingPage() {
 
       <div className="slate band-close">
       <div className="closer-room">
-      <section className="closer">
-        <h2 className="sec-title">Put your agents to work</h2>
-        <InstallOptions placement="closer">
-          Free, open source, and local-first. Install in under a minute.
-        </InstallOptions>
+        <section className="closer">
+          <h2 className="sec-title">Put your agents to work</h2>
+          <InstallOptions placement="closer">
+            Free, open source, and local-first. Install in under a minute.
+          </InstallOptions>
 
-        {/* <CloserPlates /> */}
-
-      </section>
+          {/* Shelved, not deleted: <CloserPlates /> */}
+        </section>
       </div>
 
       {/* Outside the room, below it, on the same width. The room is the offer;

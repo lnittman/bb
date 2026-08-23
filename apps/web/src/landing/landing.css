@@ -123,6 +123,9 @@
      pairs with. Add a tier only when a layout genuinely cannot hold at the
      one above it — never to fix a single element. */
   --row-h: 32px;
+  /* The app's chrome rows (window bar, pane header) are 48px --
+     CHROME_ROW_HEIGHT_CLASS in apps/app/src/lib/bb-desktop.ts. */
+  --chrome-h: 48px;
   --row-pad: 8px;
   --row-gap: 8px;
   --row-icon: 16px;
@@ -633,7 +636,7 @@ code,
      zero — so "builds itself" was setting its descenders on the card's edge. */
   margin: 34px auto 0;
   padding: 13px;
-  border-radius: 18px;
+  border-radius: var(--r-tile);
   background: color-mix(in oklab, var(--ink-strong) 9%, var(--canvas));
 }
 
@@ -3767,7 +3770,7 @@ code,
    it. The column is in the grid from the first frame; only its contents
    arrive, so opening the panel costs no layout. */
 .build-demo .gang-body {
-  grid-template-columns: minmax(0, 3.4fr) minmax(0, 5.6fr) minmax(0, 4fr);
+  grid-template-columns: min(320px, 27vw) minmax(0, 5.6fr) minmax(0, 4fr);
 }
 
 /* At compact widths, each real pane becomes a scroll-snap card. */
@@ -3811,30 +3814,51 @@ code,
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 14px 14px 16px;
   border-left: 1px solid var(--border-soft);
   background: color-mix(in oklab, var(--ink-strong) 1.5%, var(--bg));
   border-radius: 0 0 var(--r-card) 0;
 }
 
+/* The app's chrome rows are 48px and the pane header owns the seam, so the
+   panel's own padding moves down to its contents. */
 .build-panel-bar {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
+  height: var(--chrome-h);
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-soft);
   font-size: 12px;
   font-weight: 550;
   color: var(--dim);
-  padding: 0 2px 10px;
+}
+
+.build-panel-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The pane's real actions, as scenery: maximize and close, right-aligned and
+   subdued the way the app's ghost icon buttons are. */
+.build-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  color: var(--subtle);
 }
 
 .build-panel-ic {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
 }
 
 .build-queue {
   display: flex;
   flex-direction: column;
+  padding: 14px 14px 16px;
   gap: 2px;
   flex: 1;
   min-height: 0;
@@ -3957,22 +3981,20 @@ code,
   font-weight: 550;
   padding: 0 var(--btn-pad-x);
   border-radius: var(--r-control);
-  background: var(--surface);
-  color: var(--subtle);
+  background: transparent;
+  color: var(--ink);
+  box-shadow: var(--ring);
   transition:
     background var(--duration-state) var(--ease-standard),
     color var(--duration-state) var(--ease-standard);
 }
 
-.gang-commit.armed {
-  background: var(--ink);
-  color: var(--bg);
-}
-
 .gang-body {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  /* The app's sidebar default is 320px (460px is its maximum), so the rail is
+     pinned rather than fractional. It shrinks fluidly before the 900px stack. */
+  grid-template-columns: min(320px, 27vw) minmax(0, 1fr);
   min-height: 0;
 }
 
@@ -3992,6 +4014,10 @@ code,
   font: inherit;
   cursor: default;
   transition: none;
+}
+
+.gang-demo .gang-composer input {
+  pointer-events: none;
 }
 
 .gang-project + .gang-project {
@@ -5407,7 +5433,9 @@ code,
 
 /* --state-active and --sidebar-accent, at the app's own strengths. The
    landing was carrying roughly half of each, which read as a dead rail. */
-.sub-row.is-open {
+.sub-demo a.sub-row.is-open,
+.build-demo a.sub-row.is-open,
+.gang-demo a.sub-row.is-open {
   background: color-mix(in oklab, var(--ink) 11.8%, transparent);
 }
 
@@ -6232,18 +6260,16 @@ html:not(.dark) .cg-plate {
    measure and the closer becomes one centred column of three equal edges. */
 .closer-room {
   width: min(660px, 100%);
-  margin-inline: auto;
+  margin: 88px auto;
   padding: clamp(28px, 3vw, 40px) clamp(20px, 2.4vw, 28px);
   border: 1px solid var(--line);
   border-radius: var(--r-room);
 }
 
-/* Inside the room the install card has the room's own edge, so it drops its
-   width cap and its border and reads as the room's contents rather than a
-   second box inside a first. */
-.closer-room .install-card {
-  width: 100%;
-  margin-top: 24px;
+/* The room's padding is the whole inset. The section keeps its centring but
+   drops the 88px it used to need when it sat directly on the band. */
+.closer-room .closer {
+  padding: 0;
 }
 
 .closer-subscribe .subscribe-card {
@@ -6254,12 +6280,6 @@ html:not(.dark) .cg-plate {
 .closer {
   padding: 88px 0;
   text-align: center;
-}
-
-.closer p {
-  text-wrap: pretty;
-  color: var(--dim);
-  margin-top: 12px;
 }
 
 /* ── Email signup ───────────────────────────────────────────────── */
@@ -6529,9 +6549,9 @@ html:not(.dark) .cg-plate {
 .footer-group a {
   display: flex;
   align-items: center;
-  /* 28px, so a link in the footer is an actual target on a phone. As a
-     one-line run of middots these were 17px tall. */
-  min-height: 28px;
+  /* The app's row primitive is a fixed 32px (h-8), and the footer is the last
+     place the page speaks the product's interaction language. */
+  height: var(--row-h);
   font-size: 13.5px;
   color: var(--subtle);
   transition: color var(--duration-hover) var(--ease-standard);
