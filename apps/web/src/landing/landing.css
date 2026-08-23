@@ -697,8 +697,17 @@ code,
   justify-content: center;
 }
 
+/* The command reads from the left and the copy sits hard right, rather than
+   the pair being centred as a lump — it was leaving the glyph 19px short of
+   the edge and reading as a stray icon rather than the button's own control. */
 .install-card .cmd-btn {
-  padding-inline: 14px;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 0 10px 0 16px;
+}
+
+.install-card .cmd-copy {
+  margin-left: auto;
 }
 
 .install-card .cmd-text {
@@ -984,11 +993,16 @@ code,
 }
 
 .hero h1 {
-  font-size: clamp(46px, 5vw, 72px);
-  line-height: 1;
+  font-size: clamp(38px, 5vw, 72px);
+  line-height: 1.02;
   font-weight: 640;
   letter-spacing: -0.045em;
-  max-width: 12ch;
+  /* 26ch, not 12. The old cap held the line to 367px and forced "The IDE that
+     builds itself" into two rows at every width — the break was the container,
+     not the type. It sets on one line now wherever one line fits, and
+     `balance` only has to do its job on the narrow widths where it wraps,
+     which is what balance is for. */
+  max-width: 26ch;
   margin: 0 auto;
   color: var(--ink-strong);
   text-wrap: balance;
@@ -6205,6 +6219,31 @@ html:not(.dark) .cg-plate {
   letter-spacing: -0.025em;
   margin-bottom: 12px;
   color: var(--ink-strong);
+}
+
+/* The closer sits in the same bordered room the subscribe card does, so the
+   headline, the install card and the signup share one edge instead of three
+   different ones floating on the band. Border only — the ground stays the
+   page's, because a filled box here would compete with the install card
+   nested inside it. */
+/* Children of the room stop re-asserting the rail. The subscribe card carries
+   `.rail` for when it stands alone, and inside a container that is already
+   rail-width that put its border exactly on the room's — two edges at the same
+   x, so the room read as having none. Inside, it fills the room's content box
+   and the room's own edge is what you see. */
+.closer-room .subscribe-card {
+  width: 100%;
+  margin-inline: 0;
+}
+
+.closer-room {
+  width: min(var(--rail), calc(100vw - 2 * var(--gutter)));
+  margin-inline: calc(
+    (100% - min(var(--rail), 100vw - 2 * var(--gutter))) / 2
+  );
+  padding: clamp(32px, 4vw, 56px) clamp(20px, 3vw, 40px);
+  border: 1px solid var(--line);
+  border-radius: var(--r-room);
 }
 
 .closer {

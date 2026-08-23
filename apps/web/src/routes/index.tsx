@@ -4860,6 +4860,7 @@ function LandingPage() {
       </section>
 
       <div className="slate band-close">
+      <div className="closer-room">
       <section className="closer">
         <h2 className="sec-title">Put your agents to work</h2>
         <InstallOptions placement="closer">
@@ -4872,6 +4873,7 @@ function LandingPage() {
           <SubscribeCard placement="footer" title="Keep up with the build" />
         </div>
       </section>
+      </div>
 
       <SiteFooter />
       </div>
