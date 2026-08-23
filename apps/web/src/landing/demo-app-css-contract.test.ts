@@ -49,11 +49,11 @@ function tokenValue(name: string): string {
   return value.trim();
 }
 
-function subagentsDemoSource(): string {
-  const start = routeSource.indexOf("function SubagentsDemo()");
-  const end = routeSource.indexOf("const ASK_BEATS", start);
+function demoFunctionSource(functionName: string, endMarker: string): string {
+  const start = routeSource.indexOf(`function ${functionName}()`);
+  const end = routeSource.indexOf(endMarker, start);
   if (start === -1 || end === -1) {
-    throw new Error("Could not isolate SubagentsDemo source");
+    throw new Error(`Could not isolate ${functionName} source`);
   }
   return routeSource.slice(start, end);
 }
@@ -181,16 +181,43 @@ describe("demo app canonical CSS contract", () => {
 });
 
 describe("migrated demo source contract", () => {
-  it("keeps Subagents on the primitive instead of legacy row/status markup", () => {
-    const source = subagentsDemoSource();
+  it.each([
+    ["SubagentsDemo", "const ASK_BEATS"],
+    ["BuildDemo", "type GangProvider"],
+    ["GangDemo", "const BEAT_MS"],
+  ])(
+    "keeps %s on the primitive instead of legacy row/status markup",
+    (name, endMarker) => {
+      const source = demoFunctionSource(name, endMarker);
 
-    expect(source).toContain("<DemoThreadScene");
-    expect(source).toContain("<DemoThreadRail");
-    expect(source).toContain("<DemoSelectedThread");
-    expect(source).not.toMatch(
-      /\b(?:trow|sub-row|gang-row|is-open|spawn-new|sub-dot)\b/,
-    );
-    expect(source).not.toMatch(/<(?:a|button)\b/);
+      expect(source).toContain("<DemoThreadScene");
+      expect(source).toContain("<DemoThreadRail");
+      expect(source).toContain("<DemoSelectedThread");
+      expect(source).not.toMatch(
+        /\b(?:trow|sub-row|gang-row|is-open|spawn-new|sub-dot|gang-wait|gang-kid|sub-kids|sub-guide|sub-group|build-thread-group)\b/,
+      );
+      expect(source).not.toMatch(/<a\b/);
+      if (name === "SubagentsDemo") {
+        expect(source).not.toMatch(/<button\b/);
+      }
+    },
+  );
+
+  it("keeps Build search at the displayed-project boundary", () => {
+    const source = demoFunctionSource("BuildDemo", "type GangProvider");
+
+    expect(source).toContain("threads={BUILD_DEMO_THREADS}");
+    expect(source).toContain("projects={filteredProjects}");
+    expect(source).not.toMatch(/threads=\{filtered/i);
+  });
+
+  it("keeps Gang provider context and nested projects on the selected model", () => {
+    const source = demoFunctionSource("GangDemo", "const BEAT_MS");
+
+    expect(source).toContain("GANG_PROVIDER_META[open.provider]");
+    expect(source).toContain("projects={GANG_PROJECTS}");
+    expect(source).not.toContain("DemoSpinner");
+    expect(source).not.toContain("MessageQuestionIcon");
   });
 
   it("does not regress the settled native-select removal", () => {

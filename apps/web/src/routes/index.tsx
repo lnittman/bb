@@ -3730,6 +3730,33 @@ const BUILD_THREADS = [
   },
 ] as const;
 
+const BUILD_DEMO_THREADS = [
+  {
+    id: BUILD_NEW_THREAD.id,
+    title: BUILD_NEW_THREAD.title,
+    tone: "normal",
+    leading: { kind: "none" },
+    activity: { kind: "idle" },
+    attentionRevision: 0,
+    initialReadThroughRevision: 0,
+    interaction: "openable",
+    href: "#build-new",
+  },
+  ...BUILD_THREADS.map((thread): DemoThread => ({
+    id: thread.id,
+    title: thread.title,
+    tone: "normal",
+    leading: { kind: "none" },
+    activity: { kind: "idle" },
+    attentionRevision: 1,
+    initialReadThroughRevision: 0,
+    interaction: "openable",
+    href: `#build-${thread.id}`,
+  })),
+] satisfies readonly DemoThread[];
+
+const BUILD_PROJECT_IDS = ["storefront", "checkout-api"] as const;
+
 type BuildPanelKey = "extensions" | "automations" | "tasks";
 
 const BUILD_PANEL_ROWS = {
@@ -3782,243 +3809,249 @@ function BuildDemo() {
     },
     buildSearchRef,
   );
-  const activeThread =
-    activeThreadId === BUILD_NEW_THREAD.id
-      ? BUILD_NEW_THREAD
-      : (BUILD_THREADS.find((thread) => thread.id === activeThreadId) ??
-        BUILD_THREADS[0]);
-  const filteredThreads = BUILD_THREADS.filter((thread) =>
-    thread.title.toLowerCase().includes(query.trim().toLowerCase()),
-  );
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredProjects: readonly DemoThreadProject[] =
+    BUILD_PROJECT_IDS.flatMap((project) => {
+      const rows = BUILD_THREADS.filter(
+        (thread) =>
+          thread.project === project &&
+          thread.title.toLowerCase().includes(normalizedQuery),
+      ).map((thread) => ({ threadId: thread.id, children: [] }));
+      return rows.length === 0 ? [] : [{ id: project, label: project, rows }];
+    });
   const panelRows = BUILD_PANEL_ROWS[activePanel];
   const panelDescription = BUILD_PANEL_DESCRIPTIONS[activePanel];
 
   return (
-    <div
-      className="build-demo"
-      role="group"
-      aria-label="A bb thread beside the built-in Tasks plugin"
+    <DemoThreadScene
+      threads={BUILD_DEMO_THREADS}
+      selectedId={activeThreadId}
+      onSelectedIdChange={setActiveThreadId}
     >
-      <div className="dwin-bar">
-        <button
-          type="button"
-          className="dwin-rail-toggle"
-          aria-label={railOpen ? "Hide sidebar" : "Show sidebar"}
-          aria-expanded={railOpen}
-          aria-controls="build-rail"
-          onClick={() => setRailOpen((open) => !open)}
-        >
-          <PanelIcon className="ri bar-ic" />
-        </button>
-        <span className="dwin-title">{activeThread.title}</span>
-        <span className="gang-commit" aria-hidden="true">
-          Commit
-          <ChevronDown className="gang-commit-chev" />
-        </span>
-      </div>
-      <div className={railOpen ? "gang-body" : "gang-body rail-closed"}>
-        <div className="gang-side" id="build-rail" hidden={!railOpen}>
-          <div className="side-row-new">
-            <button
-              type="button"
-              className={
-                activeThread.id === BUILD_NEW_THREAD.id
-                  ? "side-act active-act"
-                  : "side-act"
-              }
-              aria-pressed={activeThread.id === BUILD_NEW_THREAD.id}
-              onClick={() => setActiveThreadId(BUILD_NEW_THREAD.id)}
+      <DemoSelectedThread>
+        {(selectedThread) => {
+          const activeThread =
+            selectedThread?.id === BUILD_NEW_THREAD.id
+              ? BUILD_NEW_THREAD
+              : (BUILD_THREADS.find(
+                  (thread) => thread.id === selectedThread?.id,
+                ) ?? BUILD_THREADS[0]);
+
+          return (
+            <div
+              className="build-demo"
+              role="group"
+              aria-label="A bb thread beside the built-in Tasks plugin"
             >
-              <NewThreadIcon className="sa-ic" />
-              New thread
-            </button>
-            <button
-              type="button"
-              className="side-search"
-              aria-label="Search threads"
-              aria-expanded={searchOpen}
-              onClick={() => setSearchOpen((current) => !current)}
-            >
-              <SearchGlyph className="sa-ic" />
-            </button>
-          </div>
-          {searchOpen ? (
-            <input
-              className="build-search"
-              aria-label="Search threads"
-              value={query}
-              ref={buildSearchRef}
-              onChange={(event) => setQuery(event.currentTarget.value)}
-              placeholder="Search threads"
-            />
-          ) : null}
-          <button
-            type="button"
-            className={
-              activePanel === "extensions" ? "side-act active-act" : "side-act"
-            }
-            aria-pressed={activePanel === "extensions"}
-            onClick={() => {
-              setActivePanel("extensions");
-              setSelectedPanelRow("plugins-browse");
-            }}
-          >
-            <ToolboxGlyph className="sa-ic" />
-            Extensions
-          </button>
-          <button
-            type="button"
-            className={
-              activePanel === "automations" ? "side-act active-act" : "side-act"
-            }
-            aria-pressed={activePanel === "automations"}
-            onClick={() => {
-              setActivePanel("automations");
-              setSelectedPanelRow("automations-installed");
-            }}
-          >
-            <ClockIcon className="sa-ic" />
-            Automations
-          </button>
-          <button
-            type="button"
-            className={
-              activePanel === "tasks" ? "side-act active-act" : "side-act"
-            }
-            aria-pressed={activePanel === "tasks"}
-            onClick={() => {
-              setActivePanel("tasks");
-              setSelectedPanelRow("task-audit");
-            }}
-          >
-            <ChecklistGlyph className="sa-ic" />
-            Tasks
-          </button>
-          {["storefront", "checkout-api"].map((project) => {
-            const projectThreads = filteredThreads.filter(
-              (thread) => thread.project === project,
-            );
-            if (projectThreads.length === 0) return null;
-            return (
-              <div className="build-thread-group" key={project}>
-                <span className="sub-group gang-gap">{project}</span>
-                {projectThreads.map((thread) => (
-                  <a
-                    key={thread.id}
-                    href={`#build-${thread.id}`}
-                    className={
-                      activeThread.id === thread.id
-                        ? "sub-row gang-row is-open"
-                        : "sub-row gang-row"
-                    }
-                    aria-current={
-                      activeThread.id === thread.id ? "page" : undefined
-                    }
-                    aria-label={`Open ${thread.title}`}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      setActiveThreadId(thread.id);
-                    }}
-                  >
-                    <span className="sub-title">{thread.title}</span>
-                    {activeThread.id === thread.id ? null : (
-                      <i className="sub-dot" aria-hidden />
-                    )}
-                  </a>
-                ))}
-              </div>
-            );
-          })}
-        </div>
-        <div className="gang-thread" id={`build-${activeThread.id}`}>
-          <div className="gang-feed" aria-live="polite">
-            {activeThread.lines.map((line) => (
-              <TranscriptLineView key={line.text} line={line} />
-            ))}
-          </div>
-          <div className="gang-pr" aria-hidden>
-            <GitMergeIcon className="gang-pr-ic" />
-            <span className="gang-pr-strong">Uncommitted changes</span>
-          </div>
-          <div className="gang-composer">
-            <label className="sr-only" htmlFor="build-follow-up">
-              Ask a follow-up
-            </label>
-            <input id="build-follow-up" placeholder="Ask a follow-up" />
-            <button
-              type="button"
-              className="gang-send"
-              aria-label="Send"
-              disabled
-            >
-              <SendIcon className="gang-send-ic" />
-            </button>
-          </div>
-          <div className="gang-ctx" aria-hidden>
-            <span className="gang-ctx-item">
-              <ClaudeIcon className="gang-ctx-ic" />
-              Opus 4.8
-              <ChevronDown className="gang-commit-chev" />
-            </span>
-            <span className="gang-ctx-item">
-              <FolderGitIcon className="gang-ctx-ic" />
-              Worktree
-              <ChevronDown className="gang-commit-chev" />
-            </span>
-          </div>
-        </div>
-        <div
-          className="build-panel"
-          role="region"
-          aria-label={`${activePanel} panel`}
-        >
-          <div className="build-panel-bar">
-            {activePanel === "tasks" ? (
-              <ChecklistGlyph className="build-panel-ic" />
-            ) : activePanel === "automations" ? (
-              <ClockIcon className="build-panel-ic" />
-            ) : (
-              <ToolboxGlyph className="build-panel-ic" />
-            )}
-            <span className="build-panel-title">
-              {activePanel === "tasks"
-                ? "Tasks"
-                : activePanel === "automations"
-                  ? "Automations"
-                  : "Extensions"}
-            </span>
-            <span className="build-panel-actions" aria-hidden>
-              <HugeiconsIcon
-                icon={ArrowExpand01Icon}
-                className="build-panel-ic"
-              />
-              <HugeiconsIcon
-                icon={SidebarRightIcon}
-                className="build-panel-ic"
-              />
-            </span>
-          </div>
-          <ul className="build-queue">
-            {panelRows.map((row) => (
-              <li key={row.id}>
+              <div className="dwin-bar">
                 <button
                   type="button"
-                  className="build-queue-row"
-                  aria-pressed={selectedPanelRow === row.id}
-                  onClick={() => setSelectedPanelRow(row.id)}
+                  className="dwin-rail-toggle"
+                  aria-label={railOpen ? "Hide sidebar" : "Show sidebar"}
+                  aria-expanded={railOpen}
+                  aria-controls="build-rail"
+                  onClick={() => setRailOpen((open) => !open)}
                 >
-                  <span className="build-queue-ask">{row.meta}</span>
-                  <span className="build-queue-title">{row.title}</span>
+                  <PanelIcon className="ri bar-ic" />
                 </button>
-              </li>
-            ))}
-          </ul>
-          {panelDescription ? (
-            <p className="build-queue-foot">{panelDescription}</p>
-          ) : null}
-        </div>
-      </div>
-    </div>
+                <span className="dwin-title">{activeThread.title}</span>
+                <span className="gang-commit" aria-hidden="true">
+                  Commit
+                  <ChevronDown className="gang-commit-chev" />
+                </span>
+              </div>
+              <div className={railOpen ? "gang-body" : "gang-body rail-closed"}>
+                <div className="gang-side" id="build-rail" hidden={!railOpen}>
+                  <DemoThreadRail
+                    ariaLabel="Build threads"
+                    header={
+                      <>
+                        <div className="side-row-new">
+                          <button
+                            type="button"
+                            className={
+                              activeThread.id === BUILD_NEW_THREAD.id
+                                ? "side-act active-act"
+                                : "side-act"
+                            }
+                            aria-pressed={
+                              activeThread.id === BUILD_NEW_THREAD.id
+                            }
+                            onClick={() =>
+                              setActiveThreadId(BUILD_NEW_THREAD.id)
+                            }
+                          >
+                            <NewThreadIcon className="sa-ic" />
+                            New thread
+                          </button>
+                          <button
+                            type="button"
+                            className="side-search"
+                            aria-label="Search threads"
+                            aria-expanded={searchOpen}
+                            onClick={() => setSearchOpen((current) => !current)}
+                          >
+                            <SearchGlyph className="sa-ic" />
+                          </button>
+                        </div>
+                        {searchOpen ? (
+                          <input
+                            className="build-search"
+                            aria-label="Search threads"
+                            value={query}
+                            ref={buildSearchRef}
+                            onChange={(event) =>
+                              setQuery(event.currentTarget.value)
+                            }
+                            placeholder="Search threads"
+                          />
+                        ) : null}
+                        <button
+                          type="button"
+                          className={
+                            activePanel === "extensions"
+                              ? "side-act active-act"
+                              : "side-act"
+                          }
+                          aria-pressed={activePanel === "extensions"}
+                          onClick={() => {
+                            setActivePanel("extensions");
+                            setSelectedPanelRow("plugins-browse");
+                          }}
+                        >
+                          <ToolboxGlyph className="sa-ic" />
+                          Extensions
+                        </button>
+                        <button
+                          type="button"
+                          className={
+                            activePanel === "automations"
+                              ? "side-act active-act"
+                              : "side-act"
+                          }
+                          aria-pressed={activePanel === "automations"}
+                          onClick={() => {
+                            setActivePanel("automations");
+                            setSelectedPanelRow("automations-installed");
+                          }}
+                        >
+                          <ClockIcon className="sa-ic" />
+                          Automations
+                        </button>
+                        <button
+                          type="button"
+                          className={
+                            activePanel === "tasks"
+                              ? "side-act active-act"
+                              : "side-act"
+                          }
+                          aria-pressed={activePanel === "tasks"}
+                          onClick={() => {
+                            setActivePanel("tasks");
+                            setSelectedPanelRow("task-audit");
+                          }}
+                        >
+                          <ChecklistGlyph className="sa-ic" />
+                          Tasks
+                        </button>
+                      </>
+                    }
+                    projects={filteredProjects}
+                  />
+                </div>
+                <div className="gang-thread" id={`build-${activeThread.id}`}>
+                  <div className="gang-feed" aria-live="polite">
+                    {activeThread.lines.map((line) => (
+                      <TranscriptLineView key={line.text} line={line} />
+                    ))}
+                  </div>
+                  <div className="gang-pr" aria-hidden>
+                    <GitMergeIcon className="gang-pr-ic" />
+                    <span className="gang-pr-strong">Uncommitted changes</span>
+                  </div>
+                  <div className="gang-composer">
+                    <label className="sr-only" htmlFor="build-follow-up">
+                      Ask a follow-up
+                    </label>
+                    <input id="build-follow-up" placeholder="Ask a follow-up" />
+                    <button
+                      type="button"
+                      className="gang-send"
+                      aria-label="Send"
+                      disabled
+                    >
+                      <SendIcon className="gang-send-ic" />
+                    </button>
+                  </div>
+                  <div className="gang-ctx" aria-hidden>
+                    <span className="gang-ctx-item">
+                      <ClaudeIcon className="gang-ctx-ic" />
+                      Opus 4.8
+                      <ChevronDown className="gang-commit-chev" />
+                    </span>
+                    <span className="gang-ctx-item">
+                      <FolderGitIcon className="gang-ctx-ic" />
+                      Worktree
+                      <ChevronDown className="gang-commit-chev" />
+                    </span>
+                  </div>
+                </div>
+                <div
+                  className="build-panel"
+                  role="region"
+                  aria-label={`${activePanel} panel`}
+                >
+                  <div className="build-panel-bar">
+                    {activePanel === "tasks" ? (
+                      <ChecklistGlyph className="build-panel-ic" />
+                    ) : activePanel === "automations" ? (
+                      <ClockIcon className="build-panel-ic" />
+                    ) : (
+                      <ToolboxGlyph className="build-panel-ic" />
+                    )}
+                    <span className="build-panel-title">
+                      {activePanel === "tasks"
+                        ? "Tasks"
+                        : activePanel === "automations"
+                          ? "Automations"
+                          : "Extensions"}
+                    </span>
+                    <span className="build-panel-actions" aria-hidden>
+                      <HugeiconsIcon
+                        icon={ArrowExpand01Icon}
+                        className="build-panel-ic"
+                      />
+                      <HugeiconsIcon
+                        icon={SidebarRightIcon}
+                        className="build-panel-ic"
+                      />
+                    </span>
+                  </div>
+                  <ul className="build-queue">
+                    {panelRows.map((row) => (
+                      <li key={row.id}>
+                        <button
+                          type="button"
+                          className="build-queue-row"
+                          aria-pressed={selectedPanelRow === row.id}
+                          onClick={() => setSelectedPanelRow(row.id)}
+                        >
+                          <span className="build-queue-ask">{row.meta}</span>
+                          <span className="build-queue-title">{row.title}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {panelDescription ? (
+                    <p className="build-queue-foot">{panelDescription}</p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          );
+        }}
+      </DemoSelectedThread>
+    </DemoThreadScene>
   );
 }
 
@@ -4052,7 +4085,6 @@ type GangThread = {
   project: "storefront" | "checkout-api" | "mobile";
   title: string;
   branch: string;
-  depth?: 1;
   status: "done" | "running" | "waiting";
   provider: GangProvider;
   lines: readonly TranscriptLine[];
@@ -4109,7 +4141,6 @@ const GANG_THREADS: readonly GangThread[] = [
     project: "storefront",
     title: "Confirm the checkout totals",
     branch: "bb/confirm-checkout-totals",
-    depth: 1,
     status: "running",
     provider: "pi",
     lines: [
@@ -4247,145 +4278,168 @@ const GANG_THREADS: readonly GangThread[] = [
   },
 ];
 
+const GANG_DEMO_THREADS: readonly DemoThread[] = GANG_THREADS.map(
+  (thread): DemoThread => ({
+    id: thread.id,
+    title: thread.title,
+    tone: "normal",
+    leading: { kind: "none" },
+    activity:
+      thread.status === "waiting"
+        ? { kind: "needs-input", label: "Waiting for you" }
+        : thread.status === "running"
+          ? { kind: "working", label: "Working" }
+          : { kind: "idle" },
+    attentionRevision: 1,
+    initialReadThroughRevision: 0,
+    interaction: "openable",
+    href: `#gang-${thread.id}`,
+  }),
+);
+
+const GANG_PROJECTS = [
+  {
+    id: "storefront",
+    label: "storefront",
+    rows: [
+      { threadId: "audit-promo", children: [] },
+      {
+        threadId: "trace-checkout",
+        children: [{ threadId: "confirm-totals", children: [] }],
+      },
+      { threadId: "promo-impact", children: [] },
+      { threadId: "cart-integration", children: [] },
+      { threadId: "release-notes", children: [] },
+    ],
+  },
+  {
+    id: "checkout-api",
+    label: "checkout-api",
+    rows: [
+      { threadId: "service-route", children: [] },
+      { threadId: "endpoint-validation", children: [] },
+      { threadId: "order-errors", children: [] },
+    ],
+  },
+  {
+    id: "mobile",
+    label: "mobile",
+    rows: [
+      { threadId: "readme", children: [] },
+      { threadId: "package-scripts", children: [] },
+    ],
+  },
+] as const satisfies readonly DemoThreadProject[];
+
 function GangDemo() {
   const [railOpen, setRailOpen] = useState(true);
   const [openId, setOpenId] = useState("trace-checkout");
-  const open =
-    GANG_THREADS.find((thread) => thread.id === openId) ?? GANG_THREADS[0];
-  const OpenProviderIcon = GANG_PROVIDER_META[open.provider].Icon;
-
-  const renderThreadRow = (thread: GangThread) => {
-    const control = (
-      <a
-        key={thread.id}
-        href={`#gang-${thread.id}`}
-        className={
-          "sub-row gang-row" +
-          (thread.depth ? " gang-kid" : "") +
-          (open.id === thread.id ? " is-open" : "")
-        }
-        aria-current={open.id === thread.id ? "page" : undefined}
-        aria-label={`Open ${thread.title}`}
-        onClick={(event) => {
-          event.preventDefault();
-          setOpenId(thread.id);
-        }}
-      >
-        <span className="sub-title">{thread.title}</span>
-        {open.id === thread.id ? null : thread.status === "waiting" ? (
-          <HugeiconsIcon
-            icon={MessageQuestionIcon}
-            className="gang-wait"
-            aria-hidden
-          />
-        ) : thread.status === "running" ? (
-          <DemoSpinner />
-        ) : (
-          <i className="sub-dot" aria-hidden />
-        )}
-      </a>
-    );
-    if (!thread.depth) return control;
-    return (
-      <div className="sub-kids" key={thread.id}>
-        <i className="sub-guide" aria-hidden />
-        {control}
-      </div>
-    );
-  };
 
   return (
-    <div
-      className="gang-demo"
-      role="group"
-      aria-label="A bb window with one thread open and others running"
+    <DemoThreadScene
+      threads={GANG_DEMO_THREADS}
+      selectedId={openId}
+      onSelectedIdChange={setOpenId}
     >
-      <div className="dwin-bar">
-        <button
-          type="button"
-          className="dwin-rail-toggle"
-          aria-label={railOpen ? "Hide sidebar" : "Show sidebar"}
-          aria-expanded={railOpen}
-          aria-controls="gang-rail"
-          onClick={() => setRailOpen((open) => !open)}
-        >
-          <PanelIcon className="ri bar-ic" />
-        </button>
-        <span className="dwin-title">{open.title}</span>
-        <span className="gang-commit" aria-hidden="true">
-          Commit
-          <ChevronDown className="gang-commit-chev" />
-        </span>
-      </div>
-      <div className={railOpen ? "gang-body" : "gang-body rail-closed"}>
-        <div className="gang-side" id="gang-rail" hidden={!railOpen}>
-          <div className="sub-top" aria-hidden>
-            <span className="sub-newthread">
-              <NewThreadIcon className="sub-top-ic" />
-              New thread
-            </span>
-            <SearchGlyph className="sub-top-ic sub-search" />
-          </div>
-          {(["storefront", "checkout-api", "mobile"] as const).map(
-            (project) => (
-              <div className="gang-project" key={project}>
-                <span className="sub-group">{project}</span>
-                {GANG_THREADS.filter(
-                  (thread) => thread.project === project,
-                ).map(renderThreadRow)}
-              </div>
-            ),
-          )}
-        </div>
-        <div className="gang-thread" id={`gang-${open.id}`}>
-          <div className="gang-feed" aria-live="polite">
-            {open.lines.map((line) => (
-              <TranscriptLineView key={line.text} line={line} />
-            ))}
-          </div>
-          <div className="gang-pr" aria-hidden>
-            <GitMergeIcon className="gang-pr-ic" />
-            <span className="gang-pr-strong">Uncommitted changes</span>
-          </div>
-          <div className="gang-composer">
-            <label className="sr-only" htmlFor="gang-follow-up">
-              Ask a follow-up
-            </label>
-            <input
-              id="gang-follow-up"
-              placeholder="Ask a follow-up"
-              readOnly
-              tabIndex={-1}
-              aria-hidden
-            />
-            <button
-              type="button"
-              className="gang-send"
-              aria-label="Send"
-              disabled
+      <DemoSelectedThread>
+        {(selectedThread) => {
+          const open =
+            GANG_THREADS.find((thread) => thread.id === selectedThread?.id) ??
+            GANG_THREADS[0];
+          const OpenProviderIcon = GANG_PROVIDER_META[open.provider].Icon;
+
+          return (
+            <div
+              className="gang-demo"
+              role="group"
+              aria-label="A bb window with one thread open and others running"
             >
-              <SendIcon className="gang-send-ic" />
-            </button>
-          </div>
-          <div className="gang-ctx" aria-hidden>
-            <span className="gang-ctx-item">
-              <OpenProviderIcon className="gang-ctx-ic" />
-              {GANG_PROVIDER_META[open.provider].label}
-              <ChevronDown className="gang-commit-chev" />
-            </span>
-            <span className="gang-ctx-item">
-              <FolderGitIcon className="gang-ctx-ic" />
-              Worktree
-              <ChevronDown className="gang-commit-chev" />
-            </span>
-            <span className="gang-ctx-item gang-ctx-branch">
-              <GitBranchIcon className="gang-ctx-ic" />
-              {open.branch}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
+              <div className="dwin-bar">
+                <button
+                  type="button"
+                  className="dwin-rail-toggle"
+                  aria-label={railOpen ? "Hide sidebar" : "Show sidebar"}
+                  aria-expanded={railOpen}
+                  aria-controls="gang-rail"
+                  onClick={() => setRailOpen((open) => !open)}
+                >
+                  <PanelIcon className="ri bar-ic" />
+                </button>
+                <span className="dwin-title">{open.title}</span>
+                <span className="gang-commit" aria-hidden="true">
+                  Commit
+                  <ChevronDown className="gang-commit-chev" />
+                </span>
+              </div>
+              <div className={railOpen ? "gang-body" : "gang-body rail-closed"}>
+                <div className="gang-side" id="gang-rail" hidden={!railOpen}>
+                  <DemoThreadRail
+                    ariaLabel="Gang threads"
+                    header={
+                      <div className="sub-top" aria-hidden>
+                        <span className="sub-newthread">
+                          <NewThreadIcon className="sub-top-ic" />
+                          New thread
+                        </span>
+                        <SearchGlyph className="sub-top-ic sub-search" />
+                      </div>
+                    }
+                    projects={GANG_PROJECTS}
+                  />
+                </div>
+                <div className="gang-thread" id={`gang-${open.id}`}>
+                  <div className="gang-feed" aria-live="polite">
+                    {open.lines.map((line) => (
+                      <TranscriptLineView key={line.text} line={line} />
+                    ))}
+                  </div>
+                  <div className="gang-pr" aria-hidden>
+                    <GitMergeIcon className="gang-pr-ic" />
+                    <span className="gang-pr-strong">Uncommitted changes</span>
+                  </div>
+                  <div className="gang-composer">
+                    <label className="sr-only" htmlFor="gang-follow-up">
+                      Ask a follow-up
+                    </label>
+                    <input
+                      id="gang-follow-up"
+                      placeholder="Ask a follow-up"
+                      readOnly
+                      tabIndex={-1}
+                      aria-hidden
+                    />
+                    <button
+                      type="button"
+                      className="gang-send"
+                      aria-label="Send"
+                      disabled
+                    >
+                      <SendIcon className="gang-send-ic" />
+                    </button>
+                  </div>
+                  <div className="gang-ctx" aria-hidden>
+                    <span className="gang-ctx-item">
+                      <OpenProviderIcon className="gang-ctx-ic" />
+                      {GANG_PROVIDER_META[open.provider].label}
+                      <ChevronDown className="gang-commit-chev" />
+                    </span>
+                    <span className="gang-ctx-item">
+                      <FolderGitIcon className="gang-ctx-ic" />
+                      Worktree
+                      <ChevronDown className="gang-commit-chev" />
+                    </span>
+                    <span className="gang-ctx-item gang-ctx-branch">
+                      <GitBranchIcon className="gang-ctx-ic" />
+                      {open.branch}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }}
+      </DemoSelectedThread>
+    </DemoThreadScene>
   );
 }
 
