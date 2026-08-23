@@ -113,7 +113,112 @@ function ByMachineSidebar() {
   );
 }
 
+/* 0.35.0: plugin pages became flat sidebar rows, and Automations split out
+   from Extensions. Both are named in that release's own notes. */
+function PluginSidebar() {
+  return (
+    <div className="feature-media">
+      <div className="media-stage">
+        <div
+          className="sidebar-card"
+          role="img"
+          aria-label="bb sidebar with plugin pages as flat rows, Automations separate from Extensions"
+        >
+          <ul className="threads">
+            {[
+              "Extensions",
+              "Automations",
+              "Tasks",
+              "Memory",
+              "Docs",
+              "Side chat",
+            ].map((page) => (
+              <li key={page}>
+                <div className={page === "Tasks" ? "trow active" : "trow"}>
+                  <span className="trow-title">{page}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* 0.0.31: "arrange up to eight chats side by side". Three panes is what fits
+   the card; the release's own wording carries the number. */
+function SplitPanes() {
+  return (
+    <div className="feature-media">
+      <div className="media-stage">
+        <div
+          className="split-card"
+          role="img"
+          aria-label="Three bb threads arranged side by side in split view"
+        >
+          {["Trace order checkout flow", "Audit promo coverage", "Cut 1.4 notes"].map(
+            (title, i) => (
+              <div className={i === 0 ? "split-pane is-active" : "split-pane"} key={title}>
+                <div className="split-pane-bar">
+                  <span>{title}</span>
+                </div>
+                <div className="split-pane-body" aria-hidden>
+                  {[92, 76, 84, 58].map((w, n) => (
+                    <i key={n} style={{ width: `${w}%` }} />
+                  ))}
+                </div>
+              </div>
+            ),
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* 0.34.0: the cross-provider Ask User Question plugin — a real multiple-choice
+   question with option previews, in place of asking in prose. */
+function AskQuestionCard() {
+  return (
+    <div className="feature-media">
+      <div className="media-stage">
+        <div
+          className="askq ask-card"
+          role="img"
+          aria-label="An agent asking a multiple-choice question with two options"
+        >
+          <div className="askq-q">Which diff layout should stay selected?</div>
+          <div className="askq-opts">
+            <div className="askq-opt">
+              <span className="askq-radio" />
+              <span className="askq-text">
+                <span className="askq-label">Stacked</span>
+                <span className="askq-desc">
+                  Show each change across the full panel width.
+                </span>
+              </span>
+            </div>
+            <div className="askq-opt on">
+              <span className="askq-radio" />
+              <span className="askq-text">
+                <span className="askq-label">Split</span>
+                <span className="askq-desc">
+                  Place old and new changes in separate columns.
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const RELEASE_MEDIA: Record<string, ReactNode> = {
+  "0.35.0": <PluginSidebar />,
+  "0.34.0": <AskQuestionCard />,
+  "0.0.31": <SplitPanes />,
   "0.0.30": <ByMachineSidebar />,
 };
 

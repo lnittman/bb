@@ -6540,6 +6540,14 @@ html:not(.dark) .cg-plate {
 .closer-room {
   border: 1px solid var(--line);
   border-radius: var(--r-room);
+  /* The changelog's media stage, at the same 22px pitch and ink weight, so the
+     last room on the page has the ground its demo cards sit on. */
+  background-image: radial-gradient(
+    circle,
+    color-mix(in oklab, var(--ink) 12%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
 }
 
 .closer {
