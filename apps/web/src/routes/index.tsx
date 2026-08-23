@@ -83,6 +83,16 @@ import {
   SubscribeCard,
   GitHubLink,
 } from "../landing/cta";
+import {
+  DemoGlyph,
+  DemoSelectedThread,
+  DemoThreadRail,
+  DemoThreadScene,
+} from "../landing/demo-app-primitives";
+import type {
+  DemoThread,
+  DemoThreadProject,
+} from "../landing/demo-app-primitives";
 import { SiteFooter, SiteNav } from "../landing/site-chrome";
 import {
   ClaudeIcon,
@@ -2353,11 +2363,23 @@ function TranscriptLineView({ line }: { line: TranscriptLine }) {
  * rests on the finished spawn — parent, nested child, report — and the
  * visitor browses it. (The pane used to hold skeleton bars; a real
  * transcript per thread is both truer and worth touching.) */
+type SubagentDemoThread = Extract<
+  DemoThread,
+  { interaction: "openable" }
+> &
+  Readonly<{ lines: readonly TranscriptLine[] }>;
+
 const SUB_THREADS = [
   {
     id: "parent",
     title: "Expand README testing documentation",
-    kind: "parent",
+    tone: "normal",
+    leading: { kind: "none" },
+    activity: { kind: "idle" },
+    attentionRevision: 1,
+    initialReadThroughRevision: 0,
+    interaction: "openable",
+    href: "#subagent-parent",
     lines: [
       { kind: "step", text: "Explored the testing documentation" },
       {
@@ -2374,7 +2396,13 @@ const SUB_THREADS = [
   {
     id: "child",
     title: "Identify missing promo edge cases",
-    kind: "child",
+    tone: "normal",
+    leading: { kind: "none" },
+    activity: { kind: "idle" },
+    attentionRevision: 1,
+    initialReadThroughRevision: 0,
+    interaction: "openable",
+    href: "#subagent-child",
     lines: [
       { kind: "step", text: "Read promo.test.ts" },
       {
@@ -2387,7 +2415,13 @@ const SUB_THREADS = [
   {
     id: "trace",
     title: "Trace order checkout flow",
-    kind: "quiet",
+    tone: "quiet",
+    leading: { kind: "none" },
+    activity: { kind: "idle" },
+    attentionRevision: 1,
+    initialReadThroughRevision: 0,
+    interaction: "openable",
+    href: "#subagent-trace",
     lines: [
       { kind: "step", text: "Explored the checkout flow" },
       {
@@ -2399,7 +2433,13 @@ const SUB_THREADS = [
   {
     id: "cart",
     title: "Summarize checkout cart integration",
-    kind: "quiet",
+    tone: "quiet",
+    leading: { kind: "none" },
+    activity: { kind: "idle" },
+    attentionRevision: 1,
+    initialReadThroughRevision: 0,
+    interaction: "openable",
+    href: "#subagent-cart",
     lines: [
       { kind: "step", text: "Explored the cart integration" },
       {
@@ -2411,7 +2451,13 @@ const SUB_THREADS = [
   {
     id: "coverage",
     title: "Audit promo test coverage gaps",
-    kind: "quiet",
+    tone: "quiet",
+    leading: { kind: "none" },
+    activity: { kind: "idle" },
+    attentionRevision: 1,
+    initialReadThroughRevision: 0,
+    interaction: "openable",
+    href: "#subagent-coverage",
     lines: [
       { kind: "step", text: "Ran the suite" },
       {
@@ -2420,13 +2466,19 @@ const SUB_THREADS = [
       },
     ],
   },
-] as const;
+] as const satisfies readonly SubagentDemoThread[];
 
 const SUB_API_THREADS = [
   {
     id: "errors",
     title: "Explain orders error handling",
-    kind: "quiet",
+    tone: "quiet",
+    leading: { kind: "none" },
+    activity: { kind: "idle" },
+    attentionRevision: 1,
+    initialReadThroughRevision: 0,
+    interaction: "openable",
+    href: "#subagent-errors",
     lines: [
       { kind: "step", text: "Read src/routes/orders.ts" },
       {
@@ -2438,7 +2490,13 @@ const SUB_API_THREADS = [
   {
     id: "route",
     title: "Summarize service route",
-    kind: "quiet",
+    tone: "quiet",
+    leading: { kind: "none" },
+    activity: { kind: "idle" },
+    attentionRevision: 1,
+    initialReadThroughRevision: 0,
+    interaction: "openable",
+    href: "#subagent-route",
     lines: [
       { kind: "step", text: "Read the route" },
       {
@@ -2447,75 +2505,96 @@ const SUB_API_THREADS = [
       },
     ],
   },
-] as const;
+] as const satisfies readonly SubagentDemoThread[];
+
+const SUBAGENT_DEMO_THREADS = [
+  ...SUB_THREADS,
+  ...SUB_API_THREADS,
+] as const satisfies readonly SubagentDemoThread[];
+
+const SUBAGENT_DEMO_PROJECTS = [
+  {
+    id: "storefront",
+    label: "storefront",
+    rows: [
+      {
+        threadId: "parent",
+        children: [{ threadId: "child", children: [] }],
+      },
+      { threadId: "trace", children: [] },
+      { threadId: "cart", children: [] },
+      { threadId: "coverage", children: [] },
+    ],
+  },
+  {
+    id: "checkout-api",
+    label: "checkout-api",
+    rows: [
+      { threadId: "errors", children: [] },
+      { threadId: "route", children: [] },
+    ],
+  },
+] as const satisfies readonly DemoThreadProject[];
+
+const SUBAGENT_TRANSCRIPTS: ReadonlyMap<string, readonly TranscriptLine[]> = new Map(
+  SUBAGENT_DEMO_THREADS.map((thread) => [thread.id, thread.lines] as const),
+);
 
 function SubagentsDemo() {
   const [openId, setOpenId] = useState("parent");
-  // Threads you have opened stay read. The dot is unread state, not a
-  // stand-in for "not currently selected".
-  const [read, setRead] = useState<ReadonlySet<string>>(
-    () => new Set(["parent"]),
-  );
-  const all = [...SUB_THREADS, ...SUB_API_THREADS];
-  const open = all.find((t) => t.id === openId) ?? all[0];
-  const row = (t: (typeof all)[number]) => (
-    <a
-      key={t.id}
-      href={`#subagent-${t.id}`}
-      className={
-        (t.kind === "child" ? "sub-row sub-child" : "sub-row") +
-        (t.kind === "quiet" ? " sub-quiet" : "") +
-        (openId === t.id ? " is-open" : "")
-      }
-      aria-current={openId === t.id ? "page" : undefined}
-      aria-label={`Open ${t.title}`}
-      onClick={(event) => {
-        event.preventDefault();
-        setOpenId(t.id);
-        setRead((current) => new Set(current).add(t.id));
-      }}
-    >
-      <span className="sub-title">{t.title}</span>
-      {read.has(t.id) ? null : <i className="sub-dot" />}
-    </a>
-  );
   return (
-    <div
-      className="sub-demo"
-      role="group"
-      aria-label="Subagent threads and the selected conversation"
+    <DemoThreadScene
+      threads={SUBAGENT_DEMO_THREADS}
+      selectedId={openId}
+      onSelectedIdChange={setOpenId}
     >
-      <div className="sub-rail">
-        <div className="sub-top" aria-hidden>
-          <span className="sub-newthread">
-            <NewThreadIcon className="sub-top-ic" />
-            New thread
-          </span>
-          <SearchGlyph className="sub-top-ic sub-search" />
-        </div>
-        <span className="sub-group" aria-hidden>
-          storefront
-        </span>
-        {row(SUB_THREADS[0])}
-        {/* The app draws one hairline down the whole child group, not a stub
-            per row, and children are set apart by indent alone. */}
-        <div className="sub-kids">
-          <i className="sub-guide" aria-hidden />
-          {row(SUB_THREADS[1])}
-        </div>
-        {SUB_THREADS.slice(2).map(row)}
-        <span className="sub-group sub-gap" aria-hidden>
-          checkout-api
-        </span>
-        {SUB_API_THREADS.map(row)}
+      <div
+        className="sub-demo"
+        role="group"
+        aria-label="Subagent threads and the selected conversation"
+      >
+        <DemoThreadRail
+          ariaLabel="Subagent threads"
+          header={
+            <div className="sub-top" aria-hidden>
+              <span className="sub-newthread">
+                <span className="sub-top-glyph">
+                  <DemoGlyph Icon={NewThreadIcon} size={16} label={null} />
+                </span>
+                New thread
+              </span>
+              <span className="sub-top-glyph sub-search">
+                <DemoGlyph Icon={SearchGlyph} size={16} label={null} />
+              </span>
+            </div>
+          }
+          projects={SUBAGENT_DEMO_PROJECTS}
+        />
+        <DemoSelectedThread>
+          {(open) => {
+            if (!open) {
+              return null;
+            }
+            const lines = SUBAGENT_TRANSCRIPTS.get(open.id);
+            if (!lines) {
+              throw new Error(`Missing subagent transcript for ${open.id}`);
+            }
+            return (
+              <div
+                className="sub-main"
+                id={`subagent-${open.id}`}
+                aria-live="polite"
+              >
+                <span className="sub-main-title">{open.title}</span>
+                {lines.map((line) => (
+                  <TranscriptLineView key={line.text} line={line} />
+                ))}
+              </div>
+            );
+          }}
+        </DemoSelectedThread>
       </div>
-      <div className="sub-main" id={`subagent-${open.id}`} aria-live="polite">
-        <span className="sub-main-title">{open.title}</span>
-        {open.lines.map((line) => (
-          <TranscriptLineView key={line.text} line={line} />
-        ))}
-      </div>
-    </div>
+    </DemoThreadScene>
   );
 }
 

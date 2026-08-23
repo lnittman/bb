@@ -127,12 +127,26 @@
      1.75rem, in apps/app/src/components/ui/theme.css:553. The 32px
      above is SidebarMenuButton, which is project/menu/footer rows. */
   --thread-row-h: 28px;
+  --thread-row-h-coarse: 40px;
   /* The app's chrome rows (window bar, pane header) are 48px --
      CHROME_ROW_HEIGHT_CLASS in apps/app/src/lib/bb-desktop.ts. */
   --chrome-h: 48px;
   --row-pad: 8px;
   --row-gap: 8px;
   --row-icon: 16px;
+  --thread-sibling-gap: 1px;
+  --thread-branch-gap: 2px;
+  --project-row-gap: 4px;
+  --thread-depth-step: 24px;
+  --glyph-sm: 12px;
+  --glyph-md: 14px;
+  --glyph-lg: 16px;
+
+  /* The real app's selected and sidebar-hover fills. Selection stays
+     translucent so it reads consistently on every surface; hover is the
+     opaque sidebar step resolved from the page's palette anchors. */
+  --state-active: color-mix(in oklab, var(--ink) 11.8%, transparent);
+  --sidebar-accent: color-mix(in oklch, var(--ink) 8%, var(--canvas));
 
   --r-control: 6px;
   --r-field: 8px;
@@ -5635,6 +5649,264 @@ code,
   display: block;
 }
 
+/* demo-app-primitives: start */
+.demo-window__chrome {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--row-gap);
+  height: var(--chrome-h);
+  padding-inline: var(--row-pad);
+}
+
+.demo-window__chrome-leading,
+.demo-window__chrome-title,
+.demo-window__chrome-trailing {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.demo-window__chrome-leading {
+  justify-self: start;
+}
+
+.demo-window__chrome-title {
+  justify-self: center;
+}
+
+.demo-window__chrome-trailing {
+  justify-self: end;
+}
+
+.demo-sidebar-action-row {
+  display: flex;
+  width: 100%;
+  height: var(--row-h);
+  align-items: center;
+  gap: var(--row-gap);
+  padding: var(--row-pad);
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: none;
+}
+
+.demo-sidebar-action-row[data-selected="true"] {
+  background: var(--state-active);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .demo-sidebar-action-row[data-selected="false"]:hover {
+    background: var(--sidebar-accent);
+  }
+}
+
+.demo-sidebar-action-row:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ink-strong) 45%, transparent);
+  outline-offset: -2px;
+}
+
+.demo-sidebar-action-row__label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.demo-sidebar-action-row__trailing {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+.demo-project-list {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--thread-branch-gap);
+}
+
+.demo-thread-project {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--thread-branch-gap);
+}
+
+.demo-thread-project + .demo-thread-project {
+  margin-top: calc(var(--project-row-gap) - var(--thread-branch-gap));
+}
+
+.demo-project-row {
+  display: flex;
+  height: var(--row-h);
+  align-items: center;
+  padding: 0 0 0 var(--row-pad);
+  color: color-mix(in oklab, var(--subtle) 75%, transparent);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.demo-thread-list,
+.demo-thread-children {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--thread-sibling-gap);
+}
+
+.demo-thread-node {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--thread-branch-gap);
+}
+
+.demo-thread-children {
+  position: relative;
+}
+
+.demo-thread-children::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(
+    var(--row-pad) + 8px + var(--demo-thread-depth) * var(--thread-depth-step)
+  );
+  width: 1px;
+  background: color-mix(in oklch, var(--ink) 14%, var(--canvas));
+  content: "";
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.demo-thread-row {
+  display: flex;
+  width: 100%;
+  height: var(--thread-row-h);
+  align-items: center;
+  gap: var(--row-gap);
+  padding: 0 0 0
+    calc(var(--row-pad) + var(--demo-thread-depth) * var(--thread-depth-step));
+  border-radius: var(--r-control);
+  color: var(--ink);
+  transition: none;
+}
+
+a.demo-thread-row {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+div.demo-thread-row[data-interaction="scenery"] {
+  cursor: default;
+}
+
+.demo-thread-row[data-selected="true"] {
+  background: var(--state-active);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  a.demo-thread-row[data-selected="false"]:hover {
+    background: var(--sidebar-accent);
+  }
+}
+
+a.demo-thread-row:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ink-strong) 45%, transparent);
+  outline-offset: -2px;
+}
+
+.demo-thread-row[data-tone="quiet"] {
+  color: var(--dim);
+}
+
+.demo-thread-row__leading,
+.demo-thread-row__status {
+  display: inline-flex;
+  width: var(--glyph-lg);
+  height: var(--glyph-lg);
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.demo-thread-row__leading > img {
+  width: var(--glyph-lg);
+  height: var(--glyph-lg);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.demo-thread-row__title {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.demo-thread-row__status[data-status="working"] {
+  color: color-mix(in oklab, var(--ink) 50%, transparent);
+}
+
+.demo-thread-row__status[data-status="needs-input"] {
+  color: color-mix(in oklab, var(--ink) 75%, transparent);
+}
+
+.demo-thread-row__unread-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--dim) 60%, transparent);
+}
+
+.demo-glyph {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.demo-glyph__icon {
+  width: 100%;
+  height: 100%;
+}
+
+.demo-glyph[data-size="12"] {
+  width: var(--glyph-sm);
+  height: var(--glyph-sm);
+}
+
+.demo-glyph[data-size="14"] {
+  width: var(--glyph-md);
+  height: var(--glyph-md);
+}
+
+.demo-glyph[data-size="16"] {
+  width: var(--glyph-lg);
+  height: var(--glyph-lg);
+}
+
+/* Coarse threads keep the app's 40px hit target without changing glyph scale. */
+@media (pointer: coarse) {
+  .demo-thread-row {
+    height: var(--thread-row-h-coarse);
+  }
+}
+/* demo-app-primitives: end */
+
 /* Built demo components inside bento windows: mock-grammar fragments in
    the app's own tokens, animated per their storyboards. No bottom padding:
    the content column runs past the frame's cut edge, so the dissolve
@@ -5681,10 +5953,9 @@ code,
    of invented convention these demos are not allowed. The thread is the pane
    that carries the idea, so the thread is what stays. */
 @media (max-width: 900px) {
-  /* `.sub-demo .sub-rail`, not `.sub-rail`: this block sits above the base
-     rule, and at equal specificity the later declaration wins — so the plain
-     selector lost and the rail stayed visible on every narrow viewport. */
-  .sub-demo .sub-rail {
+  /* The demo-qualified arm outranks the primitive's base display rule, so the
+     rail actually leaves compact layouts instead of surviving the cascade. */
+  .sub-demo .demo-project-list {
     display: none;
   }
 
@@ -5692,13 +5963,6 @@ code,
     padding: 0;
     border-left: 0;
   }
-}
-
-.sub-rail {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
 }
 
 /* The rail's header row, as in the real sidebar: the new-thread action and
@@ -5722,6 +5986,12 @@ code,
 .sub-top-ic {
   width: 15px;
   height: 15px;
+  flex: none;
+  color: var(--dim);
+}
+
+.sub-top-glyph {
+  display: inline-flex;
   flex: none;
   color: var(--dim);
 }
