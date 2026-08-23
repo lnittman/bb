@@ -65,6 +65,12 @@
   border-bottom: 1px solid var(--border-soft);
 }
 
+/* The release prose sits on the same measure blog posts do, so the two
+   content pages read at one width instead of 686 and 680. */
+.release-body {
+  max-width: var(--prose);
+}
+
 /* The subscribe strip below draws its own border-top. */
 .release:last-of-type {
   border-bottom: none;

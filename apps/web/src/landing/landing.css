@@ -62,6 +62,10 @@
 
   /* widths + rhythm */
   --rail: 1200px;
+  /* The reading measure. Blog posts, changelog release bodies and the
+     signup on those pages all sit on it, so the content pages agree with
+     each other instead of each picking a number. */
+  --prose: 680px;
   --stage: 1440px;
 
   --measure: 640px;
@@ -6637,8 +6641,12 @@ html:not(.dark) .cg-plate {
   align-items: center;
   gap: 12px;
   margin: 0 auto;
-  /* The install card's own measure, so field + button and the card above it
-     share one width. */
+  width: min(var(--prose), 100%);
+}
+
+/* In the closer the pair takes the install card's measure instead, so the two
+   acquisition surfaces there line up. */
+.closer-subscribe .subscribe-form {
   width: min(660px, 100%);
 }
 
