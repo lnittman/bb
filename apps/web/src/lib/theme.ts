@@ -62,9 +62,13 @@ export function applyThemePreference(preference: ThemePreference) {
   root.setAttribute("data-theme-preference", preference);
   syncThemeColorMeta(preference);
   void root.offsetWidth;
-  requestAnimationFrame(() => {
-    root.removeAttribute("data-theme-switching");
-  });
+  // rAF does not fire in an occluded or backgrounded document, so on its own
+  // the attribute could stick and leave every transition on the page dead
+  // until the next visible frame. The timeout guarantees removal; whichever
+  // fires first wins and the second is a no-op.
+  const clear = () => root.removeAttribute("data-theme-switching");
+  requestAnimationFrame(clear);
+  setTimeout(clear, 120);
 }
 
 export function setThemePreference(preference: ThemePreference) {

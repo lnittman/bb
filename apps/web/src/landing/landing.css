@@ -187,7 +187,6 @@
      puts transition-none on them, so a row's tile is simply on or off. */
   --hover-out: 150ms;
 
-  --duration-press: 90ms;
   --duration-hover: 160ms;
   --duration-state: 240ms;
   --duration-panel: 420ms;
@@ -496,19 +495,6 @@ code,
   align-items: center;
   justify-content: space-between;
   padding: 18px 0;
-  animation: hdr-down var(--duration-enter) var(--ease-out) both;
-}
-
-/* The header drops in first, then the hero copy rises in below it. Like the
-   hero, it moves rather than materialises — nav links are navigation, and a
-   frame without them is a frame the visitor cannot use. */
-@keyframes hdr-down {
-  from {
-    transform: translateY(-6px);
-  }
-  to {
-    transform: translateY(0);
-  }
 }
 
 .logo img {
@@ -603,12 +589,7 @@ code,
   transition:
     background var(--duration-hover) var(--ease-standard),
     box-shadow var(--duration-hover) var(--ease-standard),
-    color var(--duration-hover) var(--ease-standard),
-    transform var(--duration-press) var(--ease-standard);
-}
-
-.btn:active {
-  transform: scale(0.985);
+    color var(--duration-hover) var(--ease-standard);
 }
 
 .btn:focus-visible {
@@ -947,35 +928,7 @@ code,
   }
 }
 
-/* Staggered entrance for hero content, matching the app mock's rise so the
-   whole header reads as one entrance.
 
-   Transform only, and the headline carries no delay. The page's claim must
-   be painted and sharp on the first frame: an opacity or blur ramp here
-   would mean a frame — and a screenshot, and the LCP element — in which
-   "The IDE that builds itself" does not exist. Motion moves the hero into
-   place; it never decides whether the hero is there. */
-@keyframes fade-up {
-  from {
-    transform: translateY(14px);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
-.hero > * {
-  animation: fade-up var(--duration-enter) var(--ease-out) both;
-  animation-delay: 0ms;
-}
-
-.hero > :is(:nth-child(2), :nth-child(3)) {
-  animation-delay: 70ms;
-}
-
-.hero > :is(:nth-child(4), :nth-child(5), :nth-child(6)) {
-  animation-delay: 140ms;
-}
 
 .updates-callout {
   width: fit-content;
@@ -1124,14 +1077,6 @@ code,
   height: 26px;
   flex-shrink: 0;
   color: var(--dim);
-  transition:
-    color 0.15s ease,
-    transform 0.15s ease;
-}
-
-/* Provider marks are not controls; a lift reads as ornament. Ink alone. */
-.plogo:hover {
-  color: var(--ink);
 }
 
 /* Collapsed "+N more" for the mobile provider row; desktop shows every logo. */
@@ -7429,11 +7374,6 @@ html:not(.dark) .cg-plate {
 /* ── Reduced motion ─────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
-  .nav,
-  .hero > * {
-    animation: none;
-  }
-
   .dm-spin,
   .ctx-spin,
   .gang-ctx-spin {
@@ -8314,15 +8254,10 @@ html:not(.dark) .cg-plate {
   transition-duration: var(--hover-out);
 }
 
-/* :active as well as :hover — the press scale has to land on the frame the
-   pointer goes down, and ease back over 150ms when it lifts. */
-.btn:active,
-.theme-seg:active,
 .btn:hover,
 .cmd-btn:hover .cmd-copy,
 .theme-seg:hover,
 .gang-commit:hover,
-.plogo:hover,
 .nav-links a:hover,
 .footer a:hover,
 .subscribe-input:focus {
