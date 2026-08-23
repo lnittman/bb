@@ -705,7 +705,7 @@ code,
    the edge and reading as a stray icon rather than the button's own control. */
 .install-card .cmd-btn {
   justify-content: flex-start;
-  gap: 10px;
+  gap: 0;
   padding: 0 0 0 16px;
 }
 
@@ -759,6 +759,12 @@ code,
   align-items: center;
   padding-left: 18px;
   color: var(--accent);
+}
+
+/* One character of the button's own monospace, so `$ npx` reads as a prompt
+   line rather than a glyph beside a label. */
+.cmd-dollar + .cmd-text {
+  padding-left: 1ch;
 }
 
 /* Copy state: the glyph swaps in place, blurring and scaling through the
@@ -1563,6 +1569,9 @@ code,
 
 .threads {
   list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .trow {
