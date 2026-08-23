@@ -108,15 +108,15 @@ describe("demo app canonical CSS contract", () => {
     expect(canonical).toMatch(
       /@media \(pointer: coarse\)\s*\{\s*\.demo-thread-row\s*\{[^}]*height:\s*var\(--thread-row-h-coarse\);/s,
     );
-    expect(ruleBody(canonical, ".demo-thread-list,\n.demo-thread-children")).toContain(
-      "gap: var(--thread-sibling-gap);",
-    );
+    expect(
+      ruleBody(canonical, ".demo-thread-list,\n.demo-thread-children"),
+    ).toContain("gap: var(--thread-sibling-gap);");
     expect(ruleBody(canonical, ".demo-thread-node")).toContain(
       "gap: var(--thread-branch-gap);",
     );
-    expect(ruleBody(canonical, ".demo-thread-project + .demo-thread-project")).toContain(
-      "var(--project-row-gap)",
-    );
+    expect(
+      ruleBody(canonical, ".demo-thread-project + .demo-thread-project"),
+    ).toContain("var(--project-row-gap)");
 
     for (const selector of [
       ".demo-thread-row",
@@ -185,6 +185,7 @@ describe("migrated demo source contract", () => {
     ["SubagentsDemo", "const ASK_BEATS"],
     ["BuildDemo", "type GangProvider"],
     ["GangDemo", "const BEAT_MS"],
+    ["SpawnDemo", "/** The merged-PR feed"],
   ])(
     "keeps %s on the primitive instead of legacy row/status markup",
     (name, endMarker) => {

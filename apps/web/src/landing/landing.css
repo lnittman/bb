@@ -172,12 +172,13 @@
   --ring: 0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent);
   /* shadow-lift: apps/app/src/components/ui/theme.css:569. Cast upward so a
      bottom-anchored composer separates from the transcript above it. */
-  --shadow-composer: 0 -4px 12px -4px color-mix(in oklab, var(--ink) 7%, transparent);
+  --shadow-composer: 0 -4px 12px -4px
+    color-mix(in oklab, var(--ink) 7%, transparent);
   --shadow-tile:
     0 1px 2px color-mix(in oklab, var(--shade) 6%, transparent),
     0 2px 6px -2px color-mix(in oklab, var(--shade) 5%, transparent);
-  --shadow-raise:
-    0 10px 26px -16px color-mix(in oklab, var(--shade) 24%, transparent);
+  --shadow-raise: 0 10px 26px -16px
+    color-mix(in oklab, var(--shade) 24%, transparent);
 
   /* motion constants */
   /* Hover convention, matching the app: a control answers on the frame the
@@ -429,9 +430,7 @@ code,
    negative margins do the breakout, exactly like the nav. */
 .rail {
   width: min(var(--rail), calc(100vw - 2 * var(--gutter)));
-  margin-inline: calc(
-    (100% - min(var(--rail), 100vw - 2 * var(--gutter))) / 2
-  );
+  margin-inline: calc((100% - min(var(--rail), 100vw - 2 * var(--gutter))) / 2);
 }
 
 .stage {
@@ -488,9 +487,7 @@ code,
   /* Static (scrolls with the page, as in prod); the negative margins break
      the row out of the text column to the editorial rail. */
   width: min(var(--rail), calc(100vw - 2 * var(--gutter)));
-  margin-inline: calc(
-    (100% - min(var(--rail), 100vw - 2 * var(--gutter))) / 2
-  );
+  margin-inline: calc((100% - min(var(--rail), 100vw - 2 * var(--gutter))) / 2);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -927,8 +924,6 @@ code,
     stroke-dashoffset: 0;
   }
 }
-
-
 
 .updates-callout {
   width: fit-content;
@@ -2144,7 +2139,6 @@ code,
   opacity: 1;
 }
 
-
 .model-ic {
   width: 15px;
   height: 15px;
@@ -2428,9 +2422,12 @@ code,
      glyph and the box keeps the shared control metrics. */
   appearance: none;
   -webkit-appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
     linear-gradient(135deg, currentColor 50%, transparent 50%);
-  background-size: 4px 4px, 4px 4px;
+  background-size:
+    4px 4px,
+    4px 4px;
   background-repeat: no-repeat;
   background-position:
     right 10px center,
@@ -4677,9 +4674,7 @@ code,
   min-height: var(--demo-window);
   border-radius: var(--r-card);
   background: var(--bg);
-  box-shadow:
-    var(--ring),
-    var(--shadow-window);
+  box-shadow: var(--ring), var(--shadow-window);
   font-size: 13.5px;
 }
 
@@ -4704,21 +4699,6 @@ code,
 
 .sub-gap {
   margin-top: 14px;
-}
-
-/* Arriving rows keep their space reserved from the first frame — only
-   opacity and offset animate. Collapsing their height made the whole
-   section reflow on every loop. */
-.spawn-new {
-  transition:
-    transform 0.55s var(--ease-out),
-    opacity 0.55s var(--ease-out);
-}
-
-.spawn-demo .spawn-new:not(.in) {
-  opacity: 0;
-  transform: translateY(-8px);
-  pointer-events: none;
 }
 
 @media (max-width: 900px) {
@@ -5041,10 +5021,7 @@ code,
 
 .ext-grid {
   display: grid;
-  grid-template-columns: repeat(
-    auto-fill,
-    minmax(min(100%, 288px), 1fr)
-  );
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 288px), 1fr));
   align-content: start;
   gap: 8px;
   padding: 2px;
@@ -5461,10 +5438,18 @@ code,
    reading as the small card next to the diff; the diff is legible at four
    columns because a hunk is narrow by nature, while the tree needs room for
    its indent guides to mean anything. Row two inverts to keep the diagonal. */
-.bento > li:nth-child(1) { grid-column: span 6; }
-.bento > li:nth-child(2) { grid-column: span 4; }
-.bento > li:nth-child(3) { grid-column: span 4; }
-.bento > li:nth-child(4) { grid-column: span 6; }
+.bento > li:nth-child(1) {
+  grid-column: span 6;
+}
+.bento > li:nth-child(2) {
+  grid-column: span 4;
+}
+.bento > li:nth-child(3) {
+  grid-column: span 4;
+}
+.bento > li:nth-child(4) {
+  grid-column: span 6;
+}
 
 /* Apple gives one grid rhythm by alternating the ground per tile — iPad Air
    light, MacBook Pro dark, Watch light, iPad Pro dark. On a 2x2 that reads
@@ -5477,7 +5462,6 @@ code,
    diff window on a light card and read as two design systems colliding
    rather than as a deliberate choice. A deeper step of the same ground gives
    the alternation without putting the mock in conflict with its container. */
-
 
 /* The heading is a chip rather than a line of bold text. It reads as a label
    on the thing below it instead of a title competing with the app's own
@@ -5544,7 +5528,9 @@ code,
      rising offset and alpha give near-contact darkness, a mid falloff, and a
      wide ambient pool, which is what makes a surface look lifted rather than
      outlined. */
-  filter: drop-shadow(0 2px 4px color-mix(in oklab, var(--shade) 10%, transparent))
+  filter: drop-shadow(
+      0 2px 4px color-mix(in oklab, var(--shade) 10%, transparent)
+    )
     drop-shadow(0 18px 24px color-mix(in oklab, var(--shade) 12%, transparent))
     drop-shadow(0 40px 64px color-mix(in oklab, var(--shade) 18%, transparent));
   flex: 1;
@@ -5598,10 +5584,14 @@ code,
 .demo-window__chrome {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  flex: none;
   align-items: center;
   gap: var(--row-gap);
   height: var(--chrome-h);
   padding-inline: var(--row-pad);
+  border-bottom: 1px solid var(--border-soft);
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  background: var(--surface-1);
 }
 
 .demo-window__chrome-leading,
@@ -5956,7 +5946,8 @@ a.demo-thread-row:focus-visible {
 /* Rail rows reset the element they happen to be. The scope is in :where() so
    it adds no specificity: state rules below then outrank this on their own,
    for every rail row in every demo, whether it is an <a> or a <button>. */
-:where(.sub-demo, .build-demo, .gang-demo, .spawn-demo) :where(a, button).sub-row {
+:where(.sub-demo, .build-demo, .gang-demo, .spawn-demo)
+  :where(a, button).sub-row {
   width: 100%;
   border: 0;
   background: none;
@@ -6245,7 +6236,9 @@ a.demo-thread-row:focus-visible {
 
 .ask-opt.selected .ask-radio {
   border-color: var(--ink-strong);
-  box-shadow: inset 0 0 0 3.5px var(--bg), inset 0 0 0 8px var(--ink-strong);
+  box-shadow:
+    inset 0 0 0 3.5px var(--bg),
+    inset 0 0 0 8px var(--ink-strong);
 }
 
 .ask-after {
@@ -6714,7 +6707,6 @@ html:not(.dark) .cg-plate {
   .stat-cards li {
     padding: 24px 12px 22px;
   }
-
 }
 
 @media (max-width: 900px) {
@@ -6728,8 +6720,7 @@ html:not(.dark) .cg-plate {
     height: auto;
     min-height: 360px;
   }
-
-  }
+}
 
 /* Direct-child only: torph renders its own nested spans inside the strong. */
 @media (max-width: 900px) {
@@ -6737,7 +6728,6 @@ html:not(.dark) .cg-plate {
     gap: 12px;
     margin-bottom: 26px;
   }
-
 }
 
 /* ── Band visuals: real captures in window chrome ────────────────── */
@@ -6973,9 +6963,7 @@ html:not(.dark) .cg-plate {
    the equal 1fr ends put them there. */
 .footer {
   width: min(var(--rail), calc(100vw - 2 * var(--gutter)));
-  margin-inline: calc(
-    (100% - min(var(--rail), 100vw - 2 * var(--gutter))) / 2
-  );
+  margin-inline: calc((100% - min(var(--rail), 100vw - 2 * var(--gutter))) / 2);
   padding: 68px 0 52px;
   /* No ground and no rule: the footer is the same canvas as the closer above
      it, so it needs neither. Everything that used to live here — an 8% band,
@@ -7384,11 +7372,6 @@ html:not(.dark) .cg-plate {
     max-width: 53ch;
   }
 
-  .spawn-demo .spawn-new:not(.in) {
-    opacity: 1;
-    transform: none;
-  }
-
   .uline path {
     animation: none;
     stroke-dashoffset: 0;
@@ -7404,8 +7387,6 @@ html:not(.dark) .cg-plate {
   .side {
     transition: none;
   }
-
-  
 
   .kid-li {
     animation: none;
@@ -8108,7 +8089,9 @@ html:not(.dark) .cg-plate {
     rgb(0 0 0 / 0.1) calc(100% - 9px),
     transparent 100%
   );
-  filter: drop-shadow(0 2px 4px color-mix(in oklab, var(--shade) 10%, transparent))
+  filter: drop-shadow(
+      0 2px 4px color-mix(in oklab, var(--shade) 10%, transparent)
+    )
     drop-shadow(0 18px 24px color-mix(in oklab, var(--shade) 12%, transparent))
     drop-shadow(0 40px 64px color-mix(in oklab, var(--shade) 18%, transparent));
 }
@@ -8178,12 +8161,6 @@ html:not(.dark) .cg-plate {
    holds wherever the phone is sized. An iPhone 15 puts a 125x37pt island
    11pt below the screen edge on a 393pt-wide screen; these are those
    proportions. It was reading high because the status bar's own padding put
-
-/* Same for rail rows that have not spawned yet: the reserved slots were
-   leaving a hole under the project label. */
-.spawn-demo .spawn-new:not(.in) {
-  display: none;
-}
 
 /* Bottom-aligning a chat is right in general and wrong here: the bento card
    clips the lower third of the device, so the newest message — the one that

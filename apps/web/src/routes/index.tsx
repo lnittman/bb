@@ -60,10 +60,11 @@ import PR_FEED from "../landing/pr-feed.json";
 
 // Baked 64px contributor avatars (see scripts/refresh-github-stats.mjs's
 // sibling flow) — build-time faces, no runtime GitHub calls.
-const CONTRIBUTOR_AVATARS = import.meta.glob(
-  "../assets/contributors/*.webp",
-  { eager: true, import: "default", query: "?url" },
-) as Record<string, string>;
+const CONTRIBUTOR_AVATARS = import.meta.glob("../assets/contributors/*.webp", {
+  eager: true,
+  import: "default",
+  query: "?url",
+}) as Record<string, string>;
 import blackstoneLogo from "../assets/company-logos/blackstone.png";
 import datadogLogo from "../assets/company-logos/datadog.svg";
 import figmaLogo from "../assets/company-logos/figma.svg";
@@ -88,6 +89,7 @@ import {
   DemoSelectedThread,
   DemoThreadRail,
   DemoThreadScene,
+  DemoWindowChrome,
 } from "../landing/demo-app-primitives";
 import type {
   DemoThread,
@@ -105,6 +107,13 @@ import {
   PiIcon,
 } from "../landing/icons";
 import type { CtaPlacement } from "../landing/site";
+import {
+  parseSpawnCauseId,
+  spawnDemoHref,
+  spawnDemoTargetId,
+  validateLandingSearch,
+} from "../landing/spawn-demo-routing";
+import type { SpawnCauseId } from "../landing/spawn-demo-routing";
 import {
   CLI_COMMAND,
   OG_DESCRIPTION,
@@ -175,6 +184,7 @@ export const Route = createFileRoute("/")({
       { rel: "stylesheet", href: landingCss },
     ],
   }),
+  validateSearch: validateLandingSearch,
   component: LandingRoute,
 });
 
@@ -184,7 +194,6 @@ function LandingRoute() {
   }, []);
   return <LandingPage />;
 }
-
 
 /* ── CTAs ─────────────────────────────────────────────────────────── */
 
@@ -286,7 +295,6 @@ function InstallOptions({ placement }: { placement: CtaPlacement }) {
     </div>
   );
 }
-
 
 /** Scale the desktop app mock for narrow viewports. Below the mobile breakpoint
  *  the mock keeps its full desktop layout and is shrunk with `zoom` so a fixed
@@ -698,7 +706,7 @@ const HERO_THREADS: MockThread[] = [
         kind: "step",
         text: "Edited ProjectList.tsx",
         detail: [
-          { t: "ctx", text: "const [query, setQuery] = useState(\"\");" },
+          { t: "ctx", text: 'const [query, setQuery] = useState("");' },
           { t: "del", text: "return threads;" },
           { t: "add", text: "if (!query) return threads;" },
           { t: "add", text: "return threads.filter((thread) =>" },
@@ -770,64 +778,64 @@ function ThreadStatus({ status }: { status: Status }) {
 
 /** The conversation pane mirrors the server-provided timeline at rest. */
 function ThreadFeed({ thread }: { thread: MockThread }) {
-/**
- * A transcript step, with the app's own disclosure behaviour.
- *
- * apps/app/src/components/ui/disclosure.tsx renders an expandable row as a real
- * `<button type="button" aria-expanded>` — no role, no <details> — with the
- * chevron hidden until the row is hovered or focused and rotated 90deg when
- * open. The body animates on a 0fr/1fr grid over 200ms ease-out while its
- * contents translate the last pixel into place. Rows the app cannot expand
- * (a plain "Read …") render as a div with no button and no ARIA at all.
- */
-function TranscriptStep({
-  step,
-}: {
-  step: { kind: "step"; text: ReactNode; detail?: readonly DiffRow[] };
-}) {
-  const [open, setOpen] = useState(false);
-  const label = typeof step.text === "string" ? step.text : "";
+  /**
+   * A transcript step, with the app's own disclosure behaviour.
+   *
+   * apps/app/src/components/ui/disclosure.tsx renders an expandable row as a real
+   * `<button type="button" aria-expanded>` — no role, no <details> — with the
+   * chevron hidden until the row is hovered or focused and rotated 90deg when
+   * open. The body animates on a 0fr/1fr grid over 200ms ease-out while its
+   * contents translate the last pixel into place. Rows the app cannot expand
+   * (a plain "Read …") render as a div with no button and no ARIA at all.
+   */
+  function TranscriptStep({
+    step,
+  }: {
+    step: { kind: "step"; text: ReactNode; detail?: readonly DiffRow[] };
+  }) {
+    const [open, setOpen] = useState(false);
+    const label = typeof step.text === "string" ? step.text : "";
 
-  if (!step.detail) {
+    if (!step.detail) {
+      return (
+        <div className="msg-step">
+          <TranscriptStepGlyph text={label} />
+          {step.text}
+        </div>
+      );
+    }
+
     return (
-      <div className="msg-step">
-        <TranscriptStepGlyph text={label} />
-        {step.text}
-      </div>
-    );
-  }
-
-  return (
-    <div className="msg-step-panel">
-      <button
-        type="button"
-        className="msg-step msg-step-toggle"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <TranscriptStepGlyph text={label} />
-        <span className="msg-step-title">{step.text}</span>
-        <ChevronRight
-          className={open ? "msg-step-chev is-open" : "msg-step-chev"}
-        />
-      </button>
-      <div className={open ? "msg-step-body is-open" : "msg-step-body"}>
-        <div className="msg-step-body-inner">
-          <div className="msg-step-diff">
-            {step.detail.map((row, i) => (
-              <div key={`${row.t}-${i}`} className={`msg-dl msg-dl-${row.t}`}>
-                <span className="msg-dl-sign">
-                  {row.t === "add" ? "+" : row.t === "del" ? "-" : " "}
-                </span>
-                <span className="msg-dl-text">{row.text}</span>
-              </div>
-            ))}
+      <div className="msg-step-panel">
+        <button
+          type="button"
+          className="msg-step msg-step-toggle"
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+        >
+          <TranscriptStepGlyph text={label} />
+          <span className="msg-step-title">{step.text}</span>
+          <ChevronRight
+            className={open ? "msg-step-chev is-open" : "msg-step-chev"}
+          />
+        </button>
+        <div className={open ? "msg-step-body is-open" : "msg-step-body"}>
+          <div className="msg-step-body-inner">
+            <div className="msg-step-diff">
+              {step.detail.map((row, i) => (
+                <div key={`${row.t}-${i}`} className={`msg-dl msg-dl-${row.t}`}>
+                  <span className="msg-dl-sign">
+                    {row.t === "add" ? "+" : row.t === "del" ? "-" : " "}
+                  </span>
+                  <span className="msg-dl-text">{row.text}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   const items = [...thread.transcript, ...(thread.stream ?? [])];
   return (
@@ -1531,9 +1539,6 @@ function Band({
 
 /** How much of a demo window must be on screen before its capture plays. */
 const DEMO_PLAY_VISIBILITY = 0.35;
-
-
-
 
 /* ── Page ─────────────────────────────────────────────────────────── */
 
@@ -2275,7 +2280,10 @@ function DemoPicker({
         <ChevronDown className="picker-chev" />
       </button>
       {open ? (
-        <span className={drop === "up" ? "picker-menu is-up" : "picker-menu"} role="menu">
+        <span
+          className={drop === "up" ? "picker-menu is-up" : "picker-menu"}
+          role="menu"
+        >
           {options.map((option) => (
             <button
               key={option.value}
@@ -2363,10 +2371,7 @@ function TranscriptLineView({ line }: { line: TranscriptLine }) {
  * rests on the finished spawn — parent, nested child, report — and the
  * visitor browses it. (The pane used to hold skeleton bars; a real
  * transcript per thread is both truer and worth touching.) */
-type SubagentDemoThread = Extract<
-  DemoThread,
-  { interaction: "openable" }
-> &
+type SubagentDemoThread = Extract<DemoThread, { interaction: "openable" }> &
   Readonly<{ lines: readonly TranscriptLine[] }>;
 
 const SUB_THREADS = [
@@ -2536,9 +2541,10 @@ const SUBAGENT_DEMO_PROJECTS = [
   },
 ] as const satisfies readonly DemoThreadProject[];
 
-const SUBAGENT_TRANSCRIPTS: ReadonlyMap<string, readonly TranscriptLine[]> = new Map(
-  SUBAGENT_DEMO_THREADS.map((thread) => [thread.id, thread.lines] as const),
-);
+const SUBAGENT_TRANSCRIPTS: ReadonlyMap<string, readonly TranscriptLine[]> =
+  new Map(
+    SUBAGENT_DEMO_THREADS.map((thread) => [thread.id, thread.lines] as const),
+  );
 
 function SubagentsDemo() {
   const [openId, setOpenId] = useState("parent");
@@ -2634,7 +2640,11 @@ const ASK_OPTIONS = [
     outcome:
       "Making stackability a per-code attribute. The engine checks compatibility at apply time instead of guessing.",
   },
-  { label: "Other…", desc: "", outcome: "Say the word and I will take that route instead." },
+  {
+    label: "Other…",
+    desc: "",
+    outcome: "Say the word and I will take that route instead.",
+  },
 ] as const;
 
 /* The Ask card does not perform. It waits — which is what the product
@@ -3461,7 +3471,6 @@ function ReviewDemo() {
 /** Signal bars and a battery. Not from the icon set — these are phone
  *  hardware chrome, not product iconography. */
 
-
 /* bb's own question, on a phone. The thread paused for a decision and it
  * reached you where you are — tapping an option answers it and the agent
  * carries on, which is the claim the desktop ask card made, minus the
@@ -3567,61 +3576,58 @@ function AgentChat() {
           plain language and a thread comes back, and the bubbles carry all of
           that on their own. */}
       <div className="tg-msgs">
-          <div className="tg-msg tg-out" style={{ animationDelay: "0.3s" }}>
-            <span className="tg-bubble">
-              spawn a thread: audit our promo code coverage
-              <span className="tg-time">9:41</span>
-            </span>
-          </div>
-          {/* Telegram shows the bot typing while it works. The indicator and
+        <div className="tg-msg tg-out" style={{ animationDelay: "0.3s" }}>
+          <span className="tg-bubble">
+            spawn a thread: audit our promo code coverage
+            <span className="tg-time">9:41</span>
+          </span>
+        </div>
+        {/* Telegram shows the bot typing while it works. The indicator and
               the reply it becomes are stacked in one grid cell rather than
               being two rows, so the handoff is a cross-fade in place. An
               earlier version collapsed the indicator's height on a keyframe,
               which reflowed everything under it — the reply visibly dropped
               and then snapped back once the animation ended. */}
-          <div className="tg-swap">
-            <div className="tg-msg tg-in tg-typing" aria-hidden>
-              <span className="tg-bubble">
-                <span className="tg-dots">
-                  <i />
-                  <i />
-                  <i />
+        <div className="tg-swap">
+          <div className="tg-msg tg-in tg-typing" aria-hidden>
+            <span className="tg-bubble">
+              <span className="tg-dots">
+                <i />
+                <i />
+                <i />
+              </span>
+            </span>
+          </div>
+          <div className="tg-msg tg-in" style={{ animationDelay: "1.9s" }}>
+            <span className="tg-bubble">
+              On it. Spawning a worker thread.
+              <span className="tg-cmd mono">bb thread spawn</span>
+            </span>
+          </div>
+        </div>
+        <div className="tg-msg tg-in" style={{ animationDelay: "2.9s" }}>
+          <div className="tg-thread">
+            <div className="tg-thread-top">
+              <span aria-hidden="true" className="bb-mark tg-thread-mark" />
+              <span className="tg-thread-eyebrow">Worker thread</span>
+              <span className="tg-stat" aria-hidden>
+                <span
+                  className="tg-stat-spawn"
+                  style={{ animationDelay: "4s" }}
+                >
+                  <Spinner className="tg-spin" />
+                  spawning
+                </span>
+                <span className="tg-stat-run" style={{ animationDelay: "4s" }}>
+                  <span className="tg-rdot" />
+                  running
                 </span>
               </span>
             </div>
-            <div className="tg-msg tg-in" style={{ animationDelay: "1.9s" }}>
-              <span className="tg-bubble">
-                On it. Spawning a worker thread.
-                <span className="tg-cmd mono">bb thread spawn</span>
-              </span>
-            </div>
+            <div className="tg-thread-title">Audit promo code coverage</div>
+            <div className="tg-thread-branch mono">bb/audit-promo-coverage</div>
           </div>
-          <div className="tg-msg tg-in" style={{ animationDelay: "2.9s" }}>
-            <div className="tg-thread">
-              <div className="tg-thread-top">
-                <span aria-hidden="true" className="bb-mark tg-thread-mark" />
-                <span className="tg-thread-eyebrow">Worker thread</span>
-                <span className="tg-stat" aria-hidden>
-                  <span
-                    className="tg-stat-spawn"
-                    style={{ animationDelay: "4s" }}
-                  >
-                    <Spinner className="tg-spin" />
-                    spawning
-                  </span>
-                  <span
-                    className="tg-stat-run"
-                    style={{ animationDelay: "4s" }}
-                  >
-                    <span className="tg-rdot" />
-                    running
-                  </span>
-                </span>
-              </div>
-              <div className="tg-thread-title">Audit promo code coverage</div>
-              <div className="tg-thread-branch mono">bb/audit-promo-coverage</div>
-            </div>
-          </div>
+        </div>
       </div>
     </div>
   );
@@ -4561,11 +4567,87 @@ const SPAWN_CAUSES = [
 
 /** The app's own vocabulary for a background spawn: a terminal for a shell
  *  command, the sender for an agent, a clock for a schedule. */
-const SPAWN_GLYPHS: Record<string, (p: IconProps) => ReactNode> = {
+const SPAWN_GLYPHS: Record<SpawnCauseId, (p: IconProps) => ReactNode> = {
   cli: TerminalGlyph,
   telegram: PaperPlane,
   cron: ClockIcon,
 };
+
+const SPAWN_SCENERY_THREADS = [
+  {
+    id: "cart-integration",
+    title: "Summarize checkout cart integration",
+    Icon: ClaudeIcon,
+    source: "Claude Code",
+  },
+  {
+    id: "endpoint-validation",
+    title: "Describe order endpoint validation",
+    Icon: PiIcon,
+    source: "Pi",
+  },
+  {
+    id: "service-route",
+    title: "Summarize service route",
+    Icon: OpencodeIcon,
+    source: "OpenCode",
+  },
+  {
+    id: "order-errors",
+    title: "Explain orders error handling",
+    Icon: GrokIcon,
+    source: "Grok",
+  },
+  {
+    id: "readme",
+    title: "Suggest README improvement",
+    Icon: OmpIcon,
+    source: "omp",
+  },
+  {
+    id: "package-scripts",
+    title: "Explain package scripts",
+    Icon: CursorIcon,
+    source: "Cursor",
+  },
+  {
+    id: "app-purpose",
+    title: "Summarize app purpose",
+    Icon: ClaudeIcon,
+    source: "Claude Code",
+  },
+] as const;
+
+const SPAWN_PROJECTS = [
+  {
+    id: "storefront",
+    label: "storefront",
+    rows: [
+      { threadId: "cron", children: [] },
+      { threadId: "telegram", children: [] },
+      { threadId: "cli", children: [] },
+      { threadId: "cart-integration", children: [] },
+    ],
+  },
+  {
+    id: "checkout-api",
+    label: "checkout-api",
+    rows: [
+      { threadId: "endpoint-validation", children: [] },
+      { threadId: "service-route", children: [] },
+      { threadId: "order-errors", children: [] },
+    ],
+  },
+  {
+    id: "mobile",
+    label: "mobile",
+    rows: [
+      { threadId: "readme", children: [] },
+      { threadId: "package-scripts", children: [] },
+      { threadId: "app-purpose", children: [] },
+    ],
+  },
+] as const satisfies readonly DemoThreadProject[];
 
 type SpawnPhase = { beat: number; t: number };
 
@@ -4635,148 +4717,182 @@ function causeStage(phase: SpawnPhase, i: number) {
  * glyph the app gives a background spawn, and the pane follows whichever
  * one just landed — or whichever one you click. */
 function SpawnDemo() {
+  const { spawn } = Route.useSearch();
+  const initialCauseId = spawn ?? null;
   const { ref, phase } = useSpawnMachine();
-  const [picked, setPicked] = useState<string | null>(null);
-  // Reading a thread clears its dot for good. The dot is unread state, not a
-  // stand-in for "not currently selected".
-  const [read, setRead] = useState<ReadonlySet<string>>(() => new Set());
+  const [railOpen, setRailOpen] = useState(true);
+  const [picked, setPicked] = useState<SpawnCauseId | null>(initialCauseId);
+  useEffect(() => {
+    setPicked(initialCauseId);
+  }, [initialCauseId]);
   const cli = causeStage(phase, 0);
   const tg = causeStage(phase, 1);
   const cron = causeStage(phase, 2);
-  const stages: Record<string, number> = { cli, telegram: tg, cron };
+  const stages = useMemo<Record<SpawnCauseId, number>>(
+    () => ({ cli, telegram: tg, cron }),
+    [cli, cron, tg],
+  );
+  const spawnThreads = useMemo<readonly DemoThread[]>(
+    () => [
+      ...SPAWN_CAUSES.map((cause): DemoThread => ({
+        id: cause.id,
+        title: cause.title,
+        tone: "normal",
+        leading: {
+          kind: "glyph",
+          Icon: SPAWN_GLYPHS[cause.id],
+          size: 14,
+          label: cause.origin,
+        },
+        activity: { kind: "idle" },
+        attentionRevision: stages[cause.id] >= 4 ? 1 : 0,
+        initialReadThroughRevision: 0,
+        interaction: "openable",
+        href: spawnDemoHref(cause.id),
+      })),
+      ...SPAWN_SCENERY_THREADS.map((thread): DemoThread => ({
+        id: thread.id,
+        title: thread.title,
+        tone: "quiet",
+        leading: {
+          kind: "glyph",
+          Icon: thread.Icon,
+          size: 14,
+          label: thread.source,
+        },
+        activity: { kind: "idle" },
+        attentionRevision: 1,
+        initialReadThroughRevision: 0,
+        interaction: "scenery",
+      })),
+    ],
+    [stages],
+  );
   // Newest arrival leads the pane until a visitor takes over by clicking.
   const arrived = [...SPAWN_CAUSES].filter((c) => stages[c.id] >= 3);
   const lead = arrived[arrived.length - 1] ?? SPAWN_CAUSES[2];
-  const open = SPAWN_CAUSES.find((c) => c.id === picked) ?? lead;
-  const rows = [SPAWN_CAUSES[2], SPAWN_CAUSES[1], SPAWN_CAUSES[0]];
+  const selectedId = picked ?? lead.id;
   return (
-    <div className="spawn-demo" ref={ref}>
-      <div className="dwin-bar">
-        <span className="dwin-title">{open.title}</span>
-        <span className="gang-commit">
-          Commit
-          <ChevronDown className="gang-commit-chev" />
-        </span>
-      </div>
-      <div className="gang-body">
-        <div className="gang-side">
-          <div className="sub-top" aria-hidden>
-            <span className="sub-newthread">
-              <NewThreadIcon className="sub-top-ic" />
-              New thread
-            </span>
-            <SearchGlyph className="sub-top-ic sub-search" />
-          </div>
-          <span className="sub-group">storefront</span>
-          {rows.map((c) => {
-            const st = stages[c.id];
-            const Glyph = SPAWN_GLYPHS[c.id];
-            return (
-              <button
-                key={c.id}
-                type="button"
-                className={
-                  (st >= 2 ? "sub-row gang-row spawn-new in" : "sub-row gang-row spawn-new") +
-                  (open.id === c.id ? " is-open" : "")
+    <DemoThreadScene
+      threads={spawnThreads}
+      selectedId={selectedId}
+      onSelectedIdChange={(id) => {
+        const causeId = parseSpawnCauseId(id);
+        if (causeId !== null) setPicked(causeId);
+      }}
+    >
+      <DemoSelectedThread>
+        {(selectedThread) => {
+          const open =
+            SPAWN_CAUSES.find((cause) => cause.id === selectedThread?.id) ??
+            lead;
+
+          return (
+            <div
+              className="spawn-demo"
+              ref={ref}
+              role="group"
+              aria-label="Background-spawn threads and selected conversation"
+            >
+              <DemoWindowChrome
+                ariaLabel="Spawn thread window"
+                leading={
+                  <>
+                    <button
+                      type="button"
+                      className="dwin-rail-toggle"
+                      aria-label={railOpen ? "Hide sidebar" : "Show sidebar"}
+                      aria-expanded={railOpen}
+                      aria-controls="spawn-rail"
+                      onClick={() => setRailOpen((open) => !open)}
+                    >
+                      <PanelIcon className="ri bar-ic" />
+                    </button>
+                    <span className="dwin-title">{open.title}</span>
+                  </>
                 }
-                aria-pressed={open.id === c.id}
-                onClick={() => {
-                  setPicked(c.id);
-                  setRead((current) => new Set(current).add(c.id));
-                }}
-              >
-                <Glyph className="gang-pv" />
-                <span className="sub-title">
-                  {st >= 3 ? c.title : "New thread"}
-                </span>
-                {st >= 4 ? (
-                  read.has(c.id) ? null : (
-                    <i className="sub-dot" />
-                  )
-                ) : st >= 2 ? (
-                  <DemoSpinner />
-                ) : null}
-              </button>
-            );
-          })}
-          <div className="sub-row gang-row sub-quiet">
-            <ClaudeIcon className="gang-pv" />
-            <span className="sub-title">Summarize checkout cart integration</span>
-            <i className="sub-dot" />
-          </div>
-          <span className="sub-group gang-gap">checkout-api</span>
-          <div className="sub-row gang-row sub-quiet">
-            <PiIcon className="gang-pv" />
-            <span className="sub-title">Describe order endpoint validation</span>
-            <i className="sub-dot" />
-          </div>
-          <div className="sub-row gang-row sub-quiet">
-            <OpencodeIcon className="gang-pv" />
-            <span className="sub-title">Summarize service route</span>
-            <i className="sub-dot" />
-          </div>
-          <div className="sub-row gang-row sub-quiet">
-            <GrokIcon className="gang-pv" />
-            <span className="sub-title">Explain orders error handling</span>
-            <i className="sub-dot" />
-          </div>
-          <span className="sub-group gang-gap">mobile</span>
-          <div className="sub-row gang-row sub-quiet">
-            <OmpIcon className="gang-pv" />
-            <span className="sub-title">Suggest README improvement</span>
-            <i className="sub-dot" />
-          </div>
-          <div className="sub-row gang-row sub-quiet">
-            <CursorIcon className="gang-pv" />
-            <span className="sub-title">Explain package scripts</span>
-            <i className="sub-dot" />
-          </div>
-          <div className="sub-row gang-row sub-quiet">
-            <ClaudeIcon className="gang-pv" />
-            <span className="sub-title">Summarize app purpose</span>
-            <i className="sub-dot" />
-          </div>
-        </div>
-        <div className="gang-thread">
-          <div className="gang-feed" key={open.id}>
-            <p className="gang-step in">{open.origin}</p>
-            {open.lines.map((l) => (
-              <p
-                key={l.text}
-                className={l.kind === "step" ? "gang-step in" : "gang-say in"}
-              >
-                {l.text}
-              </p>
-            ))}
-          </div>
-          <div className="gang-pr">
-            <GitMergeIcon className="gang-pr-ic" />
-            <span className="gang-pr-strong">Uncommitted</span>
-            <span className="gang-pr-dim">· {open.diff.files},</span>
-            <em className="review-add">{open.diff.add}</em>
-            <em className="review-del">{open.diff.del}</em>
-            <ChevronDown className="gang-commit-chev" />
-          </div>
-          <div className="gang-composer">
-            <span className="gang-ph">Ask a follow-up</span>
-            <span className="gang-send">
-              <SendIcon className="gang-send-ic" />
-            </span>
-          </div>
-          <div className="gang-ctx">
-            <span className="gang-ctx-item">
-              <ClaudeIcon className="gang-ctx-ic" />
-              Opus 4.8
-              <ChevronDown className="gang-commit-chev" />
-            </span>
-            <span className="gang-ctx-item gang-ctx-branch">
-              <GitBranchIcon className="gang-ctx-ic" />
-              {open.branch}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
+                title={null}
+                trailing={
+                  <span className="gang-commit" aria-hidden="true">
+                    Commit
+                    <ChevronDown className="gang-commit-chev" />
+                  </span>
+                }
+              />
+              <div className={railOpen ? "gang-body" : "gang-body rail-closed"}>
+                <div className="gang-side" id="spawn-rail" hidden={!railOpen}>
+                  <DemoThreadRail
+                    ariaLabel="Spawn threads"
+                    header={
+                      <div className="sub-top" aria-hidden>
+                        <span className="sub-newthread">
+                          <span className="sub-top-glyph">
+                            <DemoGlyph
+                              Icon={NewThreadIcon}
+                              size={16}
+                              label={null}
+                            />
+                          </span>
+                          New thread
+                        </span>
+                        <span className="sub-top-glyph sub-search">
+                          <DemoGlyph
+                            Icon={SearchGlyph}
+                            size={16}
+                            label={null}
+                          />
+                        </span>
+                      </div>
+                    }
+                    projects={SPAWN_PROJECTS}
+                  />
+                </div>
+                <div className="gang-thread" id={spawnDemoTargetId(open.id)}>
+                  <div className="gang-feed" key={open.id} aria-live="polite">
+                    <p className="gang-step in">{open.origin}</p>
+                    {open.lines.map((line) => (
+                      <p
+                        key={line.text}
+                        className={
+                          line.kind === "step" ? "gang-step in" : "gang-say in"
+                        }
+                      >
+                        {line.text}
+                      </p>
+                    ))}
+                  </div>
+                  <div className="gang-pr" aria-hidden>
+                    <GitMergeIcon className="gang-pr-ic" />
+                    <span className="gang-pr-strong">Uncommitted</span>
+                    <span className="gang-pr-dim">· {open.diff.files},</span>
+                    <em className="review-add">{open.diff.add}</em>
+                    <em className="review-del">{open.diff.del}</em>
+                    <ChevronDown className="gang-commit-chev" />
+                  </div>
+                  <div className="gang-composer" aria-hidden>
+                    <span className="gang-ph">Ask a follow-up</span>
+                    <span className="gang-send">
+                      <SendIcon className="gang-send-ic" />
+                    </span>
+                  </div>
+                  <div className="gang-ctx" aria-hidden>
+                    <span className="gang-ctx-item">
+                      <ClaudeIcon className="gang-ctx-ic" />
+                      Opus 4.8
+                      <ChevronDown className="gang-commit-chev" />
+                    </span>
+                    <span className="gang-ctx-item gang-ctx-branch">
+                      <GitBranchIcon className="gang-ctx-ic" />
+                      {open.branch}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }}
+      </DemoSelectedThread>
+    </DemoThreadScene>
   );
 }
 
@@ -4880,24 +4996,101 @@ const PlateLocal = () => (
         <feDropShadow dx="0" dy="0" stdDeviation="16" floodColor="#08090A" />
       </filter>
       <filter id="cgLocalDrop" x="-60%" y="-60%" width="220%" height="220%">
-        <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#08090A" floodOpacity="0.6" />
+        <feDropShadow
+          dx="0"
+          dy="4"
+          stdDeviation="6"
+          floodColor="#08090A"
+          floodOpacity="0.6"
+        />
       </filter>
     </defs>
-    <path d="M134.2 80.9 A13 13 0 0 1 145.8 80.9 L224.5 120.2 A6.3 6.3 0 0 1 228 125.9 L228 198.1 A6.3 6.3 0 0 1 224.5 203.8 L145.8 243.1 A13 13 0 0 1 134.2 243.1 L55.5 203.8 A6.3 6.3 0 0 1 52 198.1 L52 125.9 A6.3 6.3 0 0 1 55.5 120.2 L134.2 80.9 Z" fill="none" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" />
-    <path d="M54 123 L134.1 163 A13.2 13.2 0 0 0 145.9 163 L226 123" fill="none" stroke="#2E2E32" strokeWidth="0.5" strokeLinecap="round" />
-    <path d="M60 202L140 162" fill="none" stroke="#2E2E32" strokeWidth="0.5" strokeLinecap="round" opacity="0.9" />
-    <path d="M140 162L220 202" fill="none" stroke="#2E2E32" strokeWidth="0.5" strokeLinecap="round" opacity="0.9" />
+    <path
+      d="M134.2 80.9 A13 13 0 0 1 145.8 80.9 L224.5 120.2 A6.3 6.3 0 0 1 228 125.9 L228 198.1 A6.3 6.3 0 0 1 224.5 203.8 L145.8 243.1 A13 13 0 0 1 134.2 243.1 L55.5 203.8 A6.3 6.3 0 0 1 52 198.1 L52 125.9 A6.3 6.3 0 0 1 55.5 120.2 L134.2 80.9 Z"
+      fill="none"
+      stroke="#62666D"
+      strokeWidth="0.5"
+      strokeLinecap="round"
+    />
+    <path
+      d="M54 123 L134.1 163 A13.2 13.2 0 0 0 145.9 163 L226 123"
+      fill="none"
+      stroke="#2E2E32"
+      strokeWidth="0.5"
+      strokeLinecap="round"
+    />
+    <path
+      d="M60 202L140 162"
+      fill="none"
+      stroke="#2E2E32"
+      strokeWidth="0.5"
+      strokeLinecap="round"
+      opacity="0.9"
+    />
+    <path
+      d="M140 162L220 202"
+      fill="none"
+      stroke="#2E2E32"
+      strokeWidth="0.5"
+      strokeLinecap="round"
+      opacity="0.9"
+    />
     <g filter="url(#cgLocalGlow)">
-      <path d="M137.2 134.4 A6.2 6.2 0 0 1 142.8 134.4 L180.3 153.2 A3 3 0 0 1 182 155.9 L182 198.1 A3 3 0 0 1 180.3 200.8 L142.8 219.6 A6.2 6.2 0 0 1 137.2 219.6 L99.7 200.8 A3 3 0 0 1 98 198.1 L98 155.9 A3 3 0 0 1 99.7 153.2 L137.2 134.4 Z" fill="#08090A" stroke="#D0D6E0" strokeWidth="0.5" strokeLinecap="round" />
-      <path d="M100 155 L137.2 173.6 A6.3 6.3 0 0 0 142.8 173.6 L180 155" fill="none" stroke="#2E2E32" strokeWidth="0.5" strokeLinecap="round" />
+      <path
+        d="M137.2 134.4 A6.2 6.2 0 0 1 142.8 134.4 L180.3 153.2 A3 3 0 0 1 182 155.9 L182 198.1 A3 3 0 0 1 180.3 200.8 L142.8 219.6 A6.2 6.2 0 0 1 137.2 219.6 L99.7 200.8 A3 3 0 0 1 98 198.1 L98 155.9 A3 3 0 0 1 99.7 153.2 L137.2 134.4 Z"
+        fill="#08090A"
+        stroke="#D0D6E0"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M100 155 L137.2 173.6 A6.3 6.3 0 0 0 142.8 173.6 L180 155"
+        fill="none"
+        stroke="#2E2E32"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+      />
     </g>
     <g filter="url(#cgLocalDrop)">
-      <path d="M134.2 36.9 A13 13 0 0 1 145.8 36.9 L225.2 76.6 A5 5 0 0 1 228 81.1 L228 86.9 A5 5 0 0 1 225.2 91.4 L145.8 131.1 A13 13 0 0 1 134.2 131.1 L54.8 91.4 A5 5 0 0 1 52 86.9 L52 81.1 A5 5 0 0 1 54.8 76.6 L134.2 36.9 Z" fill="#08090A" stroke="#D0D6E0" strokeWidth="0.5" strokeLinecap="round" />
+      <path
+        d="M134.2 36.9 A13 13 0 0 1 145.8 36.9 L225.2 76.6 A5 5 0 0 1 228 81.1 L228 86.9 A5 5 0 0 1 225.2 91.4 L145.8 131.1 A13 13 0 0 1 134.2 131.1 L54.8 91.4 A5 5 0 0 1 52 86.9 L52 81.1 A5 5 0 0 1 54.8 76.6 L134.2 36.9 Z"
+        fill="#08090A"
+        stroke="#D0D6E0"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+      />
     </g>
-    <path d="M54 79 L134.1 119 A13.2 13.2 0 0 0 145.9 119 L226 79" fill="none" stroke="#2E2E32" strokeWidth="0.5" strokeLinecap="round" />
-    <path d="M52 83v22" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" strokeDasharray="1 3" />
-    <path d="M228 83v22" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" strokeDasharray="1 3" />
-    <path d="M140 139v22" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" strokeDasharray="1 3" />
+    <path
+      d="M54 79 L134.1 119 A13.2 13.2 0 0 0 145.9 119 L226 79"
+      fill="none"
+      stroke="#2E2E32"
+      strokeWidth="0.5"
+      strokeLinecap="round"
+    />
+    <path
+      d="M52 83v22"
+      fill="none"
+      stroke="#3E3E44"
+      strokeWidth="0.5"
+      strokeLinecap="round"
+      strokeDasharray="1 3"
+    />
+    <path
+      d="M228 83v22"
+      fill="none"
+      stroke="#3E3E44"
+      strokeWidth="0.5"
+      strokeLinecap="round"
+      strokeDasharray="1 3"
+    />
+    <path
+      d="M140 139v22"
+      fill="none"
+      stroke="#3E3E44"
+      strokeWidth="0.5"
+      strokeLinecap="round"
+      strokeDasharray="1 3"
+    />
   </svg>
 );
 
@@ -4909,28 +5102,134 @@ const PlateStack = () => (
       </filter>
     </defs>
     <g transform="translate(6 18)">
-      <path d="M40 81L40 200" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" strokeDasharray="1 3" opacity="0.6" />
-      <path d="M36.5 81L43.5 81" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" opacity="0.6" />
-      <path d="M36.5 200L43.5 200" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" opacity="0.6" />
-      <path d="M134.7 151.6 A11.8 11.8 0 0 1 145.3 151.6 L217.4 187.7 A4.6 4.6 0 0 1 220 191.9 L220 197.1 A4.6 4.6 0 0 1 217.4 201.3 L145.3 237.4 A11.8 11.8 0 0 1 134.7 237.4 L62.6 201.3 A4.6 4.6 0 0 1 60 197.1 L60 191.9 A4.6 4.6 0 0 1 62.6 187.7 L134.7 151.6 Z" fill="#08090A" stroke="#4A4A52" strokeWidth="0.5" strokeLinecap="round" />
-      <path d="M62 190 L134.6 226.3 A12 12 0 0 0 145.4 226.3 L218 190" fill="none" stroke="#26262A" strokeWidth="0.5" strokeLinecap="round" />
-      <path d="M134.7 133.6 A11.8 11.8 0 0 1 145.3 133.6 L217.4 169.7 A4.6 4.6 0 0 1 220 173.9 L220 179.1 A4.6 4.6 0 0 1 217.4 183.3 L145.3 219.4 A11.8 11.8 0 0 1 134.7 219.4 L62.6 183.3 A4.6 4.6 0 0 1 60 179.1 L60 173.9 A4.6 4.6 0 0 1 62.6 169.7 L134.7 133.6 Z" fill="#08090A" stroke="#4A4A52" strokeWidth="0.5" strokeLinecap="round" />
-      <path d="M62 172 L134.6 208.3 A12 12 0 0 0 145.4 208.3 L218 172" fill="none" stroke="#26262A" strokeWidth="0.5" strokeLinecap="round" />
-      <path d="M134.7 115.6 A11.8 11.8 0 0 1 145.3 115.6 L217.4 151.7 A4.6 4.6 0 0 1 220 155.9 L220 161.1 A4.6 4.6 0 0 1 217.4 165.3 L145.3 201.4 A11.8 11.8 0 0 1 134.7 201.4 L62.6 165.3 A4.6 4.6 0 0 1 60 161.1 L60 155.9 A4.6 4.6 0 0 1 62.6 151.7 L134.7 115.6 Z" fill="#08090A" stroke="#4A4A52" strokeWidth="0.5" strokeLinecap="round" />
-      <path d="M62 154 L134.6 190.3 A12 12 0 0 0 145.4 190.3 L218 154" fill="none" stroke="#26262A" strokeWidth="0.5" strokeLinecap="round" />
-      <path d="M134.7 97.6 A11.8 11.8 0 0 1 145.3 97.6 L217.4 133.7 A4.6 4.6 0 0 1 220 137.9 L220 143.1 A4.6 4.6 0 0 1 217.4 147.3 L145.3 183.4 A11.8 11.8 0 0 1 134.7 183.4 L62.6 147.3 A4.6 4.6 0 0 1 60 143.1 L60 137.9 A4.6 4.6 0 0 1 62.6 133.7 L134.7 97.6 Z" fill="#08090A" stroke="#4A4A52" strokeWidth="0.5" strokeLinecap="round" />
-      <path d="M62 136 L134.6 172.3 A12 12 0 0 0 145.4 172.3 L218 136" fill="none" stroke="#26262A" strokeWidth="0.5" strokeLinecap="round" />
+      <path
+        d="M40 81L40 200"
+        fill="none"
+        stroke="#3E3E44"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+        strokeDasharray="1 3"
+        opacity="0.6"
+      />
+      <path
+        d="M36.5 81L43.5 81"
+        fill="none"
+        stroke="#3E3E44"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+        opacity="0.6"
+      />
+      <path
+        d="M36.5 200L43.5 200"
+        fill="none"
+        stroke="#3E3E44"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+        opacity="0.6"
+      />
+      <path
+        d="M134.7 151.6 A11.8 11.8 0 0 1 145.3 151.6 L217.4 187.7 A4.6 4.6 0 0 1 220 191.9 L220 197.1 A4.6 4.6 0 0 1 217.4 201.3 L145.3 237.4 A11.8 11.8 0 0 1 134.7 237.4 L62.6 201.3 A4.6 4.6 0 0 1 60 197.1 L60 191.9 A4.6 4.6 0 0 1 62.6 187.7 L134.7 151.6 Z"
+        fill="#08090A"
+        stroke="#4A4A52"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M62 190 L134.6 226.3 A12 12 0 0 0 145.4 226.3 L218 190"
+        fill="none"
+        stroke="#26262A"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M134.7 133.6 A11.8 11.8 0 0 1 145.3 133.6 L217.4 169.7 A4.6 4.6 0 0 1 220 173.9 L220 179.1 A4.6 4.6 0 0 1 217.4 183.3 L145.3 219.4 A11.8 11.8 0 0 1 134.7 219.4 L62.6 183.3 A4.6 4.6 0 0 1 60 179.1 L60 173.9 A4.6 4.6 0 0 1 62.6 169.7 L134.7 133.6 Z"
+        fill="#08090A"
+        stroke="#4A4A52"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M62 172 L134.6 208.3 A12 12 0 0 0 145.4 208.3 L218 172"
+        fill="none"
+        stroke="#26262A"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M134.7 115.6 A11.8 11.8 0 0 1 145.3 115.6 L217.4 151.7 A4.6 4.6 0 0 1 220 155.9 L220 161.1 A4.6 4.6 0 0 1 217.4 165.3 L145.3 201.4 A11.8 11.8 0 0 1 134.7 201.4 L62.6 165.3 A4.6 4.6 0 0 1 60 161.1 L60 155.9 A4.6 4.6 0 0 1 62.6 151.7 L134.7 115.6 Z"
+        fill="#08090A"
+        stroke="#4A4A52"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M62 154 L134.6 190.3 A12 12 0 0 0 145.4 190.3 L218 154"
+        fill="none"
+        stroke="#26262A"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M134.7 97.6 A11.8 11.8 0 0 1 145.3 97.6 L217.4 133.7 A4.6 4.6 0 0 1 220 137.9 L220 143.1 A4.6 4.6 0 0 1 217.4 147.3 L145.3 183.4 A11.8 11.8 0 0 1 134.7 183.4 L62.6 147.3 A4.6 4.6 0 0 1 60 143.1 L60 137.9 A4.6 4.6 0 0 1 62.6 133.7 L134.7 97.6 Z"
+        fill="#08090A"
+        stroke="#4A4A52"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M62 136 L134.6 172.3 A12 12 0 0 0 145.4 172.3 L218 136"
+        fill="none"
+        stroke="#26262A"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+      />
       <g filter="url(#cgStackGlow)">
-        <path d="M134.7 79.6 A11.8 11.8 0 0 1 145.3 79.6 L217.4 115.7 A4.6 4.6 0 0 1 220 119.9 L220 125.1 A4.6 4.6 0 0 1 217.4 129.3 L145.3 165.4 A11.8 11.8 0 0 1 134.7 165.4 L62.6 129.3 A4.6 4.6 0 0 1 60 125.1 L60 119.9 A4.6 4.6 0 0 1 62.6 115.7 L134.7 79.6 Z" fill="#08090A" stroke="#D0D6E0" strokeWidth="0.5" strokeLinecap="round" />
-        <path d="M62 118 L134.6 154.3 A12 12 0 0 0 145.4 154.3 L218 118" fill="none" stroke="#2E2E32" strokeWidth="0.5" strokeLinecap="round" />
+        <path
+          d="M134.7 79.6 A11.8 11.8 0 0 1 145.3 79.6 L217.4 115.7 A4.6 4.6 0 0 1 220 119.9 L220 125.1 A4.6 4.6 0 0 1 217.4 129.3 L145.3 165.4 A11.8 11.8 0 0 1 134.7 165.4 L62.6 129.3 A4.6 4.6 0 0 1 60 125.1 L60 119.9 A4.6 4.6 0 0 1 62.6 115.7 L134.7 79.6 Z"
+          fill="#08090A"
+          stroke="#D0D6E0"
+          strokeWidth="0.5"
+          strokeLinecap="round"
+        />
+        <path
+          d="M62 118 L134.6 154.3 A12 12 0 0 0 145.4 154.3 L218 118"
+          fill="none"
+          stroke="#2E2E32"
+          strokeWidth="0.5"
+          strokeLinecap="round"
+        />
       </g>
       <g filter="url(#cgStackGlow)">
-        <path d="M134.7 61.6 A11.8 11.8 0 0 1 145.3 61.6 L217.4 97.7 A4.6 4.6 0 0 1 220 101.9 L220 107.1 A4.6 4.6 0 0 1 217.4 111.3 L145.3 147.4 A11.8 11.8 0 0 1 134.7 147.4 L62.6 111.3 A4.6 4.6 0 0 1 60 107.1 L60 101.9 A4.6 4.6 0 0 1 62.6 97.7 L134.7 61.6 Z" fill="#08090A" stroke="#D0D6E0" strokeWidth="0.5" strokeLinecap="round" />
-        <path d="M62 100 L134.6 136.3 A12 12 0 0 0 145.4 136.3 L218 100" fill="none" stroke="#2E2E32" strokeWidth="0.5" strokeLinecap="round" />
+        <path
+          d="M134.7 61.6 A11.8 11.8 0 0 1 145.3 61.6 L217.4 97.7 A4.6 4.6 0 0 1 220 101.9 L220 107.1 A4.6 4.6 0 0 1 217.4 111.3 L145.3 147.4 A11.8 11.8 0 0 1 134.7 147.4 L62.6 111.3 A4.6 4.6 0 0 1 60 107.1 L60 101.9 A4.6 4.6 0 0 1 62.6 97.7 L134.7 61.6 Z"
+          fill="#08090A"
+          stroke="#D0D6E0"
+          strokeWidth="0.5"
+          strokeLinecap="round"
+        />
+        <path
+          d="M62 100 L134.6 136.3 A12 12 0 0 0 145.4 136.3 L218 100"
+          fill="none"
+          stroke="#2E2E32"
+          strokeWidth="0.5"
+          strokeLinecap="round"
+        />
       </g>
       <g filter="url(#cgStackGlow)">
-        <path d="M134.7 43.6 A11.8 11.8 0 0 1 145.3 43.6 L217.4 79.7 A4.6 4.6 0 0 1 220 83.9 L220 89.1 A4.6 4.6 0 0 1 217.4 93.3 L145.3 129.4 A11.8 11.8 0 0 1 134.7 129.4 L62.6 93.3 A4.6 4.6 0 0 1 60 89.1 L60 83.9 A4.6 4.6 0 0 1 62.6 79.7 L134.7 43.6 Z" fill="#08090A" stroke="#D0D6E0" strokeWidth="0.5" strokeLinecap="round" />
-        <path d="M62 82 L134.6 118.3 A12 12 0 0 0 145.4 118.3 L218 82" fill="none" stroke="#2E2E32" strokeWidth="0.5" strokeLinecap="round" />
+        <path
+          d="M134.7 43.6 A11.8 11.8 0 0 1 145.3 43.6 L217.4 79.7 A4.6 4.6 0 0 1 220 83.9 L220 89.1 A4.6 4.6 0 0 1 217.4 93.3 L145.3 129.4 A11.8 11.8 0 0 1 134.7 129.4 L62.6 93.3 A4.6 4.6 0 0 1 60 89.1 L60 83.9 A4.6 4.6 0 0 1 62.6 79.7 L134.7 43.6 Z"
+          fill="#08090A"
+          stroke="#D0D6E0"
+          strokeWidth="0.5"
+          strokeLinecap="round"
+        />
+        <path
+          d="M62 82 L134.6 118.3 A12 12 0 0 0 145.4 118.3 L218 82"
+          fill="none"
+          stroke="#2E2E32"
+          strokeWidth="0.5"
+          strokeLinecap="round"
+        />
       </g>
     </g>
   </svg>
@@ -4944,20 +5243,104 @@ const PlateFleet = () => (
       </filter>
     </defs>
     <g transform="translate(5 -3)">
-      <path d="M22 84.6 A9 9 0 0 1 35 76.5 L101 109.5 A9 9 0 0 1 106 117.6 L106 157.4 A9 9 0 0 1 93 165.5 L27 132.5 A9 9 0 0 1 22 124.4 L22 84.6 Z" fill="#08090A" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" opacity="0.28" />
-      <path d="M41 70.1 A9 9 0 0 1 54 62 L120 95 A9 9 0 0 1 125 103.1 L125 166.9 A9 9 0 0 1 112 175 L46 142 A9 9 0 0 1 41 133.9 L41 70.1 Z" fill="#08090A" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" opacity="0.41" />
-      <path d="M60 57.6 A9 9 0 0 1 73 49.5 L139 82.5 A9 9 0 0 1 144 90.6 L144 176.4 A9 9 0 0 1 131 184.5 L65 151.5 A9 9 0 0 1 60 143.4 L60 57.6 Z" fill="#08090A" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" opacity="0.55" />
-      <path d="M79 49.1 A9 9 0 0 1 92 41 L158 74 A9 9 0 0 1 163 82.1 L163 185.9 A9 9 0 0 1 150 194 L84 161 A9 9 0 0 1 79 152.9 L79 49.1 Z" fill="#08090A" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" opacity="0.7" />
+      <path
+        d="M22 84.6 A9 9 0 0 1 35 76.5 L101 109.5 A9 9 0 0 1 106 117.6 L106 157.4 A9 9 0 0 1 93 165.5 L27 132.5 A9 9 0 0 1 22 124.4 L22 84.6 Z"
+        fill="#08090A"
+        stroke="#62666D"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+        opacity="0.28"
+      />
+      <path
+        d="M41 70.1 A9 9 0 0 1 54 62 L120 95 A9 9 0 0 1 125 103.1 L125 166.9 A9 9 0 0 1 112 175 L46 142 A9 9 0 0 1 41 133.9 L41 70.1 Z"
+        fill="#08090A"
+        stroke="#62666D"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+        opacity="0.41"
+      />
+      <path
+        d="M60 57.6 A9 9 0 0 1 73 49.5 L139 82.5 A9 9 0 0 1 144 90.6 L144 176.4 A9 9 0 0 1 131 184.5 L65 151.5 A9 9 0 0 1 60 143.4 L60 57.6 Z"
+        fill="#08090A"
+        stroke="#62666D"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+        opacity="0.55"
+      />
+      <path
+        d="M79 49.1 A9 9 0 0 1 92 41 L158 74 A9 9 0 0 1 163 82.1 L163 185.9 A9 9 0 0 1 150 194 L84 161 A9 9 0 0 1 79 152.9 L79 49.1 Z"
+        fill="#08090A"
+        stroke="#62666D"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+        opacity="0.7"
+      />
       <g filter="url(#cgFleetGlow)">
-        <path d="M98 50.6 A9 9 0 0 1 111 42.5 L177 75.5 A9 9 0 0 1 182 83.6 L182 195.4 A9 9 0 0 1 169 203.5 L103 170.5 A9 9 0 0 1 98 162.4 L98 50.6 Z" fill="#08090A" stroke="#D0D6E0" strokeWidth="0.5" strokeLinecap="round" />
+        <path
+          d="M98 50.6 A9 9 0 0 1 111 42.5 L177 75.5 A9 9 0 0 1 182 83.6 L182 195.4 A9 9 0 0 1 169 203.5 L103 170.5 A9 9 0 0 1 98 162.4 L98 50.6 Z"
+          fill="#08090A"
+          stroke="#D0D6E0"
+          strokeWidth="0.5"
+          strokeLinecap="round"
+        />
       </g>
-      <path d="M117 66.1 A9 9 0 0 1 130 58 L196 91 A9 9 0 0 1 201 99.1 L201 204.9 A9 9 0 0 1 188 213 L122 180 A9 9 0 0 1 117 171.9 L117 66.1 Z" fill="#08090A" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" opacity="0.7" />
-      <path d="M136 91.6 A9 9 0 0 1 149 83.5 L215 116.5 A9 9 0 0 1 220 124.6 L220 214.4 A9 9 0 0 1 207 222.5 L141 189.5 A9 9 0 0 1 136 181.4 L136 91.6 Z" fill="#08090A" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" opacity="0.55" />
-      <path d="M155 123.1 A9 9 0 0 1 168 115 L234 148 A9 9 0 0 1 239 156.1 L239 223.9 A9 9 0 0 1 226 232 L160 199 A9 9 0 0 1 155 190.9 L155 123.1 Z" fill="#08090A" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" opacity="0.41" />
-      <path d="M174 156.6 A9 9 0 0 1 187 148.5 L253 181.5 A9 9 0 0 1 258 189.6 L258 233.4 A9 9 0 0 1 245 241.5 L179 208.5 A9 9 0 0 1 174 200.4 L174 156.6 Z" fill="#08090A" stroke="#62666D" strokeWidth="0.5" strokeLinecap="round" opacity="0.28" />
-      <path d="M12 141L184 227" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" strokeDasharray="1 3" opacity="0.55" />
-      <path d="M12 137L12 145" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" opacity="0.55" />
-      <path d="M184 223L184 231" fill="none" stroke="#3E3E44" strokeWidth="0.5" strokeLinecap="round" opacity="0.55" />
+      <path
+        d="M117 66.1 A9 9 0 0 1 130 58 L196 91 A9 9 0 0 1 201 99.1 L201 204.9 A9 9 0 0 1 188 213 L122 180 A9 9 0 0 1 117 171.9 L117 66.1 Z"
+        fill="#08090A"
+        stroke="#62666D"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+        opacity="0.7"
+      />
+      <path
+        d="M136 91.6 A9 9 0 0 1 149 83.5 L215 116.5 A9 9 0 0 1 220 124.6 L220 214.4 A9 9 0 0 1 207 222.5 L141 189.5 A9 9 0 0 1 136 181.4 L136 91.6 Z"
+        fill="#08090A"
+        stroke="#62666D"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+        opacity="0.55"
+      />
+      <path
+        d="M155 123.1 A9 9 0 0 1 168 115 L234 148 A9 9 0 0 1 239 156.1 L239 223.9 A9 9 0 0 1 226 232 L160 199 A9 9 0 0 1 155 190.9 L155 123.1 Z"
+        fill="#08090A"
+        stroke="#62666D"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+        opacity="0.41"
+      />
+      <path
+        d="M174 156.6 A9 9 0 0 1 187 148.5 L253 181.5 A9 9 0 0 1 258 189.6 L258 233.4 A9 9 0 0 1 245 241.5 L179 208.5 A9 9 0 0 1 174 200.4 L174 156.6 Z"
+        fill="#08090A"
+        stroke="#62666D"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+        opacity="0.28"
+      />
+      <path
+        d="M12 141L184 227"
+        fill="none"
+        stroke="#3E3E44"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+        strokeDasharray="1 3"
+        opacity="0.55"
+      />
+      <path
+        d="M12 137L12 145"
+        fill="none"
+        stroke="#3E3E44"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+        opacity="0.55"
+      />
+      <path
+        d="M184 223L184 231"
+        fill="none"
+        stroke="#3E3E44"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+        opacity="0.55"
+      />
     </g>
   </svg>
 );
@@ -4976,40 +5359,40 @@ const PlateFleet = () => (
  */
 function CloserPlates() {
   return (
-        <div className="cg-shell rail">
-          <div className="cg-card">
-            <div className="cg-panel">
-              <PlateLocal />
-            </div>
-            <h3>Stays on your machine</h3>
-            <p>
-              Local-first by default. Agents work in real worktrees beside the
-              code, and nothing leaves until you push it.
-            </p>
-          </div>
-
-          <div className="cg-card">
-            <div className="cg-panel">
-              <PlateStack />
-            </div>
-            <h3>Every thread compounds</h3>
-            <p>
-              Runs, files, and the decisions you made stack into context the
-              next agent picks up without being told twice.
-            </p>
-          </div>
-
-          <div className="cg-card">
-            <div className="cg-panel">
-              <PlateFleet />
-            </div>
-            <h3>A fleet from one prompt</h3>
-            <p>
-              Claude, Codex, Cursor and Pi fan out in parallel, in one mission
-              control.
-            </p>
-          </div>
+    <div className="cg-shell rail">
+      <div className="cg-card">
+        <div className="cg-panel">
+          <PlateLocal />
         </div>
+        <h3>Stays on your machine</h3>
+        <p>
+          Local-first by default. Agents work in real worktrees beside the code,
+          and nothing leaves until you push it.
+        </p>
+      </div>
+
+      <div className="cg-card">
+        <div className="cg-panel">
+          <PlateStack />
+        </div>
+        <h3>Every thread compounds</h3>
+        <p>
+          Runs, files, and the decisions you made stack into context the next
+          agent picks up without being told twice.
+        </p>
+      </div>
+
+      <div className="cg-card">
+        <div className="cg-panel">
+          <PlateFleet />
+        </div>
+        <h3>A fleet from one prompt</h3>
+        <p>
+          Claude, Codex, Cursor and Pi fan out in parallel, in one mission
+          control.
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -5045,7 +5428,10 @@ function LandingPage() {
 
       <div className="slate band-theater">
         <HeroAppMock />
-        <section className="company-proof" aria-labelledby="company-proof-title">
+        <section
+          className="company-proof"
+          aria-labelledby="company-proof-title"
+        >
           <h2 id="company-proof-title">Used by builders at</h2>
           <CompanyProofLogos />
         </section>
@@ -5056,8 +5442,8 @@ function LandingPage() {
           <h2>More than a chat</h2>
           <div className="act-lead">
             <p>
-              bb carries the work around the conversation: building,
-              reviewing, delegating, and deciding.
+              bb carries the work around the conversation: building, reviewing,
+              delegating, and deciding.
             </p>
           </div>
         </div>
@@ -5144,8 +5530,8 @@ function LandingPage() {
           <h2>Anything can kick off work</h2>
           <div className="act-lead">
             <p>
-              The CLI your agents use is open to any program you write: a
-              shell script, a cron job, a bot in Telegram or Slack.
+              The CLI your agents use is open to any program you write: a shell
+              script, a cron job, a bot in Telegram or Slack.
             </p>
             <p className="act-claim">
               Each can put an agent to work while you&rsquo;re away, and
@@ -5191,25 +5577,25 @@ function LandingPage() {
       </section>
 
       <div className="slate band-close">
-      <div className="closer-room rail">
-        <section className="closer">
-          <h2 className="sec-title">Put your agents to work</h2>
-          <p className="section-lead">
-            Free, open source, and local-first. Install in under a minute.
-          </p>
-          <InstallOptions placement="closer" />
+        <div className="closer-room rail">
+          <section className="closer">
+            <h2 className="sec-title">Put your agents to work</h2>
+            <p className="section-lead">
+              Free, open source, and local-first. Install in under a minute.
+            </p>
+            <InstallOptions placement="closer" />
 
-          {/* Shelved, not deleted: <CloserPlates /> */}
-        </section>
-      </div>
+            {/* Shelved, not deleted: <CloserPlates /> */}
+          </section>
+        </div>
 
-      {/* Outside the room, below it, on the same width. The room is the offer;
+        {/* Outside the room, below it, on the same width. The room is the offer;
           the signup is a separate thing you may also do. */}
-      <div className="closer-subscribe">
-        <SubscribeCard placement="footer" title="Keep up with the build" />
-      </div>
+        <div className="closer-subscribe">
+          <SubscribeCard placement="footer" title="Keep up with the build" />
+        </div>
 
-      <SiteFooter />
+        <SiteFooter />
       </div>
     </div>
   );
