@@ -1882,7 +1882,9 @@ code,
 }
 
 .askq-opt {
-  height: var(--row-h);
+  /* An option is a title over a description, so the row height is its floor,
+     not its cap. Clamped, the second line overlapped the option below it. */
+  min-height: var(--row-h);
   display: flex;
   align-items: flex-start;
   gap: var(--row-gap);
@@ -5357,10 +5359,7 @@ code,
    diff window on a light card and read as two design systems colliding
    rather than as a deliberate choice. A deeper step of the same ground gives
    the alternation without putting the mock in conflict with its container. */
-.bento > li:nth-child(2),
-.bento > li:nth-child(3) {
-  background: color-mix(in oklab, var(--ink-strong) 13%, var(--canvas));
-}
+
 
 /* The heading is a chip rather than a line of bold text. It reads as a label
    on the thing below it instead of a title competing with the app's own
@@ -6413,8 +6412,15 @@ html:not(.dark) .cg-plate {
   color: var(--ink-strong);
 }
 
+/* Border only, on the rail: the room lines up with the stat cards, the PR feed
+   and the signup below it, and the ground stays the band's. */
+.closer-room {
+  border: 1px solid var(--line);
+  border-radius: var(--r-room);
+}
+
 .closer {
-  padding: 128px 0 88px;
+  padding: 72px 0;
   text-align: center;
 }
 
@@ -6440,7 +6446,7 @@ html:not(.dark) .cg-plate {
   gap: 28px;
   border: 1px solid var(--line);
   border-radius: var(--r-room);
-  background: var(--surface-1);
+  background: transparent;
   text-align: center;
 }
 
@@ -7797,6 +7803,7 @@ html:not(.dark) .cg-plate {
    area, which added a screen of dead page under the footer. A shadow cannot. */
 .band-close {
   clip-path: inset(0 -100vmax -100vmax);
+  padding-top: 96px;
 }
 
 /* Island geometry, as a share of the device rather than fixed pixels, so it

@@ -51,7 +51,7 @@ import {
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 
 import changelogMd from "../../../../CHANGELOG.md?raw";
 import { initAnalytics, trackLandingEvent } from "../landing/analytics";
@@ -1288,6 +1288,22 @@ function HeroAppMock() {
     setMoreOpen(false);
   };
 
+  const moreRef = useRef<HTMLSpanElement>(null);
+  const editorRef = useRef<HTMLSpanElement>(null);
+  const searchRef = useRef<HTMLFormElement>(null);
+  const titleRef = useRef<HTMLFormElement>(null);
+
+  useDismiss(moreOpen, () => setMoreOpen(false), moreRef);
+  useDismiss(editorOpen, () => setEditorOpen(false), editorRef);
+  useDismiss(
+    searchOpen,
+    () => {
+      setQuery("");
+      setSearchOpen(false);
+    },
+    searchRef,
+  );
+
   const saveTitle = () => {
     const nextTitle = titleDraft.trim();
     if (nextTitle) {
@@ -1364,7 +1380,7 @@ function HeroAppMock() {
                     {threadTitle}
                   </button>
                 )}
-                <span className="bar-menu-wrap">
+                <span className="bar-menu-wrap" ref={moreRef}>
                   <button
                     type="button"
                     className="bar-kebab"
@@ -1388,7 +1404,7 @@ function HeroAppMock() {
                   ) : null}
                 </span>
                 <span className="bar-actions">
-                  <span className="editor-menu-wrap">
+                  <span className="editor-menu-wrap" ref={editorRef}>
                     <button
                       type="button"
                       className="editor-btn"
@@ -1437,6 +1453,7 @@ function HeroAppMock() {
               <form
                 className="side-search-form"
                 role="search"
+                ref={searchRef}
                 onSubmit={(event) => event.preventDefault()}
               >
                 <SearchGlyph className="sa-ic" />
@@ -2238,6 +2255,47 @@ function AutomationsPanelMock() {
 }
 
 type TranscriptLine = { kind: "step" | "say" | "you"; text: string };
+
+/**
+ * Close a transient surface the way the app's own menus close.
+ *
+ * Radix (and so every DropdownMenu, picker and popover in bb) dismisses on an
+ * outside `pointerdown` and on Escape. Listening on pointerdown rather than
+ * click matters: it means the surface is already gone by the time the control
+ * under the pointer receives its own event, which is what makes a menu feel
+ * dismissed rather than toggled.
+ */
+function useDismiss(
+  open: boolean,
+  onDismiss: () => void,
+  ref: RefObject<HTMLElement | null>,
+) {
+  const dismiss = useRef(onDismiss);
+  dismiss.current = onDismiss;
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      const node = ref.current;
+      if (node && !node.contains(event.target as Node)) {
+        dismiss.current();
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        dismiss.current();
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("keydown", onKeyDown, true);
+    };
+  }, [open, ref]);
+}
 
 function DemoSpinner() {
   return <HugeiconsIcon icon={Loading03Icon} className="dm-spin" aria-hidden />;
@@ -3637,6 +3695,16 @@ function BuildDemo() {
   const [selectedPanelRow, setSelectedPanelRow] = useState("task-audit");
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const buildSearchRef = useRef<HTMLInputElement>(null);
+
+  useDismiss(
+    searchOpen,
+    () => {
+      setQuery("");
+      setSearchOpen(false);
+    },
+    buildSearchRef,
+  );
   const activeThread =
     activeThreadId === BUILD_NEW_THREAD.id
       ? BUILD_NEW_THREAD
@@ -3692,6 +3760,7 @@ function BuildDemo() {
               className="build-search"
               aria-label="Search threads"
               value={query}
+              ref={buildSearchRef}
               onChange={(event) => setQuery(event.currentTarget.value)}
               placeholder="Search threads"
             />
@@ -4814,8 +4883,7 @@ function LandingPage() {
         <InstallOptions placement="hero" />
 
         <p className="hero-economics">
-          Free · MIT · local-first · runs on the subscriptions you already pay
-          for
+          Free · MIT · Local-first · No subscriptions
         </p>
 
         <div className="providers">
@@ -4985,15 +5053,17 @@ function LandingPage() {
       </section>
 
       <div className="slate band-close">
-      <section className="closer">
-        <h2 className="sec-title">Put your agents to work</h2>
-        <p className="section-lead">
-          Free, open source, and local-first. Install in under a minute.
-        </p>
-        <InstallOptions placement="closer" />
+      <div className="closer-room rail">
+        <section className="closer">
+          <h2 className="sec-title">Put your agents to work</h2>
+          <p className="section-lead">
+            Free, open source, and local-first. Install in under a minute.
+          </p>
+          <InstallOptions placement="closer" />
 
-        {/* Shelved, not deleted: <CloserPlates /> */}
-      </section>
+          {/* Shelved, not deleted: <CloserPlates /> */}
+        </section>
+      </div>
 
       {/* Outside the room, below it, on the same width. The room is the offer;
           the signup is a separate thing you may also do. */}
