@@ -706,7 +706,7 @@ code,
 .install-card .cmd-btn {
   justify-content: flex-start;
   gap: 10px;
-  padding: 0 10px 0 16px;
+  padding: 0 0 0 16px;
 }
 
 .install-card .cmd-copy {
@@ -6172,8 +6172,9 @@ html:not(.dark) .cg-plate {
   margin-top: 34px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 12px;
+  text-align: center;
 }
 
 .closer-subscribe span {
@@ -6249,36 +6250,8 @@ html:not(.dark) .cg-plate {
   color: var(--ink-strong);
 }
 
-/* The closer sits in the same bordered room the subscribe card does, so the
-   headline, the install card and the signup share one edge instead of three
-   different ones floating on the band. Border only — the ground stays the
-   page's, because a filled box here would compete with the install card
-   nested inside it. */
-/* The room and the signup share one width and stack. The rail was too wide
-   for either of them — a bordered box the full 1184 around a 660px install
-   card is a frame around empty space — so both take the install card's own
-   measure and the closer becomes one centred column of three equal edges. */
-.closer-room {
-  width: min(660px, 100%);
-  margin: 88px auto;
-  padding: clamp(28px, 3vw, 40px) clamp(20px, 2.4vw, 28px);
-  border: 1px solid var(--line);
-  border-radius: var(--r-room);
-}
-
-/* The room's padding is the whole inset. The section keeps its centring but
-   drops the 88px it used to need when it sat directly on the band. */
-.closer-room .closer {
-  padding: 0;
-}
-
-.closer-subscribe .subscribe-card {
-  width: min(660px, 100%);
-  margin-inline: auto;
-}
-
 .closer {
-  padding: 88px 0;
+  padding: 128px 0 88px;
   text-align: center;
 }
 

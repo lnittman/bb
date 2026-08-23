@@ -4910,17 +4910,15 @@ function LandingPage() {
       </section>
 
       <div className="slate band-close">
-      <div className="closer-room">
-        <section className="closer">
-          <h2 className="sec-title">Put your agents to work</h2>
-          <p className="section-lead">
-            Free, open source, and local-first. Install in under a minute.
-          </p>
-          <InstallOptions placement="closer" />
+      <section className="closer">
+        <h2 className="sec-title">Put your agents to work</h2>
+        <p className="section-lead">
+          Free, open source, and local-first. Install in under a minute.
+        </p>
+        <InstallOptions placement="closer" />
 
-          {/* Shelved, not deleted: <CloserPlates /> */}
-        </section>
-      </div>
+        {/* Shelved, not deleted: <CloserPlates /> */}
+      </section>
 
       {/* Outside the room, below it, on the same width. The room is the offer;
           the signup is a separate thing you may also do. */}

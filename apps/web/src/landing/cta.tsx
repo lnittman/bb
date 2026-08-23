@@ -113,6 +113,11 @@ function subscribeInputId(placement: CtaPlacement) {
     : `${SUBSCRIBE_EMAIL_ID}-${placement}`;
 }
 
+/** Deliberately permissive: one @, something either side, a dotted domain. */
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 export function EmailSignup({ placement }: { placement: CtaPlacement }) {
   const inputId = subscribeInputId(placement);
   const [email, setEmail] = useState("");
@@ -131,7 +136,7 @@ export function EmailSignup({ placement }: { placement: CtaPlacement }) {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (status === "submitting") {
+    if (status === "submitting" || !isValidEmail(email)) {
       return;
     }
     setStatus("submitting");
@@ -190,7 +195,6 @@ export function EmailSignup({ placement }: { placement: CtaPlacement }) {
         required
         placeholder="you@example.com"
         aria-label="Email address"
-        aria-invalid={status === "error"}
         value={email}
         onChange={(event) => {
           setEmail(event.target.value);
@@ -202,7 +206,7 @@ export function EmailSignup({ placement }: { placement: CtaPlacement }) {
       <button
         type="submit"
         className="btn btn-primary subscribe-btn"
-        disabled={status === "submitting"}
+        disabled={status === "submitting" || !isValidEmail(email)}
       >
         {status === "submitting" ? "Subscribing…" : "Subscribe"}
       </button>
