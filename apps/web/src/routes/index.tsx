@@ -204,16 +204,24 @@ const AppleSolidIcon: IconSvgElement = [
 // the command starts bb locally and opens it in the browser).
 function RunCommandButton({ placement }: { placement: CtaPlacement }) {
   const [copied, setCopied] = useState(false);
-  const copy = () => {
-    // Track and show feedback first; the clipboard write can reject (no user
-    // activation, permissions) and must not swallow the event.
+  const [copyFailed, setCopyFailed] = useState(false);
+  const copy = async () => {
+    // Confirm the write before claiming it. The clipboard rejects in an
+    // insecure context or when permission is denied, and neither the label
+    // nor the metric may report a copy that did not happen.
+    try {
+      await navigator.clipboard.writeText(CLI_COMMAND);
+    } catch {
+      setCopyFailed(true);
+      setTimeout(() => setCopyFailed(false), 4000);
+      return;
+    }
     trackLandingEvent({
       name: "landing_cli_command_copied",
       properties: { placement, command: CLI_COMMAND },
     });
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
-    navigator.clipboard.writeText(CLI_COMMAND).catch(() => {});
   };
   return (
     <button
@@ -225,9 +233,11 @@ function RunCommandButton({ placement }: { placement: CtaPlacement }) {
       }
       onClick={copy}
       aria-label={
-        copied
-          ? "Install command copied"
-          : `Copy browser install command: ${CLI_COMMAND}`
+        copyFailed
+          ? `Couldn't copy. Select and copy ${CLI_COMMAND}`
+          : copied
+            ? "Install command copied"
+            : `Copy browser install command: ${CLI_COMMAND}`
       }
     >
       <span className="cmd-dollar">$</span>

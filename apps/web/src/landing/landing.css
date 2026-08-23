@@ -546,6 +546,14 @@ code,
   .company-proof-company {
     min-height: 44px;
   }
+
+  .logo {
+    display: grid;
+    place-items: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin: -4px;
+  }
 }
 
 /* ── Button primitives ───────────────────────────────────────────
@@ -656,7 +664,7 @@ code,
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  height: 34px;
+  height: var(--row-h);
   padding: 0 8px;
 }
 
@@ -6932,7 +6940,7 @@ html:not(.dark) .cg-plate {
   }
 
   .install-actions {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
   }
 
   /* The full download CTA is repeated immediately below in the hero. Hide the
