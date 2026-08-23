@@ -666,19 +666,19 @@ code,
    token nests the same way in both themes. */
 .install-panel {
   margin-top: 5px;
-  padding: 24px;
+  padding: 16px;
   border-radius: 12px;
   background: var(--bg);
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
 }
 
-/* Centred, because the hero above it is. Left-aligning the lead under a
-   centred headline was most of why the card read as pasted on. */
-.install-lead {
-  font-size: 15.5px;
-  line-height: 1.5;
+/* The lead under a title, in the hero and the closer alike. It reads as the
+   section's own second line rather than the install control's caption, so it
+   keeps a narrower measure than the rail and sets its own column. */
+.section-lead {
+  max-width: 52ch;
+  margin: 14px auto 0;
+  font-size: 16.5px;
+  line-height: 1.55;
   color: var(--dim);
   text-align: center;
   text-wrap: pretty;

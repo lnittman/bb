@@ -266,13 +266,7 @@ function RunCommandButton({ placement }: { placement: CtaPlacement }) {
  * `landing_cli_command_copied`, and the download carries its placement, so the
  * hero and the closer stay separable in the click-through data.
  */
-function InstallOptions({
-  placement,
-  children,
-}: {
-  placement: CtaPlacement;
-  children: ReactNode;
-}) {
+function InstallOptions({ placement }: { placement: CtaPlacement }) {
   return (
     <div className="install-card">
       <div className="install-head">
@@ -280,7 +274,6 @@ function InstallOptions({
         <span className="install-head-meta">macOS · Windows · Linux</span>
       </div>
       <div className="install-panel">
-        <p className="install-lead">{children}</p>
         <div className="install-actions">
           <DownloadLink
             placement={placement}
@@ -4739,10 +4732,11 @@ function LandingPage() {
           <ChevronRight className="updates-arrow" />
         </a>
         <h1>The IDE that builds itself</h1>
-        <InstallOptions placement="hero">
+        <p className="section-lead">
           Mission control for coding agents. Claude Code, Codex, Cursor, and Pi
           run in one place, each in its own thread, in an IDE they can rebuild.
-        </InstallOptions>
+        </p>
+        <InstallOptions placement="hero" />
 
         <p className="hero-economics">
           Free · MIT · local-first · runs on the subscriptions you already pay
@@ -4919,9 +4913,10 @@ function LandingPage() {
       <div className="closer-room">
         <section className="closer">
           <h2 className="sec-title">Put your agents to work</h2>
-          <InstallOptions placement="closer">
+          <p className="section-lead">
             Free, open source, and local-first. Install in under a minute.
-          </InstallOptions>
+          </p>
+          <InstallOptions placement="closer" />
 
           {/* Shelved, not deleted: <CloserPlates /> */}
         </section>
