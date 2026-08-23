@@ -6390,7 +6390,7 @@ html:not(.dark) .cg-plate {
    gap the capsule's own 4px padding on all four sides. */
 .subscribe-btn {
   flex: none;
-  height: 36px;
+  height: 42px;
   padding: 0 16px;
   border-radius: 999px;
   font-size: 14px;
