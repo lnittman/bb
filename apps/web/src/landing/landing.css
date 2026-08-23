@@ -6226,24 +6226,29 @@ html:not(.dark) .cg-plate {
    different ones floating on the band. Border only — the ground stays the
    page's, because a filled box here would compete with the install card
    nested inside it. */
-/* Children of the room stop re-asserting the rail. The subscribe card carries
-   `.rail` for when it stands alone, and inside a container that is already
-   rail-width that put its border exactly on the room's — two edges at the same
-   x, so the room read as having none. Inside, it fills the room's content box
-   and the room's own edge is what you see. */
-.closer-room .subscribe-card {
-  width: 100%;
-  margin-inline: 0;
-}
-
+/* The room and the signup share one width and stack. The rail was too wide
+   for either of them — a bordered box the full 1184 around a 660px install
+   card is a frame around empty space — so both take the install card's own
+   measure and the closer becomes one centred column of three equal edges. */
 .closer-room {
-  width: min(var(--rail), calc(100vw - 2 * var(--gutter)));
-  margin-inline: calc(
-    (100% - min(var(--rail), 100vw - 2 * var(--gutter))) / 2
-  );
-  padding: clamp(32px, 4vw, 56px) clamp(20px, 3vw, 40px);
+  width: min(660px, 100%);
+  margin-inline: auto;
+  padding: clamp(28px, 3vw, 40px) clamp(20px, 2.4vw, 28px);
   border: 1px solid var(--line);
   border-radius: var(--r-room);
+}
+
+/* Inside the room the install card has the room's own edge, so it drops its
+   width cap and its border and reads as the room's contents rather than a
+   second box inside a first. */
+.closer-room .install-card {
+  width: 100%;
+  margin-top: 24px;
+}
+
+.closer-subscribe .subscribe-card {
+  width: min(660px, 100%);
+  margin-inline: auto;
 }
 
 .closer {

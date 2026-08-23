@@ -4869,10 +4869,13 @@ function LandingPage() {
 
         {/* <CloserPlates /> */}
 
-        <div className="closer-subscribe">
-          <SubscribeCard placement="footer" title="Keep up with the build" />
-        </div>
       </section>
+      </div>
+
+      {/* Outside the room, below it, on the same width. The room is the offer;
+          the signup is a separate thing you may also do. */}
+      <div className="closer-subscribe">
+        <SubscribeCard placement="footer" title="Keep up with the build" />
       </div>
 
       <SiteFooter />
