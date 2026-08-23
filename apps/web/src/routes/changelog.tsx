@@ -189,8 +189,12 @@ function ChangelogPage() {
         <h1>Changelog</h1>
         <p className="sub">{PAGE_DESCRIPTION}</p>
         <div className="meta-row">
-          <a href={`#${SUBSCRIBE_EMAIL_ID}`} onClick={focusSubscribeEmail}>
-            <HugeiconsIcon icon={Mail01Icon} className="ri" />
+          <a
+            className="btn btn-ghost"
+            href={`#${SUBSCRIBE_EMAIL_ID}`}
+            onClick={focusSubscribeEmail}
+          >
+            <HugeiconsIcon icon={Mail01Icon} className="btn-ic" />
             Get release notes by email
           </a>
         </div>
