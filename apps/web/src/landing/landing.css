@@ -523,6 +523,14 @@ code,
 
 /* ── Buttons ────────────────────────────────────────────────────── */
 
+/* `hidden` must actually hide. Any author `display` beats the UA rule, so
+   without this the attribute is inert on every styled element -- which is
+   exactly how the hero's sidebar toggle came to move its header and leave
+   the rail in place. */
+[hidden] {
+  display: none !important;
+}
+
 /* ── Touch targets ───────────────────────────────────────────────
    On coarse pointers the real page controls (nav, footer, release
    rail, inline links) extend to a 44px target with negative margins,
@@ -4255,6 +4263,33 @@ code,
      pinned rather than fractional. It shrinks fluidly before the 900px stack. */
   grid-template-columns: min(320px, 27vw) minmax(0, 1fr);
   min-height: 0;
+}
+
+/* The rail toggle, in the demo window bars. Same control the hero mock uses;
+   the app puts it at the left end of the chrome row. */
+.dwin-rail-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--row-h);
+  height: var(--row-h);
+  flex: none;
+  margin-right: 2px;
+  border: 0;
+  border-radius: var(--r-control);
+  background: none;
+  color: var(--dim);
+  cursor: pointer;
+  transition: background var(--duration-hover) var(--ease-standard);
+}
+
+/* With the rail hidden the grid must hand its column back, not hold a gap. */
+.gang-body.rail-closed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.build-demo .gang-body.rail-closed {
+  grid-template-columns: minmax(0, 5.6fr) minmax(0, 4fr);
 }
 
 .gang-side {

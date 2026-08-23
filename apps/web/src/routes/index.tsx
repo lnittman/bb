@@ -3741,6 +3741,7 @@ const BUILD_PANEL_DESCRIPTIONS: Record<BuildPanelKey, string | null> = {
 };
 
 function BuildDemo() {
+  const [railOpen, setRailOpen] = useState(true);
   const [activeThreadId, setActiveThreadId] = useState("build");
   const [activePanel, setActivePanel] = useState<BuildPanelKey>("tasks");
   const [selectedPanelRow, setSelectedPanelRow] = useState("task-audit");
@@ -3774,14 +3775,24 @@ function BuildDemo() {
       aria-label="A bb thread beside the built-in Tasks plugin"
     >
       <div className="dwin-bar">
+        <button
+          type="button"
+          className="dwin-rail-toggle"
+          aria-label={railOpen ? "Hide sidebar" : "Show sidebar"}
+          aria-expanded={railOpen}
+          aria-controls="build-rail"
+          onClick={() => setRailOpen((open) => !open)}
+        >
+          <PanelIcon className="ri bar-ic" />
+        </button>
         <span className="dwin-title">{activeThread.title}</span>
         <span className="gang-commit" aria-hidden="true">
           Commit
           <ChevronDown className="gang-commit-chev" />
         </span>
       </div>
-      <div className="gang-body">
-        <div className="gang-side">
+      <div className={railOpen ? "gang-body" : "gang-body rail-closed"}>
+        <div className="gang-side" id="build-rail" hidden={!railOpen}>
           <div className="side-row-new">
             <button
               type="button"
@@ -4212,6 +4223,7 @@ const GANG_THREADS: readonly GangThread[] = [
 ];
 
 function GangDemo() {
+  const [railOpen, setRailOpen] = useState(true);
   const [openId, setOpenId] = useState("trace-checkout");
   const open =
     GANG_THREADS.find((thread) => thread.id === openId) ?? GANG_THREADS[0];
@@ -4264,14 +4276,24 @@ function GangDemo() {
       aria-label="A bb window with one thread open and others running"
     >
       <div className="dwin-bar">
+        <button
+          type="button"
+          className="dwin-rail-toggle"
+          aria-label={railOpen ? "Hide sidebar" : "Show sidebar"}
+          aria-expanded={railOpen}
+          aria-controls="gang-rail"
+          onClick={() => setRailOpen((open) => !open)}
+        >
+          <PanelIcon className="ri bar-ic" />
+        </button>
         <span className="dwin-title">{open.title}</span>
         <span className="gang-commit" aria-hidden="true">
           Commit
           <ChevronDown className="gang-commit-chev" />
         </span>
       </div>
-      <div className="gang-body">
-        <div className="gang-side">
+      <div className={railOpen ? "gang-body" : "gang-body rail-closed"}>
+        <div className="gang-side" id="gang-rail" hidden={!railOpen}>
           <div className="sub-top" aria-hidden>
             <span className="sub-newthread">
               <NewThreadIcon className="sub-top-ic" />
