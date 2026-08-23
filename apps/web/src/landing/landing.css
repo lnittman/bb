@@ -123,6 +123,10 @@
      pairs with. Add a tier only when a layout genuinely cannot hold at the
      one above it — never to fix a single element. */
   --row-h: 32px;
+  /* Thread rows are their own primitive: --bb-sidebar-row-height,
+     1.75rem, in apps/app/src/components/ui/theme.css:553. The 32px
+     above is SidebarMenuButton, which is project/menu/footer rows. */
+  --thread-row-h: 28px;
   /* The app's chrome rows (window bar, pane header) are 48px --
      CHROME_ROW_HEIGHT_CLASS in apps/app/src/lib/bb-desktop.ts. */
   --chrome-h: 48px;
@@ -152,6 +156,9 @@
      product surface wears, the tile shadow for cards sitting on a panel,
      and the raise for floating artifacts one level below a full window. */
   --ring: 0 0 0 1px color-mix(in oklab, var(--ink-strong) 7%, transparent);
+  /* shadow-lift: apps/app/src/components/ui/theme.css:569. Cast upward so a
+     bottom-anchored composer separates from the transcript above it. */
+  --shadow-composer: 0 -4px 12px -4px color-mix(in oklab, var(--ink) 7%, transparent);
   --shadow-tile:
     0 1px 2px color-mix(in oklab, var(--shade) 6%, transparent),
     0 2px 6px -2px color-mix(in oklab, var(--shade) 5%, transparent);
@@ -285,6 +292,10 @@
   --del: oklch(0.72 0.19 22);
   --spark: oklch(0.75 0.16 50);
   --ph: oklch(0.66 0.14 32);
+
+  /* A dark ground needs the lift cast in light, not more ink. */
+  --shadow-composer: 0 -4px 12px -4px
+    color-mix(in oklab, var(--canvas) 26%, transparent);
 }
 
 html {
@@ -1158,7 +1169,7 @@ code,
   justify-content: safe center;
   flex-wrap: nowrap;
   gap: 36px;
-  width: min(1320px, calc(100vw - 2 * var(--gutter)));
+  width: min(var(--rail), calc(100vw - 2 * var(--gutter)));
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
@@ -1571,11 +1582,12 @@ code,
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  /* space-y-px on the app's thread-row wrappers (ProjectRow.tsx:1141). */
+  gap: 1px;
 }
 
 .trow {
-  height: var(--row-h);
+  height: var(--thread-row-h);
   width: 100%;
   display: flex;
   align-items: center;
@@ -1687,22 +1699,143 @@ code,
 }
 
 .msg-user {
-  align-self: flex-start;
-  max-width: 94%;
+  align-self: flex-end;
+  max-width: 70%;
   background: var(--surface-recessed);
   border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  padding: 10px 14px;
+  border-radius: var(--r-card);
+  padding: 10px 16px;
   font-size: 13.5px;
   color: var(--ink);
 }
 
+/* The step row, on the app's own disclosure geometry: a 20px line (py-0 +
+   leading-5), 8px of horizontal padding, 4px to the trailing chevron, and a
+   14px work-kind glyph 6px from the title. Timeline rows carry no background
+   at all — collapsed and hovered differ only in text tone. */
 .msg-step {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  /* leading-5: the app's step rows are a single 20px line. */
+  min-height: 20px;
+  line-height: 20px;
   font-size: 12.5px;
   color: var(--subtle);
+}
+
+.msg-step-toggle {
+  width: 100%;
+  padding: 0 8px;
+  margin-left: -8px;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  color: var(--subtle);
+  text-align: left;
+  cursor: pointer;
+  /* CONTROL_HOVER_TRANSITION: instant in, 150ms out. */
+  transition: color var(--duration-hover) var(--ease-standard);
+}
+
+.msg-step-toggle:hover,
+.msg-step-toggle[aria-expanded="true"] {
+  color: var(--ink);
+}
+
+.msg-step-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Hidden until the row is hovered or focused, as the app hides it behind its
+   own header-scoped hover group. */
+.msg-step-chev {
+  width: 12px;
+  height: 12px;
+  margin-left: 4px;
+  flex: none;
+  opacity: 0;
+  transition:
+    opacity 200ms var(--ease-standard),
+    rotate 200ms var(--ease-standard);
+}
+
+.msg-step-toggle:hover .msg-step-chev,
+.msg-step-toggle:focus-visible .msg-step-chev,
+.msg-step-chev.is-open {
+  opacity: 1;
+}
+
+.msg-step-chev.is-open {
+  rotate: 90deg;
+}
+
+/* EXPANDABLE_PANEL_TRANSITION_MS = 200, on a 0fr/1fr grid. */
+.msg-step-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    grid-template-rows 200ms var(--ease-standard),
+    opacity 200ms var(--ease-standard);
+}
+
+.msg-step-body.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.msg-step-body-inner {
+  overflow: hidden;
+  translate: 0 -4px;
+  transition: translate 200ms var(--ease-standard);
+}
+
+.msg-step-body.is-open .msg-step-body-inner {
+  translate: 0 0;
+}
+
+.msg-step-diff {
+  margin-top: 4px;
+  padding: 8px 0;
+  border-radius: var(--r-control);
+  background: color-mix(in oklab, var(--ink-strong) 3%, var(--bg));
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+.msg-dl {
+  display: flex;
+  gap: 6px;
+  padding: 0 10px;
+  white-space: pre;
+}
+
+.msg-dl-sign {
+  width: 1ch;
+  flex: none;
+  opacity: 0.7;
+}
+
+.msg-dl-ctx {
+  color: var(--subtle);
+}
+
+.msg-dl-add {
+  background: color-mix(in oklab, var(--add) 13%, transparent);
+  color: color-mix(in oklab, var(--add) 62%, var(--ink));
+}
+
+.msg-dl-del {
+  background: color-mix(in oklab, var(--del) 13%, transparent);
+  color: color-mix(in oklab, var(--del) 62%, var(--ink));
 }
 
 .step-chev {
@@ -1850,6 +1983,7 @@ code,
   border-radius: var(--r-card);
   background: var(--bg);
   padding: 12px 14px;
+  box-shadow: var(--shadow-composer);
 }
 
 .composer-file {
@@ -2158,14 +2292,34 @@ code,
 .diff-toolbar {
   display: flex;
   align-items: center;
-  gap: 4px;
-  min-height: 40px;
+  gap: 12px;
+  /* The app's diff toolbar is a 56px chrome band with 12px block and 16px
+     inline padding (GitDiffToolbar.tsx:64-93). */
+  min-height: 56px;
   flex-shrink: 0;
   overflow-x: auto;
   overscroll-behavior-x: contain;
-  padding: 4px 8px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border-soft);
   scrollbar-width: none;
+}
+
+/* The change summary the app's toolbar states and this one withheld. */
+.diff-summary {
+  margin-left: auto;
+  flex: none;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--subtle);
+  white-space: nowrap;
+}
+
+.diff-summary-add {
+  color: color-mix(in oklab, var(--add) 62%, var(--ink));
+}
+
+.diff-summary-del {
+  color: color-mix(in oklab, var(--del) 62%, var(--ink));
 }
 
 .diff-toolbar::-webkit-scrollbar {
@@ -5513,7 +5667,7 @@ code,
   align-items: center;
   justify-content: space-between;
   gap: var(--row-gap);
-  height: var(--row-h);
+  height: var(--thread-row-h);
   padding: var(--row-pad);
   border-radius: var(--r-control);
   color: var(--ink);

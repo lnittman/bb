@@ -686,9 +686,10 @@ function PriorityGlyph({ priority }: { priority: BoardTaskPriority }) {
 }
 
 type Status = "running" | "done" | "waiting";
+type DiffRow = { t: "add" | "del" | "ctx"; text: string };
 type Step =
   | { kind: "user"; text: string }
-  | { kind: "step"; text: ReactNode }
+  | { kind: "step"; text: ReactNode; detail?: readonly DiffRow[] }
   | { kind: "say"; text: ReactNode }
   | { kind: "spawn"; text: ReactNode; child: MockThread };
 type Ask = {
@@ -727,7 +728,18 @@ const HERO_THREADS: MockThread[] = [
         kind: "say",
         text: "The search control can become a focused input in the existing row.",
       },
-      { kind: "step", text: "Edited ProjectList.tsx" },
+      {
+        kind: "step",
+        text: "Edited ProjectList.tsx",
+        detail: [
+          { t: "ctx", text: "const [query, setQuery] = useState(\"\");" },
+          { t: "del", text: "return threads;" },
+          { t: "add", text: "if (!query) return threads;" },
+          { t: "add", text: "return threads.filter((thread) =>" },
+          { t: "add", text: "  thread.title.toLowerCase().includes(query)," },
+          { t: "add", text: ");" },
+        ],
+      },
       {
         kind: "say",
         text: "Search now filters the visible threads without changing their order.",
@@ -792,6 +804,65 @@ function ThreadStatus({ status }: { status: Status }) {
 
 /** The conversation pane mirrors the server-provided timeline at rest. */
 function ThreadFeed({ thread }: { thread: MockThread }) {
+/**
+ * A transcript step, with the app's own disclosure behaviour.
+ *
+ * apps/app/src/components/ui/disclosure.tsx renders an expandable row as a real
+ * `<button type="button" aria-expanded>` — no role, no <details> — with the
+ * chevron hidden until the row is hovered or focused and rotated 90deg when
+ * open. The body animates on a 0fr/1fr grid over 200ms ease-out while its
+ * contents translate the last pixel into place. Rows the app cannot expand
+ * (a plain "Read …") render as a div with no button and no ARIA at all.
+ */
+function TranscriptStep({
+  step,
+}: {
+  step: { kind: "step"; text: ReactNode; detail?: readonly DiffRow[] };
+}) {
+  const [open, setOpen] = useState(false);
+  const label = typeof step.text === "string" ? step.text : "";
+
+  if (!step.detail) {
+    return (
+      <div className="msg-step">
+        <TranscriptStepGlyph text={label} />
+        {step.text}
+      </div>
+    );
+  }
+
+  return (
+    <div className="msg-step-panel">
+      <button
+        type="button"
+        className="msg-step msg-step-toggle"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <TranscriptStepGlyph text={label} />
+        <span className="msg-step-title">{step.text}</span>
+        <ChevronRight
+          className={open ? "msg-step-chev is-open" : "msg-step-chev"}
+        />
+      </button>
+      <div className={open ? "msg-step-body is-open" : "msg-step-body"}>
+        <div className="msg-step-body-inner">
+          <div className="msg-step-diff">
+            {step.detail.map((row, i) => (
+              <div key={`${row.t}-${i}`} className={`msg-dl msg-dl-${row.t}`}>
+                <span className="msg-dl-sign">
+                  {row.t === "add" ? "+" : row.t === "del" ? "-" : " "}
+                </span>
+                <span className="msg-dl-text">{row.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
   const items = [...thread.transcript, ...(thread.stream ?? [])];
   return (
     <div className="feed">
@@ -805,12 +876,7 @@ function ThreadFeed({ thread }: { thread: MockThread }) {
           );
         }
         if (step.kind === "step") {
-          return (
-            <div key={id} className="msg-step">
-              <ChevronRight className="step-chev" />
-              {step.text}
-            </div>
-          );
+          return <TranscriptStep key={id} step={step} />;
         }
         if (step.kind === "spawn") {
           return (
@@ -1074,6 +1140,15 @@ function DiffPanel({ onClose }: { onClose: () => void }) {
           <option value="all">All changes</option>
           <option value="uncommitted">Uncommitted changes</option>
         </select>
+        <span className="diff-summary">
+          1 file{" "}
+          <span className="diff-summary-add">
+            +{DIFF_LINES.filter((line) => line.t === "add").length}
+          </span>{" "}
+          <span className="diff-summary-del">
+            &minus;{DIFF_LINES.filter((line) => line.t === "del").length}
+          </span>
+        </span>
         <button
           type="button"
           aria-label={collapsed ? "Expand all files" : "Collapse all files"}
