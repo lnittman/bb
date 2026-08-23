@@ -107,6 +107,21 @@
      padding inside it, not a floor. Consumers used `min-height` for a while,
      which let 8px of padding and a 21.6px line box stack to 37.6px and made
      every sidebar in every demo five pixels too tall. */
+  /* ── Breakpoints ───────────────────────────────────────────────────
+     Four, and only four. The page had ten — 1100, 1099, 960, 900, 820, 768,
+     767, 720, 700, 620, 520, 448 and 430 — which is not a system but a record
+     of thirteen separate decisions, and it is why a control could be correct
+     at 900 and broken at 860. Each tier is a real change in what the layout
+     can hold:
+
+       1100  the hero mock leaves the text column and takes the rail
+        900  every two-up becomes a one-up: bento, band, demos, closer
+        720  desktop chrome gives way to mobile: rails scroll, stats reflow
+        480  small phone: panels drop internals, controls stack
+
+     `1099` survives as the exact complement of the `min-width: 1100` rule it
+     pairs with. Add a tier only when a layout genuinely cannot hold at the
+     one above it — never to fix a single element. */
   --row-h: 32px;
   --row-pad: 8px;
   --row-gap: 8px;
@@ -168,7 +183,7 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 720px) {
   :root {
     --act: 72px;
   }
@@ -500,7 +515,7 @@ code,
    so the hit area grows without changing the visual rhythm. The app
    mock is exempt: it is a miniature of the product, and inflating its
    rows would break the recreation. */
-@media (pointer: coarse), (max-width: 768px) {
+@media (pointer: coarse), (max-width: 720px) {
   .nav-links a:not(.btn),
   .footer a,
   .updates-callout {
@@ -526,6 +541,10 @@ code,
    carried by the shadow ring so a button reads the same on white and
    on slate. */
 .btn {
+  /* A wrapped label is what made the nav button grow at tablet widths: the
+     bar crowds before it hides, and `Download for macOS` has three places to
+     break. It is a button, not a paragraph. */
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2347,7 +2366,7 @@ code,
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 720px) {
   .bar-main {
     gap: 4px;
     padding: 0 8px;
@@ -3265,7 +3284,7 @@ code,
   }
 }
 
-@media (max-width: 448px) {
+@media (max-width: 480px) {
   .board-bar {
     flex-wrap: wrap;
     gap: 6px;
@@ -3605,7 +3624,7 @@ code,
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 720px) {
   .build-demo > .dwin-bar,
   .gang-demo > .dwin-bar {
     gap: 4px;
@@ -3663,37 +3682,23 @@ code,
 
 /* At compact widths, each real pane becomes a scroll-snap card. */
 @media (max-width: 900px) {
+  /* The rail goes, as it does in the app. The thread and the panel it built
+     both stay, stacked, because the panel appearing is the whole point of
+     this demo — hiding it the way the hero hides its Changes pane would
+     leave the card arguing nothing. */
   .build-demo > .gang-body {
     display: flex;
+    flex-direction: column;
     gap: var(--row-gap);
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
   }
 
-  .build-demo > .gang-body::-webkit-scrollbar {
+  .build-demo > .gang-body > .gang-side {
     display: none;
-  }
-
-  .build-demo > .gang-body > .gang-side,
-  .build-demo > .gang-body > .gang-thread,
-  .build-demo > .gang-body > .build-panel {
-    flex: 0 0 calc(100% - var(--row-h));
-    scroll-snap-align: start;
-  }
-
-  .build-demo > .gang-body > .build-panel {
-    order: -2;
-  }
-
-  .build-demo > .gang-body > .gang-thread {
-    order: -1;
   }
 
   .build-demo .build-panel {
     border-left: 0;
-    border-right: 1px solid var(--border-soft);
+    border-top: 1px solid var(--border-soft);
     border-radius: 0;
   }
 }
@@ -3702,7 +3707,7 @@ code,
    model chip breaks across two lines and the branch runs into the edge. The
    branch is the least load-bearing of the three, so it steps out and the
    other two keep their line. */
-@media (max-width: 620px) {
+@media (max-width: 480px) {
   .gang-ctx-branch {
     display: none;
   }
@@ -4075,27 +4080,11 @@ code,
     min-width: 0;
   }
 
-  .gang-demo > .gang-body {
-    display: flex;
-    gap: var(--row-gap);
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-  }
-
-  .gang-demo > .gang-body::-webkit-scrollbar {
+  /* Same as the subagent demo: the app closes its sidebar on a compact
+     viewport rather than stacking it or making it swipeable, so the thread
+     takes the whole body and the rail goes. */
+  .gang-side {
     display: none;
-  }
-
-  .gang-demo > .gang-body > .gang-side,
-  .gang-demo > .gang-body > .gang-thread {
-    flex: 0 0 calc(100% - var(--row-h));
-    scroll-snap-align: start;
-  }
-
-  .gang-demo > .gang-body > .gang-thread {
-    order: -1;
   }
 
   .gang-demo .gang-you,
@@ -4945,7 +4934,7 @@ code,
   }
 }
 
-@media (max-width: 448px) {
+@media (max-width: 480px) {
   .ext-panel {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
@@ -5246,31 +5235,23 @@ code,
   align-items: stretch;
 }
 
-/* Phones keep each pane legible in a scroll-snap rail with the next pane
-   peeking at the edge. */
+/* Narrow viewports drop the rail, because that is what the app does: on a
+   compact viewport the sidebar is closed and reachable only as an overlay
+   (`isCompactViewport ? openMobile : state === "expanded"`, with a
+   `data-sidebar-mobile-backdrop` behind it). It never sits stacked above the
+   conversation, and it was never a swipeable rail either — that was a
+   sensible mobile pattern borrowed from elsewhere, which is exactly the kind
+   of invented convention these demos are not allowed. The thread is the pane
+   that carries the idea, so the thread is what stays. */
 @media (max-width: 900px) {
-  .sub-demo {
-    display: flex;
-    gap: var(--row-gap);
-    overflow-x: auto;
-    overflow-y: hidden;
-    overscroll-behavior-inline: contain;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-  }
-
-  .sub-demo::-webkit-scrollbar {
+  /* `.sub-demo .sub-rail`, not `.sub-rail`: this block sits above the base
+     rule, and at equal specificity the later declaration wins — so the plain
+     selector lost and the rail stayed visible on every narrow viewport. */
+  .sub-demo .sub-rail {
     display: none;
   }
 
-  .sub-rail,
-  .sub-main {
-    flex: 0 0 calc(100% - var(--row-h));
-    scroll-snap-align: start;
-  }
-
-  .sub-main {
-    order: -1;
+  .sub-demo .sub-main {
     padding: 0;
     border-left: 0;
   }
@@ -6063,7 +6044,7 @@ html:not(.dark) .cg-plate {
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 480px) {
   .cg-install .install-actions {
     flex-wrap: wrap;
   }
@@ -6082,7 +6063,7 @@ html:not(.dark) .cg-plate {
   color: var(--subtle);
 }
 
-@media (max-width: 700px) {
+@media (max-width: 720px) {
   /* Four stat cards become a 2x2; numerals step down to fit. */
   .stat-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -6098,7 +6079,7 @@ html:not(.dark) .cg-plate {
 
 }
 
-@media (max-width: 960px) {
+@media (max-width: 900px) {
   .bento {
     grid-template-columns: 1fr;
   }
@@ -6200,7 +6181,7 @@ html:not(.dark) .cg-plate {
   color: var(--dim);
 }
 
-@media (max-width: 620px) {
+@media (max-width: 480px) {
   .subscribe-card {
     padding: 32px 20px;
   }
@@ -6381,7 +6362,7 @@ html:not(.dark) .cg-plate {
   mask-position: center;
 }
 
-@media (max-width: 620px) {
+@media (max-width: 480px) {
   .footer-mark {
     width: 56px;
     height: 56px;
@@ -6534,7 +6515,7 @@ html:not(.dark) .cg-plate {
 
 /* ── Responsive ─────────────────────────────────────────────────── */
 
-@media (max-width: 820px) {
+@media (max-width: 900px) {
   .band-grid {
     grid-template-columns: 1fr;
     gap: 36px;
@@ -6662,7 +6643,14 @@ html:not(.dark) .cg-plate {
      reader is holding, but the command can be copied, sent, or run against
      a remote machine. */
   .install-actions {
+    /* Capped, not just full-width. `width: 100%` alone let the pair span 664px
+       at a 720 viewport — two stacked buttons the width of a tablet, which
+       reads as a form rather than a choice. 380px is about the widest a
+       single-column control stack stays comfortable, and it stays centred
+       under the hero copy above it. */
     width: 100%;
+    max-width: 380px;
+    margin-inline: auto;
     flex-direction: column;
     align-items: stretch;
   }
@@ -6704,7 +6692,7 @@ html:not(.dark) .cg-plate {
 }
 
 /* Give the remaining utility links a little more room on narrow phones. */
-@media (max-width: 430px) {
+@media (max-width: 480px) {
   .nav-links {
     gap: 12px;
     font-size: 13px;
@@ -7525,7 +7513,7 @@ html:not(.dark) .cg-plate {
    axis, and there is no definite parent height to resolve `height: 100%`
 /* Below the grid's single-column breakpoint the card grows to its content,
    so the device takes a sensible fixed width instead of an unbounded one. */
-@media (max-width: 960px) {
+@media (max-width: 900px) {
   .bento-phone .bento-component {
     padding-bottom: 18px;
   }
