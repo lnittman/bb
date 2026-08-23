@@ -624,62 +624,58 @@ code,
   gap: 13px;
 }
 
-/* One capsule: the command runs along the left, the download sits inside it
-   on the right. A single bordered pill rather than two blocks with captions,
-   which is what the reference's search-and-save control gets right — it reads
-   as one act you complete, not a pair you choose between. */
-.install-capsule {
-  display: flex;
-  align-items: center;
+/* A rounded tile, not a capsule. The pill shape put the command and the
+   download on one line and read as a search field — the wrong promise for a
+   control whose two halves are two ways to get the same program. The card
+   holds the section's subtitle at the top and the pair across the bottom. */
+.install-card {
   width: min(660px, 100%);
   margin-inline: auto;
-  height: 56px;
-  padding: 0 5px 0 4px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--bg);
-  transition:
-    border-color var(--duration-hover) var(--ease-standard),
-    box-shadow var(--duration-hover) var(--ease-standard);
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  border-radius: var(--r-room);
+  background: color-mix(in oklab, var(--ink-strong) 6%, var(--canvas));
+  border: 1px solid var(--line);
+  text-align: left;
 }
 
-.install-capsule:focus-within {
-  border-color: color-mix(in oklab, var(--ink) 34%, var(--bg));
+/* Top-aligned, and left, because it is the offer being made rather than a
+   caption centred over a button. */
+.install-lead {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--dim);
+  text-wrap: pretty;
 }
 
-/* The command loses its own frame — the capsule is the frame now — and takes
-   the whole left side, so the click target for copying is the text and the
-   space around it rather than a small glyph. */
-.install-capsule .cmd-btn {
-  flex: 1 1 auto;
-  min-width: 0;
-  height: 46px;
-  justify-content: flex-start;
+/* Equal halves. Neither way of installing is the lesser one — which is the
+   whole reason both are here — so neither gets the wider box. */
+/* Grid, not flex. Both children reported `flex: 1 1 0` and `min-width: 0`
+   and still came out 306 and 290 — a flex basis of zero is a starting point
+   that content can still argue with. Two `1fr` columns are exactly equal by
+   definition, which is the guarantee this needs: neither way of installing is
+   the lesser one, so neither gets the wider box. */
+.install-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
-  padding: 0 12px 0 18px;
-  border: 0;
-  background: none;
-  border-radius: 999px;
 }
 
-.install-capsule .cmd-text {
+.install-actions > * {
+  min-width: 0;
+  justify-content: center;
+}
+
+.install-card .cmd-btn {
+  padding-inline: 14px;
+}
+
+.install-card .cmd-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.install-capsule .cmd-copy {
-  margin-left: auto;
-  flex: none;
-}
-
-/* The action, inset in the capsule the way the reference insets its Save. */
-.capsule-cta {
-  flex: none;
-  height: 46px;
-  padding: 0 20px;
-  border-radius: 999px;
-  font-size: 14.5px;
 }
 
 /* Hero-sized CTA: a touch larger than the base button. An explicit line-height
@@ -6689,47 +6685,15 @@ html:not(.dark) .cg-plate {
     justify-content: flex-start;
   }
 
-  /* The capsule comes apart on narrow screens. It only works as one pill
-     while both halves fit: the action is a fixed 211px, so by 540 the command
-     beside it had about 120px and was truncating to nothing. Stacked, each
-     half is full width and legible, and the command stays first — a macOS
-     download cannot be completed on the phone in the reader's hand, but the
-     command can be copied, sent, or run against a remote machine.
-
-     Capped at 380px. Full-width alone let the stack span 664px at a 720
-     viewport, which reads as a form rather than a choice. */
-  .install-capsule {
-    width: 100%;
-    max-width: 380px;
-    height: auto;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    padding: 0;
-    border: 0;
-    background: none;
+  /* The card keeps its shape; only the pair inside stacks, because two
+     half-width buttons below 480px are two truncated buttons. */
+  .install-card {
+    padding: 20px;
+    gap: 18px;
   }
 
-  .install-capsule .cmd-btn {
-    height: 46px;
-    justify-content: center;
-    padding: 0 16px;
-    border: 1px solid var(--border);
-    background: var(--bg);
-  }
-
-  .install-capsule .cmd-text {
-    overflow: visible;
-    white-space: normal;
-  }
-
-  .install-capsule .cmd-copy {
-    margin-left: 0;
-  }
-
-  .capsule-cta {
-    width: 100%;
-    justify-content: center;
+  .install-actions {
+    grid-template-columns: 1fr;
   }
 
   /* The full download CTA is repeated immediately below in the hero. Hide the

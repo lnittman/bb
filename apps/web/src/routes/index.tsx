@@ -248,34 +248,42 @@ function RunCommandButton({ placement }: { placement: CtaPlacement }) {
 }
 
 /**
- * The install, as one control.
+ * The install, as a card.
  *
- * It was two blocks side by side, each with a caption under it: a filled
- * download button and a bordered command pill, four elements arguing for the
- * same act. This is one capsule — the command reading along the left, the
- * download sitting in it on the right — which is the shape of a control you
- * complete rather than a pair you choose between.
+ * A rounded tile holding the section's own subtitle at the top and the two
+ * actions across the bottom at equal width. It replaced a pill capsule that
+ * put the command and the download on one line — that shape reads as a search
+ * field, which is the wrong promise for a control whose halves are two ways to
+ * get the same program.
  *
- * The captions go with it. "One-click, no terminal" and "Windows (via WSL),
- * Linux & remote machines" were doing real work when the two halves needed
- * telling apart, and none once the capsule reads as one thing; the platform
- * detail lives in the command itself.
+ * The subtitle lives inside because the card is the offer: what bb is, then
+ * the two ways to have it. The terms line stays outside and below, where a
+ * footnote belongs.
  *
- * Both halves keep their behaviour: the command still copies on click and
- * still reports `landing_cli_command_copied`, and the download still carries
- * its placement, so hero and closer stay separable in the data.
+ * Both halves keep their behaviour: the command copies on click and reports
+ * `landing_cli_command_copied`, and the download carries its placement, so the
+ * hero and the closer stay separable in the click-through data.
  */
-function InstallOptions({ placement }: { placement: CtaPlacement }) {
+function InstallOptions({
+  placement,
+  children,
+}: {
+  placement: CtaPlacement;
+  children: ReactNode;
+}) {
   return (
-    <div className="install-capsule">
-      <RunCommandButton placement={placement} />
-      <DownloadLink
-        placement={placement}
-        className="btn btn-primary capsule-cta"
-      >
-        <HugeiconsIcon icon={AppleSolidIcon} className="btn-ic" />
-        Download for macOS
-      </DownloadLink>
+    <div className="install-card">
+      <p className="install-lead">{children}</p>
+      <div className="install-actions">
+        <DownloadLink
+          placement={placement}
+          className="btn btn-primary btn-install"
+        >
+          <HugeiconsIcon icon={AppleSolidIcon} className="btn-ic" />
+          Download for macOS
+        </DownloadLink>
+        <RunCommandButton placement={placement} />
+      </div>
     </div>
   );
 }
@@ -4667,21 +4675,15 @@ function LandingPage() {
           <ChevronRight className="updates-arrow" />
         </a>
         <h1>The IDE that builds itself</h1>
-        <p className="sub">
-          Mission control for coding agents. Claude Code, Codex, Cursor, and
-          Pi run in one place, each in its own thread, in an IDE they can
-          rebuild.
-        </p>
+        <InstallOptions placement="hero">
+          Mission control for coding agents. Claude Code, Codex, Cursor, and Pi
+          run in one place, each in its own thread, in an IDE they can rebuild.
+        </InstallOptions>
 
-        {/* The economics line moves above the control. It reads as the second
-            half of the subtitle rather than a footnote to the buttons, which
-            is what it always was. */}
         <p className="hero-economics">
           Free · MIT · local-first · runs on the subscriptions you already pay
           for
         </p>
-
-        <InstallOptions placement="hero" />
 
         <div className="providers">
           <span className="label">Works with</span>
@@ -4852,8 +4854,9 @@ function LandingPage() {
       <div className="slate band-close">
       <section className="closer">
         <h2 className="sec-title">Put your agents to work</h2>
-        <p>Free, open source, and local-first. Install in under a minute.</p>
-        <InstallOptions placement="closer" />
+        <InstallOptions placement="closer">
+          Free, open source, and local-first. Install in under a minute.
+        </InstallOptions>
 
         {/* <CloserPlates /> */}
 
