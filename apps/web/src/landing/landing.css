@@ -7284,7 +7284,7 @@ html:not(.dark) .cg-plate {
   border-radius: 16px;
   font-size: 14.5px;
   line-height: 1.45;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 1px color-mix(in oklab, var(--shade) 8%, transparent);
 }
 
 .tg-in .tg-bubble {
@@ -7328,7 +7328,7 @@ html:not(.dark) .cg-plate {
   border-radius: 12px;
   border-bottom-left-radius: 5px;
   padding: 10px 11px;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 1px color-mix(in oklab, var(--shade) 8%, transparent);
 }
 
 .tg-thread-top {
@@ -7734,6 +7734,9 @@ html:not(.dark) .cg-plate {
     rgb(0 0 0 / 0.1) calc(100% - 9px),
     transparent 100%
   );
+  filter: drop-shadow(0 2px 4px color-mix(in oklab, var(--shade) 10%, transparent))
+    drop-shadow(0 18px 24px color-mix(in oklab, var(--shade) 12%, transparent))
+    drop-shadow(0 40px 64px color-mix(in oklab, var(--shade) 18%, transparent));
 }
 
 .bento-phone .bento-chat > * {
@@ -7824,7 +7827,30 @@ html:not(.dark) .cg-plate {
   }
 }
 
+/* Everything the two phone cards animate settles into its finished state.
+   tg-in fills backwards with delays out to 2.9s, so without this the
+   spawned-thread card was invisible at rest for a reduced-motion visitor and
+   in any single screenshot. */
 @media (prefers-reduced-motion: reduce) {
+  .tg-msg,
+  .tg-swap > *,
+  .ap-reply {
+    animation: none;
+  }
+
+  .tg-spin {
+    animation: none;
+  }
+
+  .tg-stat-spawn {
+    animation: none;
+    opacity: 0;
+  }
+
+  .tg-stat-run {
+    animation: none;
+    opacity: 1;
+  }
 }
 
 /* Answered: the badge stops asking and starts reporting. */
