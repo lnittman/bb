@@ -248,17 +248,19 @@ function RunCommandButton({ placement }: { placement: CtaPlacement }) {
 }
 
 /**
- * The install, as a card.
+ * The install, as a card with an inset panel.
  *
- * A rounded tile holding the section's own subtitle at the top and the two
- * actions across the bottom at equal width. It replaced a pill capsule that
- * put the command and the download on one line — that shape reads as a search
- * field, which is the wrong promise for a control whose halves are two ways to
- * get the same program.
+ * Two layers, from the reference: an outer card carrying a quiet header row —
+ * a label on the left, the platforms on the right — and an inner panel holding
+ * the offer and the two ways to take it. The single-layer version read as a
+ * grey slab because one flat ground at 6% is not a card on a near-black page;
+ * nesting is what makes it one.
  *
- * The subtitle lives inside because the card is the offer: what bb is, then
- * the two ways to have it. The terms line stays outside and below, where a
- * footnote belongs.
+ * The inner panel takes `--bg` rather than the reference's light literal. That
+ * file is drawn for a light page, where a near-white inset reads as paper on a
+ * dark mount; dropped unchanged into this one it would be a lit block in the
+ * middle of the hero. `--bg` is the app-surface token, so the nesting reads
+ * the same way in both themes.
  *
  * Both halves keep their behaviour: the command copies on click and reports
  * `landing_cli_command_copied`, and the download carries its placement, so the
@@ -273,16 +275,22 @@ function InstallOptions({
 }) {
   return (
     <div className="install-card">
-      <p className="install-lead">{children}</p>
-      <div className="install-actions">
-        <DownloadLink
-          placement={placement}
-          className="btn btn-primary btn-install"
-        >
-          <HugeiconsIcon icon={AppleSolidIcon} className="btn-ic" />
-          Download for macOS
-        </DownloadLink>
-        <RunCommandButton placement={placement} />
+      <div className="install-head">
+        <span className="install-head-label">Install</span>
+        <span className="install-head-meta">macOS · Windows · Linux</span>
+      </div>
+      <div className="install-panel">
+        <p className="install-lead">{children}</p>
+        <div className="install-actions">
+          <DownloadLink
+            placement={placement}
+            className="btn btn-primary btn-install"
+          >
+            <HugeiconsIcon icon={AppleSolidIcon} className="btn-ic" />
+            Download for macOS
+          </DownloadLink>
+          <RunCommandButton placement={placement} />
+        </div>
       </div>
     </div>
   );
