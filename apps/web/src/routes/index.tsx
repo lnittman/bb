@@ -247,27 +247,35 @@ function RunCommandButton({ placement }: { placement: CtaPlacement }) {
   );
 }
 
+/**
+ * The install, as one control.
+ *
+ * It was two blocks side by side, each with a caption under it: a filled
+ * download button and a bordered command pill, four elements arguing for the
+ * same act. This is one capsule — the command reading along the left, the
+ * download sitting in it on the right — which is the shape of a control you
+ * complete rather than a pair you choose between.
+ *
+ * The captions go with it. "One-click, no terminal" and "Windows (via WSL),
+ * Linux & remote machines" were doing real work when the two halves needed
+ * telling apart, and none once the capsule reads as one thing; the platform
+ * detail lives in the command itself.
+ *
+ * Both halves keep their behaviour: the command still copies on click and
+ * still reports `landing_cli_command_copied`, and the download still carries
+ * its placement, so hero and closer stay separable in the data.
+ */
 function InstallOptions({ placement }: { placement: CtaPlacement }) {
   return (
-    <div className="install-options">
-      <div className="install-actions">
-        <span className="install-choice install-choice--mac">
-          <DownloadLink
-            placement={placement}
-            className="btn btn-primary btn-install"
-          >
-            <HugeiconsIcon icon={AppleSolidIcon} className="btn-ic" />
-            Download for macOS
-          </DownloadLink>
-          <span className="install-note">One-click, no terminal</span>
-        </span>
-        <span className="install-choice install-choice--cli">
-          <RunCommandButton placement={placement} />
-          <span className="install-note">
-            Windows (via WSL), Linux &amp; remote machines
-          </span>
-        </span>
-      </div>
+    <div className="install-capsule">
+      <RunCommandButton placement={placement} />
+      <DownloadLink
+        placement={placement}
+        className="btn btn-primary capsule-cta"
+      >
+        <HugeiconsIcon icon={AppleSolidIcon} className="btn-ic" />
+        Download for macOS
+      </DownloadLink>
     </div>
   );
 }
@@ -4665,12 +4673,15 @@ function LandingPage() {
           rebuild.
         </p>
 
-        <InstallOptions placement="hero" />
-
+        {/* The economics line moves above the control. It reads as the second
+            half of the subtitle rather than a footnote to the buttons, which
+            is what it always was. */}
         <p className="hero-economics">
           Free · MIT · local-first · runs on the subscriptions you already pay
           for
         </p>
+
+        <InstallOptions placement="hero" />
 
         <div className="providers">
           <span className="label">Works with</span>

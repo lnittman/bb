@@ -624,11 +624,62 @@ code,
   gap: 13px;
 }
 
-.install-actions {
+/* One capsule: the command runs along the left, the download sits inside it
+   on the right. A single bordered pill rather than two blocks with captions,
+   which is what the reference's search-and-save control gets right — it reads
+   as one act you complete, not a pair you choose between. */
+.install-capsule {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
+  align-items: center;
+  width: min(660px, 100%);
+  margin-inline: auto;
+  height: 56px;
+  padding: 0 5px 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  transition:
+    border-color var(--duration-hover) var(--ease-standard),
+    box-shadow var(--duration-hover) var(--ease-standard);
+}
+
+.install-capsule:focus-within {
+  border-color: color-mix(in oklab, var(--ink) 34%, var(--bg));
+}
+
+/* The command loses its own frame — the capsule is the frame now — and takes
+   the whole left side, so the click target for copying is the text and the
+   space around it rather than a small glyph. */
+.install-capsule .cmd-btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 46px;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 0 12px 0 18px;
+  border: 0;
+  background: none;
+  border-radius: 999px;
+}
+
+.install-capsule .cmd-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.install-capsule .cmd-copy {
+  margin-left: auto;
+  flex: none;
+}
+
+/* The action, inset in the capsule the way the reference insets its Save. */
+.capsule-cta {
+  flex: none;
+  height: 46px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-size: 14.5px;
 }
 
 /* Hero-sized CTA: a touch larger than the base button. An explicit line-height
@@ -6638,40 +6689,45 @@ html:not(.dark) .cg-plate {
     justify-content: flex-start;
   }
 
-  /* Stack the two CTAs full-width so neither wraps awkwardly, and lead with
-     the command: a macOS download cannot be completed on the phone the
-     reader is holding, but the command can be copied, sent, or run against
-     a remote machine. */
-  .install-actions {
-    /* Capped, not just full-width. `width: 100%` alone let the pair span 664px
-       at a 720 viewport — two stacked buttons the width of a tablet, which
-       reads as a form rather than a choice. 380px is about the widest a
-       single-column control stack stays comfortable, and it stays centred
-       under the hero copy above it. */
+  /* The capsule comes apart on narrow screens. It only works as one pill
+     while both halves fit: the action is a fixed 211px, so by 540 the command
+     beside it had about 120px and was truncating to nothing. Stacked, each
+     half is full width and legible, and the command stays first — a macOS
+     download cannot be completed on the phone in the reader's hand, but the
+     command can be copied, sent, or run against a remote machine.
+
+     Capped at 380px. Full-width alone let the stack span 664px at a 720
+     viewport, which reads as a form rather than a choice. */
+  .install-capsule {
     width: 100%;
     max-width: 380px;
-    margin-inline: auto;
+    height: auto;
     flex-direction: column;
     align-items: stretch;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: none;
   }
 
-  .install-choice--cli {
-    order: -1;
-  }
-
-  /* Order alone is weak hierarchy: the command takes the stronger ring so
-     it reads as the phone's primary path. */
-  .install-choice--cli .cmd-btn {
-    box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink-strong) 26%, transparent);
-  }
-
-  .install-choice--mac .btn-install {
+  .install-capsule .cmd-btn {
+    height: 46px;
+    justify-content: center;
+    padding: 0 16px;
+    border: 1px solid var(--border);
     background: var(--bg);
-    color: var(--ink-strong);
-    box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink-strong) 12%, transparent);
   }
 
-  .btn-install {
+  .install-capsule .cmd-text {
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .install-capsule .cmd-copy {
+    margin-left: 0;
+  }
+
+  .capsule-cta {
     width: 100%;
     justify-content: center;
   }
