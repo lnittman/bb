@@ -285,6 +285,72 @@
   background: color-mix(in oklab, var(--ink) 11%, transparent);
 }
 
+/* The Extensions page: a bounded pane with the app's 48px chrome row and its
+   28px thread-row rhythm underneath. */
+.ext-card {
+  width: min(460px, 100%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow:
+    0 1px 0 color-mix(in oklab, var(--shade) 4%, transparent),
+    0 22px 44px -24px color-mix(in oklab, var(--shade) 32%, transparent);
+}
+
+.ext-card-bar {
+  height: var(--chrome-h);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--dim);
+}
+
+.ext-card-list {
+  margin: 0;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  list-style: none;
+}
+
+.ext-card-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--thread-row-h);
+  padding: 0 8px;
+  border-radius: var(--r-control);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.ext-card-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ext-card-kind {
+  font-size: 11px;
+  color: var(--subtle);
+}
+
+.ext-card-state {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--subtle);
+}
+
+.ext-card-state.is-on {
+  color: color-mix(in oklab, var(--ok) 62%, var(--ink));
+}
+
 /* The ask card is the landing's own .askq, sized for the stage. */
 .ask-card {
   width: min(420px, 100%);

@@ -215,7 +215,52 @@ function AskQuestionCard() {
   );
 }
 
+/* 0.38.0: the Extensions Page — plugins and skills browsable and installable
+   from the sidebar. Names and the install affordance come from that release's
+   own notes. */
+function ExtensionsPage() {
+  const rows = [
+    { name: "Tasks", kind: "Plugin", state: "Installed" },
+    { name: "GitHub", kind: "Plugin", state: "Install" },
+    { name: "Memory", kind: "Plugin", state: "Install" },
+    { name: "Code review", kind: "Skill", state: "Installed" },
+  ];
+  return (
+    <div className="feature-media">
+      <div className="media-stage">
+        <div
+          className="ext-card"
+          role="img"
+          aria-label="The Extensions page listing plugins and skills with install controls"
+        >
+          <div className="ext-card-bar">
+            <span>Extensions</span>
+          </div>
+          <ul className="ext-card-list">
+            {rows.map((row) => (
+              <li key={row.name}>
+                <span className="ext-card-name">{row.name}</span>
+                <span className="ext-card-kind">{row.kind}</span>
+                <span
+                  className={
+                    row.state === "Installed"
+                      ? "ext-card-state is-on"
+                      : "ext-card-state"
+                  }
+                >
+                  {row.state}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const RELEASE_MEDIA: Record<string, ReactNode> = {
+  "0.38.0": <ExtensionsPage />,
   "0.35.0": <PluginSidebar />,
   "0.34.0": <AskQuestionCard />,
   "0.0.31": <SplitPanes />,
