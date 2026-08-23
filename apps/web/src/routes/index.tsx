@@ -4595,6 +4595,57 @@ const PlateFleet = () => (
   </svg>
 );
 
+/**
+ * The closer's three plates.
+ *
+ * Currently unrendered — the call site in `LandingPage` is commented out.
+ * Kept whole rather than deleted because the artwork was supplied for it and
+ * the composition is finished; restoring it is one line.
+ *
+ * The plates are that supplied artwork, reproduced verbatim. They are drawn
+ * with light strokes over near-black fills, so their box takes `--bg` and the
+ * plates invert in light mode — give this art a light ground untouched and
+ * its depth ordering falls apart.
+ */
+function CloserPlates() {
+  return (
+        <div className="cg-shell rail">
+          <div className="cg-card">
+            <div className="cg-panel">
+              <PlateLocal />
+            </div>
+            <h3>Stays on your machine</h3>
+            <p>
+              Local-first by default. Agents work in real worktrees beside the
+              code, and nothing leaves until you push it.
+            </p>
+          </div>
+
+          <div className="cg-card">
+            <div className="cg-panel">
+              <PlateStack />
+            </div>
+            <h3>Every thread compounds</h3>
+            <p>
+              Runs, files, and the decisions you made stack into context the
+              next agent picks up without being told twice.
+            </p>
+          </div>
+
+          <div className="cg-card">
+            <div className="cg-panel">
+              <PlateFleet />
+            </div>
+            <h3>A fleet from one prompt</h3>
+            <p>
+              Claude, Codex, Cursor and Pi fan out in parallel, in one mission
+              control.
+            </p>
+          </div>
+        </div>
+  );
+}
+
 function LandingPage() {
   useFitMock();
   return (
@@ -4793,52 +4844,7 @@ function LandingPage() {
         <p>Free, open source, and local-first. Install in under a minute.</p>
         <InstallOptions placement="closer" />
 
-        {/* One slate shell holding three plates, the last of which carries
-            the install row at its foot. A feature grid stacked above a CTA
-            buries it; a grid whose final cell ends in the CTA gives the
-            buttons somewhere to land and lets the two claims beside them do
-            the arguing on the way down.
-
-            The plates are supplied artwork, reproduced verbatim. They are
-            drawn for a near-black ground with light strokes, which is why the
-            panel is a fixed dark literal in both themes rather than a step off
-            `--canvas` — give this art a light ground and its depth ordering
-            inverts. The same reasoning `--tg-card` already carries for
-            Telegram's own surface. */}
-        <div className="cg-shell rail">
-          <div className="cg-card">
-            <div className="cg-panel">
-              <PlateLocal />
-            </div>
-            <h3>Stays on your machine</h3>
-            <p>
-              Local-first by default. Agents work in real worktrees beside the
-              code, and nothing leaves until you push it.
-            </p>
-          </div>
-
-          <div className="cg-card">
-            <div className="cg-panel">
-              <PlateStack />
-            </div>
-            <h3>Every thread compounds</h3>
-            <p>
-              Runs, files, and the decisions you made stack into context the
-              next agent picks up without being told twice.
-            </p>
-          </div>
-
-          <div className="cg-card">
-            <div className="cg-panel">
-              <PlateFleet />
-            </div>
-            <h3>A fleet from one prompt</h3>
-            <p>
-              Claude, Codex, Cursor and Pi fan out in parallel, in one mission
-              control.
-            </p>
-          </div>
-        </div>
+        {/* <CloserPlates /> */}
 
         <div className="closer-subscribe">
           <SubscribeCard placement="footer" title="Keep up with the build" />
