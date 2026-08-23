@@ -6970,26 +6970,30 @@ html:not(.dark) .cg-plate {
   align-self: start;
 }
 
-/* The bot typing. Three dots on a stagger inside a bubble the same shape as
-   the reply that replaces it, so the reply reads as that message resolving
-   rather than a second one arriving. It runs once per loop and then leaves —
-   a permanent typing indicator says the bot is stuck. */
+/* The bot typing, once. This ran `infinite` at 5.4s while the conversation
+   around it plays a single time (`tg-in … 1 iteration, backwards`), so every
+   5.4 seconds the dots came back and sat on top of a reply that had been
+   there for good — which is why they appeared after the animation finished
+   rather than before it. It is a one-shot now, held at zero by `forwards`,
+   and it ends exactly as the reply it hands off to begins.
+
+   `pointer-events: none` because it is a spent layer sharing a grid cell with
+   a real bubble; invisible is not the same as out of the way. */
 .tg-typing {
-  animation: tg-typing-life 5.4s var(--ease-standard) infinite;
+  animation: tg-typing-life 2s var(--ease-standard) forwards;
+  pointer-events: none;
 }
 
 @keyframes tg-typing-life {
-  0%,
-  6% {
+  0% {
     opacity: 0;
     transform: translateY(4px);
   }
-  12%,
-  32% {
+  15%,
+  88% {
     opacity: 1;
     transform: none;
   }
-  36%,
   100% {
     opacity: 0;
   }
