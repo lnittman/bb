@@ -1146,10 +1146,10 @@ function DiffPanel({ onClose }: { onClose: () => void }) {
         </button>
       </div>
       <div className="diff-toolbar" aria-label="Diff controls">
-        <select aria-label="Change set" defaultValue="all">
-          <option value="all">All changes</option>
-          <option value="uncommitted">Uncommitted changes</option>
-        </select>
+        <span className="diff-scope" aria-hidden="true">
+          All changes
+          <ChevronDown className="diff-scope-chev" />
+        </span>
         <span className="diff-summary">
           1 file{" "}
           <span className="diff-summary-add">
@@ -2466,6 +2466,11 @@ const SUB_API_THREADS = [
 
 function SubagentsDemo() {
   const [openId, setOpenId] = useState("parent");
+  // Threads you have opened stay read. The dot is unread state, not a
+  // stand-in for "not currently selected".
+  const [read, setRead] = useState<ReadonlySet<string>>(
+    () => new Set(["parent"]),
+  );
   const all = [...SUB_THREADS, ...SUB_API_THREADS];
   const open = all.find((t) => t.id === openId) ?? all[0];
   const row = (t: (typeof all)[number]) => (
@@ -2482,10 +2487,11 @@ function SubagentsDemo() {
       onClick={(event) => {
         event.preventDefault();
         setOpenId(t.id);
+        setRead((current) => new Set(current).add(t.id));
       }}
     >
       <span className="sub-title">{t.title}</span>
-      {openId === t.id ? null : <i className="sub-dot" />}
+      {read.has(t.id) ? null : <i className="sub-dot" />}
     </a>
   );
   return (
@@ -4909,7 +4915,7 @@ function LandingPage() {
 
       <section className="act">
         <div className="act-head rail">
-          <h2>More than a chat window</h2>
+          <h2>More than a chat</h2>
           <div className="act-lead">
             <p>
               bb carries the work around the conversation: building,

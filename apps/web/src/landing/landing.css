@@ -736,6 +736,7 @@ code,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  user-select: none;
 }
 
 /* Hero-sized CTA: a touch larger than the base button. An explicit line-height
@@ -2315,6 +2316,25 @@ code,
 }
 
 /* The change summary the app's toolbar states and this one withheld. */
+.diff-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--row-h);
+  padding: 0 10px;
+  border-radius: var(--r-control);
+  box-shadow: var(--ring);
+  font-size: 12px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.diff-scope-chev {
+  width: 12px;
+  height: 12px;
+  opacity: 0.6;
+}
+
 .diff-summary {
   margin-left: auto;
   flex: none;
@@ -3616,6 +3636,11 @@ code,
 .review-demo {
   display: flex;
   flex-direction: column;
+  /* Takes the window's height and absorbs its own growth. min-height:auto let
+     an expanded file card push the column, which pushed the bento card, so
+     opening a diff resized the tile. It already clips; now it is allowed to. */
+  flex: 1 1 0;
+  min-height: 0;
   font-size: 12px;
 }
 
