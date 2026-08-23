@@ -2053,7 +2053,7 @@ code,
   margin-top: 20px;
 }
 
-.model {
+.picker {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -2061,9 +2061,23 @@ code,
   color: var(--ink);
 }
 
+.picker-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-chev {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  opacity: 0.6;
+}
+
 /* The app's picker: a button with a chevron, and a menu this page owns, so no
    part of the control is drawn by the OS. */
-.model-trigger {
+.picker-trigger {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -2079,10 +2093,10 @@ code,
   transition: background var(--duration-hover) var(--ease-standard);
 }
 
-.model-menu {
+.picker-menu {
   position: absolute;
   z-index: 4;
-  bottom: calc(100% + 4px);
+  top: calc(100% + 4px);
   left: 0;
   min-width: 168px;
   padding: 4px;
@@ -2095,7 +2109,7 @@ code,
   box-shadow: 0 10px 26px color-mix(in oklab, var(--ink) 16%, transparent);
 }
 
-.model-menu button {
+.picker-menu button {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2113,14 +2127,19 @@ code,
   transition: none;
 }
 
-.model-tick {
+.picker-menu.is-up {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
+.picker-tick {
   width: 14px;
   height: 14px;
   flex: none;
   opacity: 0;
 }
 
-.model-tick[data-on="true"] {
+.picker-tick[data-on="true"] {
   opacity: 1;
 }
 

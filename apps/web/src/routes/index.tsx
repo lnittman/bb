@@ -966,10 +966,6 @@ function Composer({ thread }: { thread?: MockThread }) {
   const isNew = !thread;
   const [expanded, setExpanded] = useState(false);
   const [model, setModel] = useState<ComposerModel>("opus-5");
-  const [modelOpen, setModelOpen] = useState(false);
-  const modelRef = useRef<HTMLSpanElement>(null);
-
-  useDismiss(modelOpen, () => setModelOpen(false), modelRef);
 
   return (
     <div className={isNew ? "composer composer-new" : "composer"}>
@@ -1001,43 +997,17 @@ function Composer({ thread }: { thread?: MockThread }) {
           </button>
         </div>
         <div className="composer-row">
-          <span className="model" ref={modelRef}>
-            <button
-              type="button"
-              className="model-trigger"
-              aria-haspopup="menu"
-              aria-expanded={modelOpen}
-              onClick={() => setModelOpen((value) => !value)}
-            >
-              <ClaudeIcon className="model-ic" />
-              {COMPOSER_MODELS[model]}
-              <ChevronDown className="ctx-chev" />
-            </button>
-            {modelOpen ? (
-              <span className="model-menu" role="menu">
-                {(Object.keys(COMPOSER_MODELS) as ComposerModel[]).map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={model === id}
-                    onClick={() => {
-                      setModel(id);
-                      setModelOpen(false);
-                    }}
-                  >
-                    <HugeiconsIcon
-                      icon={Tick02Icon}
-                      className="model-tick"
-                      data-on={model === id}
-                      aria-hidden
-                    />
-                    {COMPOSER_MODELS[id]}
-                  </button>
-                ))}
-              </span>
-            ) : null}
-          </span>
+          <DemoPicker
+            className="model"
+            label="Model"
+            drop="up"
+            leading={<ClaudeIcon className="model-ic" />}
+            value={model}
+            onChange={(next) => setModel(next as ComposerModel)}
+            options={(Object.keys(COMPOSER_MODELS) as ComposerModel[]).map(
+              (id) => ({ value: id, label: COMPOSER_MODELS[id] }),
+            )}
+          />
           <span className="composer-actions">
             <span className="composer-action" aria-hidden="true">
               <Paperclip className="composer-clip" />
@@ -1993,21 +1963,19 @@ function ExtensionsPanelMock() {
                     />
                   </label>
                   {page === "plugins-browse" ? (
-                    <select
-                      className="ext-tool ext-category"
-                      aria-label="Category"
+                    <DemoPicker
+                      className="ext-category"
+                      label="Category"
                       value={categoryFilter}
-                      onChange={(event) =>
-                        setCategoryFilter(event.target.value)
-                      }
-                    >
-                      <option value="">Category</option>
-                      {PLUGIN_CATEGORIES_FROM_REGISTRY.map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={setCategoryFilter}
+                      options={[
+                        { value: "", label: "Category" },
+                        ...PLUGIN_CATEGORIES_FROM_REGISTRY.map((category) => ({
+                          value: category,
+                          label: category,
+                        })),
+                      ]}
+                    />
                   ) : (
                     <button
                       type="button"
@@ -2303,6 +2271,80 @@ const COMPOSER_MODELS: Record<ComposerModel, string> = {
   "opus-5": "Opus 5 (1M)",
   "opus-4-8": "Opus 4.8 (1M)",
 };
+
+/**
+ * The app's picker, as one control.
+ *
+ * A native `<select>` makes the OS paint its own popup — on macOS a system
+ * shadow and a system-blue highlight — on top of a recreation of bb, which is
+ * the one place OS chrome cannot appear. `appearance: none` reaches the closed
+ * control only. bb's own pickers are a button with a chevron over a menu the
+ * app draws, so this is that: dismissing on outside pointerdown and Escape
+ * through the same primitive every other menu here uses.
+ */
+function DemoPicker({
+  value,
+  options,
+  onChange,
+  label,
+  className,
+  drop = "down",
+  leading,
+}: {
+  value: string;
+  options: readonly { value: string; label: string }[];
+  onChange: (next: string) => void;
+  label: string;
+  className?: string;
+  drop?: "up" | "down";
+  leading?: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useDismiss(open, () => setOpen(false), ref);
+  const current = options.find((option) => option.value === value);
+
+  return (
+    <span className={className ? `picker ${className}` : "picker"} ref={ref}>
+      <button
+        type="button"
+        className="picker-trigger"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={label}
+        onClick={() => setOpen((current) => !current)}
+      >
+        {leading}
+        <span className="picker-value">{current?.label ?? label}</span>
+        <ChevronDown className="picker-chev" />
+      </button>
+      {open ? (
+        <span className={drop === "up" ? "picker-menu is-up" : "picker-menu"} role="menu">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="menuitemradio"
+              aria-checked={option.value === value}
+              onClick={() => {
+                onChange(option.value);
+                setOpen(false);
+              }}
+            >
+              <HugeiconsIcon
+                icon={Tick02Icon}
+                className="picker-tick"
+                data-on={option.value === value}
+                aria-hidden
+              />
+              {option.label}
+            </button>
+          ))}
+        </span>
+      ) : null}
+    </span>
+  );
+}
 
 function DemoSpinner() {
   return <HugeiconsIcon icon={Loading03Icon} className="dm-spin" aria-hidden />;
@@ -3230,17 +3272,16 @@ function ReviewDemo() {
       data-wrap={wrapLines ? "wrap" : "scroll"}
     >
       <div className="review-head">
-        <label className="review-selector">
-          <span className="sr-only">Diff selection</span>
-          <select
-            className="review-scope"
-            value={selection}
-            onChange={(event) => setSelection(event.currentTarget.value)}
-          >
-            <option value="all">All changes</option>
-            <option value="uncommitted">Uncommitted changes</option>
-          </select>
-        </label>
+        <DemoPicker
+          className="review-scope"
+          label="Diff selection"
+          value={selection}
+          onChange={setSelection}
+          options={[
+            { value: "all", label: "All changes" },
+            { value: "uncommitted", label: "Uncommitted changes" },
+          ]}
+        />
         <span className="review-count">
           {REVIEW_FILES.length} files
           <em className="review-add">+{totals.additions}</em>
