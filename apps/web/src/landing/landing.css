@@ -1089,7 +1089,7 @@ code,
   align-items: center;
   height: 26px;
   padding: 0 10px;
-  border-radius: 10px;
+  border-radius: 8px;
   corner-shape: squircle;
   background: color-mix(in oklab, var(--ink-strong) 5%, var(--canvas));
   box-shadow: var(--ring);
@@ -1109,7 +1109,7 @@ code,
   align-items: center;
   gap: 20px;
   justify-content: center;
-  margin-top: 44px;
+  margin-top: 48px;
   flex-wrap: wrap;
 }
 
@@ -6407,7 +6407,7 @@ a.demo-thread-row:focus-visible {
 .stat-cards strong {
   font-size: clamp(30px, 3vw, 44px);
   line-height: 1;
-  font-weight: 620;
+  font-weight: 600;
   letter-spacing: -0.025em;
   font-variant-numeric: tabular-nums;
   color: var(--ink-strong);
@@ -6818,7 +6818,11 @@ html:not(.dark) .cg-plate {
 
 .sec-title {
   font-size: clamp(26px, 4vw, 32px);
-  font-weight: 700;
+  /* The display family: 64/510, 54/600 — the closer joins it instead of
+     carrying the page's only 700, and drops the body line-height it was
+     inheriting onto a display heading. */
+  font-weight: 600;
+  line-height: 1.1;
   letter-spacing: -0.025em;
   margin-bottom: 12px;
   color: var(--ink-strong);
@@ -6873,6 +6877,7 @@ html:not(.dark) .cg-plate {
 .subscribe-card-head > h2 {
   font-size: 22px;
   font-weight: 600;
+  line-height: 1.15;
   letter-spacing: -0.018em;
   color: var(--ink-strong);
 }
