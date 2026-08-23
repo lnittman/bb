@@ -2670,16 +2670,14 @@ code,
   display: none;
 }
 
+/* Below the rail the window keeps its real size and runs off the right edge
+   under a dissolve, the way the app itself stays inline to its 767px compact
+   boundary (use-compact-viewport.tsx:10-36). The panes were a scroll-snap
+   carousel here, which is navigation bb does not have, and it put two thirds
+   of the product off-screen at 900px. */
 @media (max-width: 1099px) {
   .mock-body {
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-  }
-
-  .mock-body::-webkit-scrollbar {
-    display: none;
+    overflow: hidden;
   }
 
   .mock .bar-left {
@@ -2692,27 +2690,20 @@ code,
     display: none;
   }
 
-  .main,
-  .side,
-  .diff-panel {
-    width: calc(100% - var(--btn-h));
-    flex: 0 0 calc(100% - var(--btn-h));
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-  }
-
-  .main {
-    order: 1;
-    border-right: 1px solid var(--border-soft);
-  }
-
+  /* The rail goes first, as it does in the app on a compact viewport. */
   .side {
-    order: 2;
+    display: none;
   }
 
   .diff-panel {
-    order: 3;
-    border-left: 0;
+    border-left: 1px solid var(--border-soft);
+  }
+}
+
+/* Below the two-up tier the changes pane goes too, leaving the thread. */
+@media (max-width: 900px) {
+  .diff-panel {
+    display: none;
   }
 }
 
@@ -2743,7 +2734,6 @@ code,
   }
 
   .composer-input,
-  .model select,
   .side-search-form input {
     font-size: 16px;
   }
@@ -7026,17 +7016,25 @@ html:not(.dark) .cg-plate {
     overflow-x: clip;
   }
 
-  /* The mock keeps its full desktop width and is shrunk with `zoom` (which
-     reflows, so the card occupies its scaled size and the page below flows
-     normally). JS sets `--mock-scale` so a fixed slice of the app
-     (`--mock-visible-width`) fills the available width. Both vars are defined
-     only here, so the mock is unscaled above this breakpoint; the fallback
-     scale covers the pre-hydration/no-JS paint. */
+  /* Real size. Scaling the window to fit put a mandated 32px row at 20.7px
+     and body text near 8.7px; a legible slice of the product beats an
+     illegible whole of it. The window is as wide as it needs to be and the
+     wrap dissolves whatever runs past the edge. */
   .mockup-wrap .mock {
-    --mock-desktop-width: 980px;
-    --mock-visible-width: 560px;
-    width: var(--mock-desktop-width);
-    zoom: var(--mock-scale, 0.62);
+    width: 980px;
+  }
+
+  .mockup-wrap {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      black calc(100% - 48px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      black calc(100% - 48px),
+      transparent 100%
+    );
   }
 
   /* Left-align the centered statement on mobile so it reads like the bands

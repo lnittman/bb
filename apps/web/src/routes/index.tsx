@@ -307,38 +307,6 @@ function InstallOptions({ placement }: { placement: CtaPlacement }) {
  *  stays legible instead of shrinking the whole app to fit. `--mock-visible-width`
  *  is defined only inside that breakpoint, so above it the variable is unset and
  *  the mock renders unscaled at its natural width. */
-function useFitMock() {
-  useEffect(() => {
-    const mock = document.querySelector<HTMLElement>(".mock");
-    const wrap = mock?.parentElement;
-    if (!mock || !wrap) {
-      return;
-    }
-    const fit = () => {
-      const wrapStyle = getComputedStyle(wrap);
-      const visibleWidth = Number.parseFloat(
-        getComputedStyle(mock).getPropertyValue("--mock-visible-width"),
-      );
-      if (!visibleWidth) {
-        // Desktop layout (variable unset above the breakpoint): no scaling.
-        mock.style.removeProperty("--mock-scale");
-        return;
-      }
-      // The card is inset by the wrap's side padding (its left gutter holds the
-      // drop shadow), so its on-screen width is the content box — clientWidth
-      // minus the padding — not clientWidth itself.
-      const slice =
-        wrap.clientWidth -
-        Number.parseFloat(wrapStyle.paddingLeft) -
-        Number.parseFloat(wrapStyle.paddingRight);
-      mock.style.setProperty("--mock-scale", String(slice / visibleWidth));
-    };
-    fit();
-    const observer = new ResizeObserver(fit);
-    observer.observe(wrap);
-    return () => observer.disconnect();
-  }, []);
-}
 
 /* ── Shared bits ──────────────────────────────────────────────────── */
 
@@ -4937,7 +4905,6 @@ function CloserPlates() {
 }
 
 function LandingPage() {
-  useFitMock();
   return (
     <div className="wrap">
       <SiteNav />
