@@ -6642,7 +6642,9 @@ html:not(.dark) .cg-plate {
   align-items: center;
   gap: 12px;
   margin: 0 auto;
-  width: min(560px, 100%);
+  /* The install card's own measure, so field + button and the card above it
+     share one width. */
+  width: min(660px, 100%);
 }
 
 .subscribe-input {
@@ -6948,12 +6950,6 @@ html:not(.dark) .cg-plate {
 
   .band {
     padding: 64px 0;
-  }
-
-  /* The stacked sidebar visual already shows every provider logo, so the
-     chip row under the copy is redundant on narrow screens. */
-  .band-copy .providers {
-    display: none;
   }
 }
 

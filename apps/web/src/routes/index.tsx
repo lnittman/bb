@@ -5021,9 +5021,6 @@ function LandingPage() {
               No new subscription. Each agent runs on the one you already pay
               for, billed by the provider, not bb.
             </p>
-            <div className="providers">
-              <ProviderChips />
-            </div>
           </div>
         </div>
         <div className="rail">
