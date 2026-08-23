@@ -3451,9 +3451,6 @@ function AskPhone() {
           </div>
           {chosen ? <p className="ap-reply">{chosen.outcome}</p> : null}
         </div>
-        {chosen ? null : (
-          <p className="ap-hint">Tap an answer and the thread carries on.</p>
-        )}
       </div>
     </div>
   );

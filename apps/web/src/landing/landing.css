@@ -3692,6 +3692,11 @@ code,
    A border is part of the box: the rows clip inside it and every tinted
    line keeps a visible edge on both sides. */
 .review-file-card {
+  /* In a fixed-height flex column an expanding card would otherwise take its
+     height out of the card above it, so opening one file visibly shrank the
+     diff already on screen. Cards keep their natural height and the column
+     grows into the demo's own clipped overflow instead. */
+  flex: 0 0 auto;
   border-radius: var(--r-field);
   background: var(--bg);
   border: 1px solid var(--border);
@@ -7303,6 +7308,7 @@ html:not(.dark) .cg-plate {
 
 .tg-in .tg-bubble {
   background: var(--tg-card);
+  border: 1px solid var(--border-soft);
   color: var(--ink-strong);
   border-bottom-left-radius: 5px;
 }
@@ -7642,7 +7648,6 @@ html:not(.dark) .cg-plate {
   gap: 5px;
 }
 
-.ap-hint,
 /* 40px rows: a real thumb target, which is the point of showing this on a
    phone at all. */
 .ap-opt {
@@ -7687,7 +7692,6 @@ html:not(.dark) .cg-plate {
   min-width: 0;
 }
 
-.ap-hint,
 .ap-reply {
   margin-top: auto;
   font-size: 11.5px;
