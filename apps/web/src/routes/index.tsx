@@ -87,6 +87,7 @@ import {
 import {
   DemoGlyph,
   DemoSelectedThread,
+  DemoSidebarActionRow,
   DemoThreadRail,
   DemoThreadScene,
   DemoWindowChrome,
@@ -108,12 +109,15 @@ import {
 } from "../landing/icons";
 import type { CtaPlacement } from "../landing/site";
 import {
+  heroDemoHref,
+  heroDemoTargetId,
+  parseHeroThreadId,
   parseSpawnCauseId,
   spawnDemoHref,
   spawnDemoTargetId,
   validateLandingSearch,
 } from "../landing/spawn-demo-routing";
-import type { SpawnCauseId } from "../landing/spawn-demo-routing";
+import type { HeroThreadId, SpawnCauseId } from "../landing/spawn-demo-routing";
 import {
   CLI_COMMAND,
   OG_DESCRIPTION,
@@ -396,11 +400,6 @@ const GearIcon = ({ className }: IconProps) => (
 const CheckIcon = ({ className }: IconProps) => (
   <HugeiconsIcon icon={Tick02Icon} className={className} />
 );
-// Sidebar thread-status glyphs, matching the real app's muted glyphs
-// (CheckmarkCircle02 for done, MessageQuestion for needs-input).
-const CircleCheckIcon = ({ className }: IconProps) => (
-  <HugeiconsIcon icon={CheckmarkCircle02Icon} className={className} />
-);
 const MessageQuestionGlyph = ({ className }: IconProps) => (
   <HugeiconsIcon icon={MessageQuestionIcon} className={className} />
 );
@@ -672,7 +671,7 @@ type Ask = {
   selected: number;
 };
 type MockThread = {
-  id: string;
+  id: HeroThreadId;
   title: string;
   status: Status;
   branch: string;
@@ -688,7 +687,7 @@ type MockThread = {
 // A finite timeline fixture. The app receives ordered timeline rows from the
 // server; the landing preview renders that final result directly and never
 // fabricates activity after hydration.
-const HERO_THREADS: MockThread[] = [
+const HERO_THREADS: readonly MockThread[] = [
   {
     id: "sidebar-search",
     title: "Fix sidebar search",
@@ -765,16 +764,6 @@ const HERO_THREADS: MockThread[] = [
     },
   },
 ];
-
-function ThreadStatus({ status }: { status: Status }) {
-  return (
-    <span className="tstatus" aria-hidden>
-      {status === "running" ? <Spinner className="trun" /> : null}
-      {status === "done" ? <CircleCheckIcon className="tdone" /> : null}
-      {status === "waiting" ? <MessageQuestionGlyph className="twait" /> : null}
-    </span>
-  );
-}
 
 /** The conversation pane mirrors the server-provided timeline at rest. */
 function ThreadFeed({ thread }: { thread: MockThread }) {
@@ -1180,8 +1169,13 @@ const DEFAULT_SIDEBAR_NAV = [
   { id: "automations", label: "Automations", Icon: TimeScheduleGlyph },
 ] as const;
 
+const DEFAULT_HERO_THREAD_ID: HeroThreadId = "sidebar-search";
+
 function HeroAppMock() {
-  const [activeId, setActiveId] = useState(HERO_THREADS[0].id);
+  const { thread: linkedThreadId } = Route.useSearch();
+  const [activeId, setActiveId] = useState<HeroThreadId>(
+    linkedThreadId ?? DEFAULT_HERO_THREAD_ID,
+  );
   const [view, setView] = useState<HeroView>("thread");
   const [diffOpen, setDiffOpen] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -1189,28 +1183,67 @@ function HeroAppMock() {
   const [query, setQuery] = useState("");
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
-  const [titleOverrides, setTitleOverrides] = useState<Record<string, string>>(
-    {},
-  );
+  const [titleOverrides, setTitleOverrides] = useState<
+    Partial<Record<HeroThreadId, string>>
+  >({});
   const [moreOpen, setMoreOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const thread =
     HERO_THREADS.find((candidate) => candidate.id === activeId) ??
     HERO_THREADS[0];
   const threadTitle = titleOverrides[thread.id] ?? thread.title;
-  const visibleThreads = useMemo(() => {
+  const heroThreads = useMemo<readonly DemoThread[]>(
+    () =>
+      HERO_THREADS.map((candidate): DemoThread => ({
+        id: candidate.id,
+        title: titleOverrides[candidate.id] ?? candidate.title,
+        tone: "normal",
+        leading: { kind: "none" },
+        activity:
+          candidate.status === "running"
+            ? { kind: "working", label: "Working" }
+            : candidate.status === "waiting"
+              ? { kind: "needs-input", label: "Waiting for you" }
+              : { kind: "idle" },
+        attentionRevision: candidate.status === "done" ? 1 : 0,
+        initialReadThroughRevision: 0,
+        interaction: "openable",
+        href: heroDemoHref(candidate.id),
+      })),
+    [titleOverrides],
+  );
+  const visibleProjects = useMemo<readonly DemoThreadProject[]>(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
-    if (!normalizedQuery) return HERO_THREADS;
-    return HERO_THREADS.filter((candidate) =>
-      (titleOverrides[candidate.id] ?? candidate.title)
-        .toLocaleLowerCase()
-        .includes(normalizedQuery),
-    );
+    const visibleThreads = normalizedQuery
+      ? HERO_THREADS.filter((candidate) =>
+          (titleOverrides[candidate.id] ?? candidate.title)
+            .toLocaleLowerCase()
+            .includes(normalizedQuery),
+        )
+      : HERO_THREADS;
+    return [
+      {
+        id: "bb",
+        label: "bb",
+        rows: visibleThreads.map((candidate) => ({
+          threadId: candidate.id,
+          children: [],
+        })),
+      },
+    ];
   }, [query, titleOverrides]);
+  const visibleThreadCount = visibleProjects[0]?.rows.length ?? 0;
+  const selectedId = view === "thread" && !searchOpen ? activeId : null;
 
   const openThread = (id: string) => {
-    setActiveId(id);
+    const nextId = parseHeroThreadId(id);
+    if (nextId === null) {
+      return;
+    }
+    setActiveId(nextId);
     setView("thread");
+    setQuery("");
+    setSearchOpen(false);
     setEditingTitle(false);
     setMoreOpen(false);
   };
@@ -1224,7 +1257,6 @@ function HeroAppMock() {
   const moreRef = useRef<HTMLSpanElement>(null);
   const editorRef = useRef<HTMLSpanElement>(null);
   const searchRef = useRef<HTMLFormElement>(null);
-  const titleRef = useRef<HTMLFormElement>(null);
 
   useDismiss(moreOpen, () => setMoreOpen(false), moreRef);
   useDismiss(editorOpen, () => setEditorOpen(false), editorRef);
@@ -1249,258 +1281,318 @@ function HeroAppMock() {
   };
 
   return (
-    <section className="mockup-wrap hero-stage">
-      <div
-        className={sidebarOpen ? "mock" : "mock sidebar-closed"}
-        aria-label="Interactive preview of the bb app"
-      >
-        <div className="mock-bar">
-          <div className="bar-left">
-            <button
-              type="button"
-              className="bar-menu"
-              aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-              aria-expanded={sidebarOpen}
-              aria-controls="hero-sidebar"
-              onClick={() => setSidebarOpen((open) => !open)}
-            >
-              <PanelIcon className="ri bar-ic" />
-            </button>
-            <span className="bar-nav">
-              <button type="button" aria-label="Go back" disabled>
-                <ChevronLeft className="ri" />
-              </button>
-              <button type="button" aria-label="Go forward" disabled>
-                <ChevronRight className="ri" />
-              </button>
-            </span>
-          </div>
-          <div className="bar-main">
-            {view === "extensions" || view === "automations" ? (
-              <span className="bar-title">
-                {view === "extensions" ? "Extensions" : "Automations"}
-              </span>
-            ) : null}
-            {view === "thread" ? (
-              <>
-                {editingTitle ? (
-                  <form
-                    className="bar-title-form"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      saveTitle();
-                    }}
-                  >
-                    <input
-                      value={titleDraft}
-                      aria-label="Thread title"
-                      autoFocus
-                      onChange={(event) => setTitleDraft(event.target.value)}
-                      onBlur={saveTitle}
-                      onKeyDown={(event) => {
-                        if (event.key === "Escape") {
-                          setEditingTitle(false);
-                        }
-                      }}
-                    />
-                  </form>
-                ) : (
-                  <button
-                    type="button"
-                    className="bar-title bar-title-button"
-                    onClick={startRename}
-                  >
-                    {threadTitle}
-                  </button>
-                )}
-                <span className="bar-menu-wrap" ref={moreRef}>
-                  <button
-                    type="button"
-                    className="bar-kebab"
-                    aria-label="Thread actions"
-                    aria-haspopup="menu"
-                    aria-expanded={moreOpen}
-                    onClick={() => setMoreOpen((open) => !open)}
-                  >
-                    <Ellipsis className="ri" />
-                  </button>
-                  {moreOpen ? (
-                    <span className="bar-popover" role="menu">
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={startRename}
-                      >
-                        Rename thread
-                      </button>
-                    </span>
-                  ) : null}
-                </span>
-                <span className="bar-actions">
-                  <span className="editor-menu-wrap" ref={editorRef}>
-                    <button
-                      type="button"
-                      className="editor-btn"
-                      aria-label="Open in editor"
-                      aria-haspopup="menu"
-                      aria-expanded={editorOpen}
-                      onClick={() => setEditorOpen((open) => !open)}
-                    >
-                      <img src={vscodeIcon} alt="" className="editor-ic" />
-                      <ChevronDown className="chev-xs" />
-                    </button>
-                    {editorOpen ? (
-                      <span className="bar-popover editor-popover" role="menu">
+    <DemoThreadScene
+      threads={heroThreads}
+      selectedId={selectedId}
+      onSelectedIdChange={openThread}
+    >
+      <DemoSelectedThread>
+        {(selectedThread) => {
+          const displayedThread =
+            HERO_THREADS.find(
+              (candidate) => candidate.id === selectedThread?.id,
+            ) ?? thread;
+
+          return (
+            <section className="mockup-wrap hero-stage">
+              <div
+                className={sidebarOpen ? "mock" : "mock sidebar-closed"}
+                aria-label="Interactive preview of the bb app"
+              >
+                <DemoWindowChrome
+                  ariaLabel="Hero app window"
+                  leading={
+                    <div className="hero-chrome-content">
+                      <div className="bar-left">
                         <button
                           type="button"
-                          role="menuitem"
-                          onClick={() => setEditorOpen(false)}
+                          className="bar-menu"
+                          aria-label={
+                            sidebarOpen ? "Hide sidebar" : "Show sidebar"
+                          }
+                          aria-expanded={sidebarOpen}
+                          aria-controls="hero-sidebar"
+                          onClick={() => setSidebarOpen((open) => !open)}
                         >
-                          VS Code
+                          <DemoGlyph Icon={PanelIcon} size={16} label={null} />
                         </button>
-                      </span>
-                    ) : null}
-                  </span>
-                  <button type="button" className="commit-btn" disabled>
-                    Commit
-                  </button>
-                  {!diffOpen ? (
-                    <button
-                      type="button"
-                      className="bar-toggle"
-                      aria-label="Show changes"
-                      aria-pressed="false"
-                      onClick={() => setDiffOpen(true)}
-                    >
-                      <PanelRightIcon className="ri" />
-                    </button>
-                  ) : null}
-                </span>
-              </>
-            ) : null}
-          </div>
-        </div>
-        <div className="mock-body">
-          <aside id="hero-sidebar" className="side" hidden={!sidebarOpen}>
-            {searchOpen ? (
-              <form
-                className="side-search-form"
-                role="search"
-                ref={searchRef}
-                onSubmit={(event) => event.preventDefault()}
-              >
-                <SearchGlyph className="sa-ic" />
-                <input
-                  value={query}
-                  aria-label="Search threads"
-                  placeholder="Search threads"
-                  autoFocus
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-                <button
-                  type="button"
-                  aria-label="Close thread search"
-                  onClick={() => {
-                    setQuery("");
-                    setSearchOpen(false);
-                  }}
-                >
-                  <span aria-hidden="true">×</span>
-                </button>
-              </form>
-            ) : (
-              <div className="side-row-new">
-                <button
-                  type="button"
-                  className={
-                    view === "new" ? "side-act active-act" : "side-act"
+                        <span className="bar-nav">
+                          <button type="button" aria-label="Go back" disabled>
+                            <DemoGlyph
+                              Icon={ChevronLeft}
+                              size={16}
+                              label={null}
+                            />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Go forward"
+                            disabled
+                          >
+                            <DemoGlyph
+                              Icon={ChevronRight}
+                              size={16}
+                              label={null}
+                            />
+                          </button>
+                        </span>
+                      </div>
+                      <div className="bar-main">
+                        {view === "extensions" || view === "automations" ? (
+                          <span className="bar-title">
+                            {view === "extensions"
+                              ? "Extensions"
+                              : "Automations"}
+                          </span>
+                        ) : null}
+                        {view === "thread" ? (
+                          <>
+                            {editingTitle ? (
+                              <form
+                                className="bar-title-form"
+                                onSubmit={(event) => {
+                                  event.preventDefault();
+                                  saveTitle();
+                                }}
+                              >
+                                <input
+                                  value={titleDraft}
+                                  aria-label="Thread title"
+                                  autoFocus
+                                  onChange={(event) =>
+                                    setTitleDraft(event.target.value)
+                                  }
+                                  onBlur={saveTitle}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Escape") {
+                                      setEditingTitle(false);
+                                    }
+                                  }}
+                                />
+                              </form>
+                            ) : (
+                              <button
+                                type="button"
+                                className="bar-title bar-title-button"
+                                onClick={startRename}
+                              >
+                                {threadTitle}
+                              </button>
+                            )}
+                            <span className="bar-menu-wrap" ref={moreRef}>
+                              <button
+                                type="button"
+                                className="bar-kebab"
+                                aria-label="Thread actions"
+                                aria-haspopup="menu"
+                                aria-expanded={moreOpen}
+                                onClick={() => setMoreOpen((open) => !open)}
+                              >
+                                <DemoGlyph
+                                  Icon={Ellipsis}
+                                  size={16}
+                                  label={null}
+                                />
+                              </button>
+                              {moreOpen ? (
+                                <span className="bar-popover" role="menu">
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={startRename}
+                                  >
+                                    Rename thread
+                                  </button>
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className="bar-actions">
+                              <span
+                                className="editor-menu-wrap"
+                                ref={editorRef}
+                              >
+                                <button
+                                  type="button"
+                                  className="editor-btn"
+                                  aria-label="Open in editor"
+                                  aria-haspopup="menu"
+                                  aria-expanded={editorOpen}
+                                  onClick={() => setEditorOpen((open) => !open)}
+                                >
+                                  <img
+                                    src={vscodeIcon}
+                                    alt=""
+                                    className="editor-ic"
+                                  />
+                                  <span className="editor-chevron">
+                                    <DemoGlyph
+                                      Icon={ChevronDown}
+                                      size={12}
+                                      label={null}
+                                    />
+                                  </span>
+                                </button>
+                                {editorOpen ? (
+                                  <span
+                                    className="bar-popover editor-popover"
+                                    role="menu"
+                                  >
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      onClick={() => setEditorOpen(false)}
+                                    >
+                                      VS Code
+                                    </button>
+                                  </span>
+                                ) : null}
+                              </span>
+                              <button
+                                type="button"
+                                className="commit-btn"
+                                disabled
+                              >
+                                Commit
+                              </button>
+                              {!diffOpen ? (
+                                <button
+                                  type="button"
+                                  className="bar-toggle"
+                                  aria-label="Show changes"
+                                  aria-pressed="false"
+                                  onClick={() => setDiffOpen(true)}
+                                >
+                                  <DemoGlyph
+                                    Icon={PanelRightIcon}
+                                    size={16}
+                                    label={null}
+                                  />
+                                </button>
+                              ) : null}
+                            </span>
+                          </>
+                        ) : null}
+                      </div>
+                    </div>
                   }
-                  aria-pressed={view === "new"}
-                  onClick={() => setView("new")}
-                >
-                  <NewThreadIcon className="sa-ic" />
-                  New thread
-                </button>
-                <button
-                  type="button"
-                  className="side-search"
-                  aria-label="Search threads"
-                  onClick={() => setSearchOpen(true)}
-                >
-                  <SearchGlyph className="sa-ic" />
-                </button>
-              </div>
-            )}
-            {DEFAULT_SIDEBAR_NAV.map(({ id, label, Icon }) => (
-              <button
-                key={id}
-                type="button"
-                className={view === id ? "side-act active-act" : "side-act"}
-                aria-pressed={view === id}
-                onClick={() => setView(id)}
-              >
-                <Icon className="sa-ic" />
-                {label}
-              </button>
-            ))}
-            <div className="side-label">bb</div>
-            <ul className="threads">
-              {visibleThreads.map((candidate) => {
-                const isActive = view === "thread" && candidate.id === activeId;
-                return (
-                  <li key={candidate.id}>
-                    <button
-                      type="button"
-                      className={isActive ? "trow active" : "trow"}
-                      aria-pressed={isActive}
-                      onClick={() => openThread(candidate.id)}
+                  title={null}
+                  trailing={null}
+                />
+                <div className="mock-body">
+                  <aside
+                    id="hero-sidebar"
+                    className="side"
+                    hidden={!sidebarOpen}
+                  >
+                    {searchOpen ? (
+                      <form
+                        className="side-search-form"
+                        role="search"
+                        ref={searchRef}
+                        onSubmit={(event) => event.preventDefault()}
+                      >
+                        <SearchGlyph className="sa-ic" />
+                        <input
+                          value={query}
+                          aria-label="Search threads"
+                          placeholder="Search threads"
+                          autoFocus
+                          onChange={(event) => setQuery(event.target.value)}
+                        />
+                        <button
+                          type="button"
+                          aria-label="Close thread search"
+                          onClick={() => {
+                            setQuery("");
+                            setSearchOpen(false);
+                          }}
+                        >
+                          <span aria-hidden="true">×</span>
+                        </button>
+                      </form>
+                    ) : (
+                      <div className="side-row-new">
+                        <DemoSidebarActionRow
+                          label="New thread"
+                          Icon={NewThreadIcon}
+                          selected={view === "new"}
+                          onActivate={() => setView("new")}
+                          trailing={null}
+                        />
+                        <button
+                          type="button"
+                          className="side-search"
+                          aria-label="Search threads"
+                          onClick={() => setSearchOpen(true)}
+                        >
+                          <SearchGlyph className="sa-ic" />
+                        </button>
+                      </div>
+                    )}
+                    {DEFAULT_SIDEBAR_NAV.map(({ id, label, Icon }) => (
+                      <DemoSidebarActionRow
+                        key={id}
+                        label={label}
+                        Icon={Icon}
+                        selected={view === id}
+                        onActivate={() => setView(id)}
+                        trailing={null}
+                      />
+                    ))}
+                    <div className="hero-thread-rail">
+                      <DemoThreadRail
+                        ariaLabel="Hero threads"
+                        header={null}
+                        projects={visibleProjects}
+                      />
+                      {visibleThreadCount === 0 ? (
+                        <div className="side-empty">No matching threads</div>
+                      ) : null}
+                    </div>
+                    <div className="side-foot" aria-hidden="true">
+                      <GearIcon className="sa-ic" />
+                    </div>
+                  </aside>
+
+                  {view === "thread" ? (
+                    <div
+                      className="main"
+                      id={heroDemoTargetId(displayedThread.id)}
                     >
-                      <span className="trow-title">
-                        {titleOverrides[candidate.id] ?? candidate.title}
-                      </span>
-                      <ThreadStatus status={candidate.status} />
-                    </button>
-                  </li>
-                );
-              })}
-              {visibleThreads.length === 0 ? (
-                <li className="side-empty">No matching threads</li>
-              ) : null}
-            </ul>
-            <div className="side-foot" aria-hidden="true">
-              <GearIcon className="sa-ic" />
-            </div>
-          </aside>
+                      <ThreadFeed
+                        key={displayedThread.id}
+                        thread={displayedThread}
+                      />
+                      {displayedThread.ask ? (
+                        <AskQuestion ask={displayedThread.ask} />
+                      ) : (
+                        <Composer thread={displayedThread} />
+                      )}
+                    </div>
+                  ) : view === "new" ? (
+                    <div className="main main-new">
+                      <Composer />
+                    </div>
+                  ) : (
+                    <div className="main main-panel">
+                      {view === "extensions" ? (
+                        <ExtensionsPanelMock />
+                      ) : (
+                        <AutomationsPanelMock />
+                      )}
+                    </div>
+                  )}
 
-          {view === "thread" ? (
-            <div className="main">
-              <ThreadFeed key={thread.id} thread={thread} />
-              {thread.ask ? (
-                <AskQuestion ask={thread.ask} />
-              ) : (
-                <Composer thread={thread} />
-              )}
-            </div>
-          ) : view === "new" ? (
-            <div className="main main-new">
-              <Composer />
-            </div>
-          ) : (
-            <div className="main main-panel">
-              {view === "extensions" ? (
-                <ExtensionsPanelMock />
-              ) : (
-                <AutomationsPanelMock />
-              )}
-            </div>
-          )}
-
-          {view === "thread" && diffOpen ? (
-            <DiffPanel onClose={() => setDiffOpen(false)} />
-          ) : null}
-        </div>
-      </div>
-    </section>
+                  {view === "thread" && diffOpen ? (
+                    <DiffPanel onClose={() => setDiffOpen(false)} />
+                  ) : null}
+                </div>
+              </div>
+            </section>
+          );
+        }}
+      </DemoSelectedThread>
+    </DemoThreadScene>
   );
 }
 

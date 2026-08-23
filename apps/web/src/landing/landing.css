@@ -1202,6 +1202,7 @@ code,
 }
 
 .mock {
+  --demo-window-chrome-surface: var(--surface);
   position: relative;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -1219,6 +1220,16 @@ code,
   height: 48px;
   border-bottom: 1px solid var(--border-soft);
   background: var(--surface);
+}
+
+/* DemoWindowChrome owns the canonical 48px row. The Hero keeps its real app
+   split inside that row: 320px sidebar chrome plus the active page header. */
+.hero-chrome-content {
+  position: absolute;
+  inset: 0 0 auto;
+  display: flex;
+  align-items: stretch;
+  height: var(--chrome-h);
 }
 
 .bar-left {
@@ -1389,10 +1400,15 @@ code,
 }
 
 .editor-ic {
-  width: 17px;
-  height: 17px;
+  width: 16px;
+  height: 16px;
   border-radius: 3px;
   display: block;
+}
+
+.editor-chevron {
+  display: inline-flex;
+  color: var(--subtle);
 }
 
 .chev-xs {
@@ -1442,7 +1458,7 @@ code,
   border: 0;
   border-radius: var(--r-control);
   background: transparent;
-  color: inherit;
+  color: var(--subtle);
   cursor: pointer;
 }
 
@@ -1474,6 +1490,11 @@ code,
 .side-row-new .side-act {
   flex: 1;
   min-width: 0;
+}
+
+.side-row-new > :first-child {
+  min-width: 0;
+  flex: 1;
 }
 
 .side-search {
@@ -1568,6 +1589,10 @@ code,
   font-size: 11.5px;
   color: var(--subtle);
   padding: 13px 8px 5px;
+}
+
+.hero-thread-rail {
+  font-size: 13px;
 }
 
 .threads {
@@ -5591,7 +5616,7 @@ code,
   padding-inline: var(--row-pad);
   border-bottom: 1px solid var(--border-soft);
   border-radius: var(--r-card) var(--r-card) 0 0;
-  background: var(--surface-1);
+  background: var(--demo-window-chrome-surface, var(--surface-1));
 }
 
 .demo-window__chrome-leading,
@@ -5626,6 +5651,7 @@ code,
   background: transparent;
   color: var(--ink);
   font: inherit;
+  font-size: 13.5px;
   text-align: left;
   cursor: pointer;
   transition: none;

@@ -182,6 +182,7 @@ describe("demo app canonical CSS contract", () => {
 
 describe("migrated demo source contract", () => {
   it.each([
+    ["HeroAppMock", "function Band"],
     ["SubagentsDemo", "const ASK_BEATS"],
     ["BuildDemo", "type GangProvider"],
     ["GangDemo", "const BEAT_MS"],
@@ -198,11 +199,28 @@ describe("migrated demo source contract", () => {
         /\b(?:trow|sub-row|gang-row|is-open|spawn-new|sub-dot|gang-wait|gang-kid|sub-kids|sub-guide|sub-group|build-thread-group)\b/,
       );
       expect(source).not.toMatch(/<a\b/);
+      if (name === "HeroAppMock") {
+        expect(source).toContain("<DemoSidebarActionRow");
+        expect(source).toContain("<DemoWindowChrome");
+        expect(source).not.toContain('className="mock-bar"');
+      }
       if (name === "SubagentsDemo") {
         expect(source).not.toMatch(/<button\b/);
       }
     },
   );
+
+  it("keeps Hero search at the displayed-project boundary and non-thread views unselected", () => {
+    const source = demoFunctionSource("HeroAppMock", "function Band");
+
+    expect(source).toContain("threads={heroThreads}");
+    expect(source).toContain("projects={visibleProjects}");
+    expect(source).not.toMatch(/threads=\{visible/i);
+    expect(source).toContain(
+      'const selectedId = view === "thread" && !searchOpen ? activeId : null;',
+    );
+    expect(source).toContain("href: heroDemoHref(candidate.id)");
+  });
 
   it("keeps Build search at the displayed-project boundary", () => {
     const source = demoFunctionSource("BuildDemo", "type GangProvider");
