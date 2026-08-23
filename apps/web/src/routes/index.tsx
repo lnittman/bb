@@ -4526,6 +4526,9 @@ function causeStage(phase: SpawnPhase, i: number) {
 function SpawnDemo() {
   const { ref, phase } = useSpawnMachine();
   const [picked, setPicked] = useState<string | null>(null);
+  // Reading a thread clears its dot for good. The dot is unread state, not a
+  // stand-in for "not currently selected".
+  const [read, setRead] = useState<ReadonlySet<string>>(() => new Set());
   const cli = causeStage(phase, 0);
   const tg = causeStage(phase, 1);
   const cron = causeStage(phase, 2);
@@ -4566,14 +4569,17 @@ function SpawnDemo() {
                   (open.id === c.id ? " is-open" : "")
                 }
                 aria-pressed={open.id === c.id}
-                onClick={() => setPicked(c.id)}
+                onClick={() => {
+                  setPicked(c.id);
+                  setRead((current) => new Set(current).add(c.id));
+                }}
               >
                 <Glyph className="gang-pv" />
                 <span className="sub-title">
                   {st >= 3 ? c.title : "New thread"}
                 </span>
                 {st >= 4 ? (
-                  open.id === c.id ? null : (
+                  read.has(c.id) ? null : (
                     <i className="sub-dot" />
                   )
                 ) : st >= 2 ? (
