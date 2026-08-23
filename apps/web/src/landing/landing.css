@@ -704,8 +704,9 @@ code,
 .section-lead {
   max-width: 52ch;
   margin: 14px auto 0;
-  font-size: 16.5px;
-  line-height: 1.55;
+  font-size: 15px;
+  line-height: 1.6;
+  letter-spacing: -0.011em;
   color: var(--dim);
   text-align: center;
   text-wrap: pretty;
@@ -1030,10 +1031,11 @@ code,
 }
 
 .hero h1 {
-  font-size: clamp(38px, 5vw, 72px);
-  line-height: 1.02;
-  font-weight: 640;
-  letter-spacing: -0.045em;
+  font-size: clamp(36px, 5vw, 64px);
+  line-height: 1;
+  font-weight: 510;
+  font-variation-settings: "wght" 510;
+  letter-spacing: -0.022em;
   /* 26ch, not 12. The old cap held the line to 367px and forced "The IDE that
      builds itself" into two rows at every width — the break was the container,
      not the type. It sets on one line now wherever one line fits, and
@@ -6093,7 +6095,7 @@ code,
 .stat-cards {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(14px, 1.6vw, 22px);
   text-align: center;
 }
@@ -6280,24 +6282,6 @@ code,
    down, which lands "the IDE that builds itself" harder than the percentage
    above it does. So it is quiet by design — monospace, small, low contrast.
    It is a fact in the margin, not a badge. */
-.pr-agent {
-  flex: none;
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.02em;
-  color: var(--subtle);
-  padding: 2px 6px;
-  border-radius: 5px;
-  background: color-mix(in oklab, var(--ink-strong) 6%, transparent);
-}
-
-/* The marker takes the auto margin when present, so the meta follows it
-   rather than fighting it for the right edge. */
-.pr-agent + .pr-meta {
-  margin-left: 0;
-}
-
 .pr-meta {
   flex: none;
   margin-left: auto;

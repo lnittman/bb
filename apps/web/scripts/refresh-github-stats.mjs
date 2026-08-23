@@ -51,25 +51,7 @@ const merged = await (
   )
 ).json();
 
-// Of those, the ones an agent wrote. Both searches are ordered by creation
-// date so the two result sets cover the same window; the agent query pulls a
-// deeper page because the feed only needs its numbers as a membership test,
-// and a shallow best-match page shares almost nothing with the merged page.
-// Of those, the ones an agent wrote: the repo requires agent-created PRs to
-// carry an "AGENT GENERATED: by <model>" line, so the tag is countable.
-const agentMerged = await (
-  await api(
-    `/search/issues?q=${encodeURIComponent(
-      `repo:${REPO} is:pr is:merged merged:>${since} "AGENT GENERATED"`,
-    )}&sort=created&order=desc&per_page=100`,
-  )
-).json();
-
-// The feed itself, from the same two queries. A row is marked as agent-written
-// when its number appears in the "AGENT GENERATED" result set — the same tag
-// the aggregate count is built from, so the feed and the stat can never
-// disagree. lnittman is excluded: it is the author of this page.
-const agentNumbers = new Set(agentMerged.items.map((pr) => pr.number));
+// The feed. lnittman is excluded: it is the author of this page.
 const feed = merged.items
   .filter((pr) => pr.user.login !== "lnittman")
   .slice(0, 18)
@@ -82,17 +64,15 @@ const feed = merged.items
       month: "short",
       day: "numeric",
     }),
-    agent: agentNumbers.has(pr.number),
   }));
 writeFileSync(FEED_OUT, `${JSON.stringify(feed, null, 2)}\n`);
-console.log("Wrote", FEED_OUT, `${feed.length} rows,`, `${feed.filter((p) => p.agent).length} agent-written`);
+console.log("Wrote", FEED_OUT, `${feed.length} rows`);
 
 const stats = {
   stars: repo.stargazers_count,
   forks: repo.forks_count,
   contributors: Number(lastPage),
   mergedLastMonth: merged.total_count,
-  agentMergedLastMonth: agentMerged.total_count,
   fetchedAt: new Date().toISOString().slice(0, 10),
 };
 writeFileSync(OUT, `${JSON.stringify(stats, null, 2)}\n`);

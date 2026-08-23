@@ -6,9 +6,12 @@
   font-weight: 500;
 }
 
+/* Centred like a landing section: title, then the lead on the landing's own
+   measure, then the meta row under both. */
 .page-head {
   padding: 72px 0 40px;
   border-bottom: 1px solid var(--border-soft);
+  text-align: center;
 }
 
 .page-head h1 {
@@ -20,10 +23,15 @@
 }
 
 .page-head .sub {
-  margin-top: 14px;
+  /* The landing's .section-lead, so a page head and a section head read the
+     same: 15px on 160%, -0.011em, 52ch, centred. */
+  max-width: 52ch;
+  margin: 14px auto 0;
   color: var(--dim);
-  font-size: 17px;
-  max-width: 540px;
+  font-size: 15px;
+  line-height: 1.6;
+  letter-spacing: -0.011em;
+  text-wrap: pretty;
 }
 
 .page-head .meta-row {
@@ -31,6 +39,7 @@
   display: flex;
   gap: 18px;
   align-items: center;
+  justify-content: center;
   font-size: 13.5px;
 }
 

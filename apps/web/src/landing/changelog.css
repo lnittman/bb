@@ -114,7 +114,6 @@
   margin-top: 14px;
   color: var(--dim);
   font-size: 16.5px;
-  max-width: 38em;
 }
 
 .release-body h3 {
@@ -130,7 +129,6 @@
   margin-top: 12px;
   color: var(--dim);
   font-size: 15px;
-  max-width: 44em;
 }
 
 .release-body ul {
@@ -146,7 +144,6 @@
   padding-left: 20px;
   color: var(--dim);
   font-size: 15px;
-  max-width: 44em;
 }
 
 /* Inline links in release prose, mostly the @handle credits in Thanks. The

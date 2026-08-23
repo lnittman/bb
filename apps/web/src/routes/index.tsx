@@ -4717,14 +4717,6 @@ function PRFeed() {
               </span>
             )}
             <span className="pr-title">{pr.title}</span>
-            {pr.agent ? (
-              <span
-                className="pr-agent"
-                title="Written by an agent running in bb"
-              >
-                agent
-              </span>
-            ) : null}
             <span className="pr-meta">
               #{pr.number} · {pr.date}
             </span>
@@ -5075,16 +5067,6 @@ function LandingPage() {
           <li>
             <StatNumber value={String(GITHUB_STATS.mergedLastMonth)} />
             <span>PRs merged last month</span>
-          </li>
-          {/* This replaced the fork count, which said nothing a reader could
-              use. It is the page's headline restated as a measurement, and it
-              sits beside the total on purpose: 436 of 721 needs no percentage
-              because the two numbers are adjacent. Same source as the `agent`
-              markers in the feed below — the "AGENT GENERATED" tag the repo
-              requires — so the stat and the rows cannot disagree. */}
-          <li>
-            <StatNumber value={String(GITHUB_STATS.agentMergedLastMonth)} />
-            <span>of those, written by agents</span>
           </li>
         </ul>
         <PRFeed />
