@@ -4256,15 +4256,15 @@ code,
   min-width: 0;
 }
 
-/* A thread you are looking at is scrolled to the bottom, so the newest line
-   sits just above the composer. Bottom-aligning the feed is both truer than
-   top-aligning it and the reason these panes no longer carry a band of dead
-   space under the last message. */
+/* Top-down, as the app's ThreadTimelineSurface is: a short transcript leaves
+   its space below the last line, above the composer. The feed used to
+   bottom-anchor here while the hero's read top-down -- two recreations of
+   one pane disagreeing, and the anchoring was a convention the app does not
+   have. */
 .gang-feed {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
   gap: 11px;
   min-height: 158px;
   padding-bottom: 14px;
