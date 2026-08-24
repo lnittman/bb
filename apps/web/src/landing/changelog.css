@@ -1,6 +1,6 @@
 /* bb changelog — loads alongside landing.css and reuses its tokens (--ink,
-   --border-soft, …) plus the hero mock's sidebar classes (.side-label, .trow,
-   .thread-kids, .tstatus, .trun) for the release visuals. Layout follows the
+   --border-soft, …) plus the demo primitives (.demo-project-row,
+   .demo-thread-row, .demo-sidebar-action-row) for the release visuals. Layout follows the
    Cursor-changelog shape: a sticky version rail beside each release body. */
 
 /* ── Page header ─────────────────────────────────────────────────── */
@@ -361,7 +361,8 @@
 }
 
 /* The media card holds app-mock markup, not prose — undo the release-body
-   list styling so .threads/.trow render exactly as they do in landing.css. */
+   list styling so the demo primitives render exactly as they do in
+   landing.css. */
 .release-body .feature-media ul {
   margin-top: 0;
   display: block;
@@ -390,15 +391,6 @@
   box-shadow:
     0 1px 0 color-mix(in oklab, var(--shade) 4%, transparent),
     0 22px 44px -24px color-mix(in oklab, var(--shade) 32%, transparent);
-}
-
-.sidebar-card .side-label:first-child {
-  padding-top: 5px;
-}
-
-/* Rows are decorative here, not clickable like the hero mock's. */
-.sidebar-card .trow {
-  cursor: default;
 }
 
 /* ── Responsive ──────────────────────────────────────────────────── */

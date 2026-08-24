@@ -1267,8 +1267,8 @@ code,
 }
 
 .bar-nav .ri {
-  width: 17px;
-  height: 17px;
+  width: 16px;
+  height: 16px;
 }
 
 .bar-main {
@@ -1281,8 +1281,8 @@ code,
 }
 
 .bar-ic {
-  width: 17px;
-  height: 17px;
+  width: 16px;
+  height: 16px;
   color: var(--subtle);
 }
 
@@ -1585,60 +1585,8 @@ code,
   color: var(--dim);
 }
 
-.side-label {
-  font-size: 11.5px;
-  color: var(--subtle);
-  padding: 13px 8px 5px;
-}
-
 .hero-thread-rail {
   font-size: 13px;
-}
-
-.threads {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  /* space-y-px on the app's thread-row wrappers (ProjectRow.tsx:1141). */
-  gap: 1px;
-}
-
-.trow {
-  height: var(--thread-row-h);
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: var(--row-gap);
-  padding: var(--row-pad);
-  border: 0;
-  border-radius: var(--r-control);
-  background: none;
-  cursor: pointer;
-  text-align: left;
-  font: inherit;
-  color: var(--dim);
-  transition: none;
-}
-
-.trow.active {
-  background: color-mix(in oklab, var(--ink) 7%, var(--bg));
-  color: var(--ink);
-}
-
-.trow-glyph {
-  width: 15px;
-  height: 15px;
-  flex-shrink: 0;
-  color: var(--subtle);
-}
-
-.trow-title {
-  flex: 1;
-  min-width: 0;
-  font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .side-empty {
@@ -1647,45 +1595,10 @@ code,
   color: var(--subtle);
 }
 
-/* Fixed-width centered box so every status (spinner / check / dot) aligns,
-   regardless of its own size. */
-.tstatus {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-}
-
-/* Status glyphs mirror the real app: all muted gray, no green/orange.
-   Working/done sit back; the needs-input bubble is a touch more present. */
-.trun {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  color: var(--subtle);
-  animation: spin 0.9s linear infinite;
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
-}
-
-.tdone {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  color: var(--subtle);
-}
-
-.twait {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  color: var(--dim);
 }
 
 /* main thread pane */
@@ -2317,8 +2230,8 @@ code,
 }
 
 .bar-toggle .ri {
-  width: 17px;
-  height: 17px;
+  width: 16px;
+  height: 16px;
 }
 
 /* Diff / secondary panel. */
@@ -2529,8 +2442,8 @@ code,
 }
 
 .diff-file-disclosure {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
   color: var(--subtle);
 }
 
@@ -2539,8 +2452,8 @@ code,
 }
 
 .diff-file-ic {
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
   color: var(--subtle);
 }
 
@@ -2675,7 +2588,6 @@ code,
   }
 
   .side-act:hover,
-  .trow:hover,
   .askq-opt:hover {
     background: var(--state-hover);
   }
@@ -4329,49 +4241,11 @@ code,
   margin-top: var(--row-pad);
 }
 
-.gang-row {
-  gap: 10px;
-}
-
-.gang-demo .gang-row,
-.build-demo .gang-row {
-  gap: var(--row-gap);
-}
-
-/* space-between would strand the title in the middle of the row; the title
-   takes the free space so every row reads on one left rail. */
-.gang-row .sub-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.gang-row.is-open {
-  background: var(--state-hover);
-}
-
-.gang-pv {
-  flex: none;
-  width: 15px;
-  height: 15px;
-  color: var(--dim);
-}
-
 .gang-wait {
   flex: none;
   width: 15px;
   height: 15px;
   color: var(--warn, var(--dim));
-}
-
-.gang-kid {
-  padding-left: var(--rail-indent);
-}
-
-.gang-gap {
-  margin-top: 14px;
 }
 
 /* The open thread: a compact transcript over the composer's anatomy. */
@@ -4534,8 +4408,8 @@ code,
 }
 
 .gang-pr-ic {
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
   flex: none;
   color: var(--subtle);
 }
@@ -4650,8 +4524,8 @@ code,
 }
 
 .gang-ctx-ic {
-  width: 13px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
   flex: none;
   color: var(--subtle);
 }
@@ -4665,8 +4539,8 @@ code,
 }
 
 .gang-ctx-spin {
-  width: 13px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
   flex: none;
   margin-left: auto;
   color: var(--subtle);
@@ -5945,8 +5819,8 @@ a.demo-thread-row:focus-visible {
 }
 
 .sub-top-ic {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   flex: none;
   color: var(--dim);
 }
@@ -5961,62 +5835,11 @@ a.demo-thread-row:focus-visible {
   flex: none;
 }
 
-.sub-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Rail rows reset the element they happen to be. The scope is in :where() so
-   it adds no specificity: state rules below then outrank this on their own,
-   for every rail row in every demo, whether it is an <a> or a <button>. */
-:where(.sub-demo, .build-demo, .gang-demo, .spawn-demo)
-  :where(a, button).sub-row {
-  width: 100%;
-  border: 0;
-  background: none;
-  font: inherit;
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
-  transition: none;
-}
-
-/* --state-active and --sidebar-accent, at the app's own strengths. The
-   landing was carrying roughly half of each, which read as a dead rail. */
-.sub-row.is-open {
-  background: color-mix(in oklab, var(--ink) 11.8%, transparent);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  :where(.sub-demo, .build-demo, .gang-demo, .spawn-demo)
-    .sub-row:not(.is-open):hover {
-    background: color-mix(in oklab, var(--ink) 8%, var(--bg));
-  }
-}
-
-:where(.sub-demo, .build-demo, .gang-demo, .spawn-demo) .sub-row:focus-visible {
-  outline: 2px solid color-mix(in oklab, var(--ink-strong) 45%, transparent);
-  outline-offset: -2px;
-}
-
 .sub-main-title {
   font-size: 13px;
   font-weight: 600;
   color: var(--ink-strong);
   padding-bottom: 4px;
-}
-
-/* The app's unread-success indicator: a 5px dot at muted/60. It is the only
-   thing the rail shows for a finished thread — never a check. */
-.sub-dot {
-  flex: none;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: color-mix(in oklab, var(--dim) 60%, transparent);
 }
 
 /* The open thread beside the rail: real text is not the point here, so the
@@ -6030,49 +5853,6 @@ a.demo-thread-row:focus-visible {
   border-left: 1px solid var(--border-soft);
   overflow: hidden;
   min-width: 0;
-}
-
-/* CHROME_SECTION_LABEL_CLASS: 12px, normal weight, 20px leading, subtle at
-   75%, and the row's own 8px lead. No uppercase, no tracking — the app has
-   neither; a project header reads lowercase because the project name is. */
-.sub-group {
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 20px;
-  padding-left: 8px;
-  color: color-mix(in oklab, var(--subtle) 75%, transparent);
-  margin-bottom: 4px;
-}
-
-/* Row metrics come from the app's sidebar: 8px leading pad, no trailing pad,
-   8px gap, rounded-md, and a 28px row that grows to a real tap target on
-   coarse pointers. */
-.sub-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--row-gap);
-  height: var(--thread-row-h);
-  padding: var(--row-pad);
-  border-radius: var(--r-control);
-  color: var(--ink);
-}
-
-.sub-kids > .sub-row {
-  padding-left: var(--rail-indent);
-}
-
-.sub-row svg {
-  flex: none;
-  width: 15px;
-  height: 15px;
-}
-
-/* Hermes messages bb from Telegram, so his row carries an avatar, not a
-   glyph — round, like every other avatar in the product. */
-.sub-row img.gang-pv {
-  border-radius: 50%;
-  object-fit: cover;
 }
 
 .dm-spin {
@@ -6090,17 +5870,6 @@ a.demo-thread-row:focus-visible {
   color: var(--ok);
 }
 
-/* Nesting, as the app actually draws it: one 1px hairline spanning the whole
-   child group (ProjectRow's ThreadTreeGroupLine), sitting at the parent
-   glyph's centre, and a 24px indent step on the row itself. No per-row
-   border, no rounded stub, no ↳ — the app has none of those. */
-.sub-kids {
-  /* The app's step is 24px on top of the row's own 8px lead. */
-  --rail-indent: 32px;
-  --rail-guide: 16px;
-  position: relative;
-}
-
 .sub-guide {
   position: absolute;
   top: 0;
@@ -6110,14 +5879,6 @@ a.demo-thread-row:focus-visible {
   background: var(--border);
   opacity: 0.7;
   pointer-events: none;
-}
-
-.sub-child {
-  padding-left: var(--rail-indent);
-}
-
-.sub-quiet {
-  color: var(--dim);
 }
 
 .ask-demo {
@@ -7377,9 +7138,6 @@ html:not(.dark) .cg-plate {
   .review-file-head,
   .review-fold,
   .build-demo .side-act,
-  .build-demo a.sub-row,
-  .gang-demo a.sub-row,
-  .sub-demo a.sub-row,
   .build-queue-row {
     min-height: 36px;
   }
@@ -7403,13 +7161,8 @@ html:not(.dark) .cg-plate {
     stroke-dashoffset: 0;
   }
 
-  .trun {
-    animation: none;
-  }
-
   .btn,
   .plogo,
-  .trow,
   .side {
     transition: none;
   }
@@ -8269,9 +8022,7 @@ html:not(.dark) .cg-plate {
 
 /* Rows are on or off. A thread row that fades its tile reads as laggy next
    to the app, which repaints it instantly. */
-.trow,
 .side-act,
-.sub-row,
 .askq-opt,
 .ask-opt,
 .ap-opt,

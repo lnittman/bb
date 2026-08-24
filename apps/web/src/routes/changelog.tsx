@@ -1,5 +1,13 @@
-import { Loading03Icon, Mail01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  BrainIcon,
+  BubbleChatAddIcon,
+  CheckListIcon,
+  File01Icon,
+  Mail01Icon,
+  TimeScheduleIcon,
+  ToolboxIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Fragment, useEffect } from "react";
 import type { ReactNode } from "react";
@@ -9,6 +17,14 @@ import { initAnalytics } from "../landing/analytics";
 import type { Release, ReleaseBlock } from "../landing/changelog";
 import { RELEASE_META, parseChangelog } from "../landing/changelog";
 import { ChangelogInline } from "../landing/changelog-inline";
+import {
+  type DemoIcon,
+  DemoSidebarActionRow,
+  type DemoThread,
+  type DemoThreadProject,
+  DemoThreadRail,
+  DemoThreadScene,
+} from "../landing/demo-app-primitives";
 import {
   focusSubscribeEmail,
   SUBSCRIBE_EMAIL_ID,
@@ -65,49 +81,102 @@ function anchorId(version: string): string {
    floating slice of the app sidebar, reusing the hero mock's classes from
    landing.css so it matches the real app (and the homepage) exactly. */
 
+/** Hugeicons need an `icon` prop; the primitive wants a plain component. */
+function glyph(icon: IconSvgElement): DemoIcon {
+  return function Glyph({ className }: { className?: string }) {
+    return <HugeiconsIcon icon={icon} className={className} />;
+  };
+}
+
+const BY_MACHINE_THREADS: readonly DemoThread[] = [
+  {
+    id: "special-case",
+    title: "Special Case Handling",
+    tone: "normal",
+    leading: { kind: "none" },
+    activity: { kind: "working", label: "Running" },
+    attentionRevision: 0,
+    initialReadThroughRevision: 0,
+    interaction: "scenery",
+  },
+  {
+    id: "desloppify",
+    title: "Desloppify High-Priority Worker",
+    tone: "normal",
+    leading: { kind: "none" },
+    activity: { kind: "idle" },
+    attentionRevision: 0,
+    initialReadThroughRevision: 0,
+    interaction: "scenery",
+  },
+  {
+    id: "first-principles",
+    title: "First-principles codebase simplification",
+    tone: "normal",
+    leading: { kind: "none" },
+    activity: { kind: "idle" },
+    attentionRevision: 0,
+    initialReadThroughRevision: 0,
+    interaction: "scenery",
+  },
+  {
+    id: "design-changelog",
+    title: "Design Changelog Page",
+    tone: "normal",
+    leading: { kind: "none" },
+    activity: { kind: "idle" },
+    attentionRevision: 0,
+    initialReadThroughRevision: 0,
+    // The selected row links to this release's own anchor: a real in-page
+    // target, so the anchor the primitive renders is genuinely navigable.
+    interaction: "openable",
+    href: "#0-0-30",
+  },
+];
+
+/* Machines are the app's project-level grouping here, so each becomes a
+   32px project row over its 28px threads, with the child nested under its
+   parent at the rail's real indent. */
+const BY_MACHINE_PROJECTS: readonly DemoThreadProject[] = [
+  {
+    id: "air",
+    label: "Sawyer\u2019s MacBook Air",
+    rows: [
+      { threadId: "special-case", children: [] },
+      {
+        threadId: "desloppify",
+        children: [{ threadId: "first-principles", children: [] }],
+      },
+    ],
+  },
+  {
+    id: "pro",
+    label: "Sawyer\u2019s MacBook Pro",
+    rows: [{ threadId: "design-changelog", children: [] }],
+  },
+];
+
 function ByMachineSidebar() {
   return (
     <div className="feature-media">
       <div className="media-stage">
-        <div
-          className="sidebar-card"
-          role="img"
-          aria-label="bb sidebar grouped by machine, with threads running on two computers"
+        <DemoThreadScene
+          threads={BY_MACHINE_THREADS}
+          selectedId="design-changelog"
+          onSelectedIdChange={() => {}}
         >
-          <div className="side-label">Sawyer&rsquo;s MacBook Air</div>
-          <ul className="threads">
-            <li>
-              <div className="trow">
-                <span className="trow-title">Special Case Handling</span>
-                <span className="tstatus" aria-hidden>
-                  <HugeiconsIcon icon={Loading03Icon} className="trun" />
-                </span>
-              </div>
-            </li>
-            <li>
-              <div className="trow">
-                <span className="trow-title">Desloppify High-Priority Worker</span>
-              </div>
-              <ul className="threads thread-kids">
-                <li>
-                  <div className="trow trow-kid">
-                    <span className="trow-title">
-                      First-principles codebase simplification
-                    </span>
-                  </div>
-                </li>
-              </ul>
-            </li>
-          </ul>
-          <div className="side-label">Sawyer&rsquo;s MacBook Pro</div>
-          <ul className="threads">
-            <li>
-              <div className="trow active">
-                <span className="trow-title">Design Changelog Page</span>
-              </div>
-            </li>
-          </ul>
-        </div>
+          <div
+            className="sidebar-card"
+            role="group"
+            aria-label="bb sidebar grouped by machine, with threads running on two computers"
+          >
+            <DemoThreadRail
+              ariaLabel="Threads by machine"
+              header={null}
+              projects={BY_MACHINE_PROJECTS}
+            />
+          </div>
+        </DemoThreadScene>
       </div>
     </div>
   );
@@ -115,31 +184,34 @@ function ByMachineSidebar() {
 
 /* 0.35.0: plugin pages became flat sidebar rows, and Automations split out
    from Extensions. Both are named in that release's own notes. */
+const PLUGIN_PAGES: readonly { label: string; Icon: DemoIcon }[] = [
+  { label: "Extensions", Icon: glyph(ToolboxIcon) },
+  { label: "Automations", Icon: glyph(TimeScheduleIcon) },
+  { label: "Tasks", Icon: glyph(CheckListIcon) },
+  { label: "Memory", Icon: glyph(BrainIcon) },
+  { label: "Docs", Icon: glyph(File01Icon) },
+  { label: "Side chat", Icon: glyph(BubbleChatAddIcon) },
+];
+
 function PluginSidebar() {
   return (
     <div className="feature-media">
       <div className="media-stage">
         <div
           className="sidebar-card"
-          role="img"
+          role="group"
           aria-label="bb sidebar with plugin pages as flat rows, Automations separate from Extensions"
         >
-          <ul className="threads">
-            {[
-              "Extensions",
-              "Automations",
-              "Tasks",
-              "Memory",
-              "Docs",
-              "Side chat",
-            ].map((page) => (
-              <li key={page}>
-                <div className={page === "Tasks" ? "trow active" : "trow"}>
-                  <span className="trow-title">{page}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {PLUGIN_PAGES.map((page) => (
+            <DemoSidebarActionRow
+              key={page.label}
+              label={page.label}
+              Icon={page.Icon}
+              selected={page.label === "Tasks"}
+              onActivate={() => {}}
+              trailing={null}
+            />
+          ))}
         </div>
       </div>
     </div>

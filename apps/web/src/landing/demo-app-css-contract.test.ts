@@ -13,6 +13,13 @@ const routeSource = readFileSync(
   join(landingDirectory, "../routes/index.tsx"),
   "utf8",
 );
+const changelogSource = readFileSync(
+  join(landingDirectory, "../routes/changelog.tsx"),
+  "utf8",
+);
+/** Row/status/chrome vocabulary the primitives replaced. None may return. */
+const LEGACY_DEMO_CLASS =
+  /\b(?:trow|trow-kid|trow-glyph|trow-title|threads|thread-kids|sub-row|gang-row|spawn-new|sub-dot|tstatus|trun|tdone|twait|gang-pv|sub-quiet|sub-kids|sub-group|gang-gap|sub-child|gang-kid|side-label)\b/;
 
 const CANONICAL_START = "/* demo-app-primitives: start */";
 const CANONICAL_END = "/* demo-app-primitives: end */";
@@ -244,5 +251,50 @@ describe("migrated demo source contract", () => {
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/\/\/.*$/gm, "");
     expect(routeWithoutComments).not.toMatch(/<select\b/);
+  });
+});
+
+describe("legacy demo vocabulary is banned at the source", () => {
+  it("keeps every legacy row/status class out of the route sources", () => {
+    for (const [name, source] of [
+      ["index.tsx", routeSource],
+      ["changelog.tsx", changelogSource],
+    ] as const) {
+      const classNames = [...source.matchAll(/className=\{?"([^"]+)"/g)].map(
+        (match) => match[1] ?? "",
+      );
+      const offenders = classNames.filter((value) =>
+        LEGACY_DEMO_CLASS.test(value),
+      );
+      expect(offenders, `${name} still uses legacy demo classes`).toEqual([]);
+    }
+  });
+
+  it("keeps every legacy selector out of the stylesheet", () => {
+    const offenders = selectorsContaining(css, LEGACY_DEMO_CLASS);
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps app-recreation glyphs on the 12/14/16 vocabulary", () => {
+    for (const selector of [
+      ".bar-nav .ri",
+      ".bar-ic",
+      ".bar-toggle .ri",
+      ".diff-file-disclosure",
+      ".diff-file-ic",
+      ".gang-pr-ic",
+      ".gang-ctx-ic",
+      ".gang-ctx-spin",
+      ".sub-top-ic",
+    ]) {
+      const body = ruleBody(css, selector);
+      const sizes = [...body.matchAll(/(?:width|height):\s*(\d+)px/g)].map(
+        (match) => Number(match[1]),
+      );
+      expect(sizes.length, `${selector} sizes its glyph`).toBeGreaterThan(0);
+      for (const size of sizes) {
+        expect([12, 14, 16], `${selector} uses ${size}px`).toContain(size);
+      }
+    }
   });
 });
