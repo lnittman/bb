@@ -1978,6 +1978,14 @@ code,
   color: var(--subtle);
 }
 
+/* Collapsed, the composer is a single line. A long placeholder must clip at the
+   right edge the way the app's does, not wrap to a second line that the row's
+   height then cuts off (visible on a narrow hero). Expanded (5 rows) it wraps. */
+.composer-box:not(.composer-expanded) .composer-input {
+  white-space: nowrap;
+  overflow: hidden;
+}
+
 .composer-row {
   display: flex;
   align-items: center;
@@ -2211,6 +2219,10 @@ code,
   padding: 3px 6px;
   color: var(--spark);
   font-weight: 500;
+  /* "Full Access" is two words; without this it wraps to a second line, which
+     doubles the row height and spills the label past the clipped row. The row
+     stays a single 24px line, as the app's does. */
+  white-space: nowrap;
 }
 
 .ctx-spin {
