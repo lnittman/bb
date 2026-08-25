@@ -3725,7 +3725,8 @@ function AgentChat() {
   );
 }
 
-const BUILD_PROMPT = "Add Tasks as a built-in plugin";
+const BUILD_PROMPT =
+  "Add a review queue plugin: a bb review command, a skill, and a sidebar panel.";
 
 const BUILD_NEW_THREAD = {
   id: "new",
@@ -3736,21 +3737,56 @@ const BUILD_NEW_THREAD = {
 
 const BUILD_THREADS = [
   {
-    id: "build",
+    id: "build-codex",
     project: "storefront",
-    title: BUILD_PROMPT,
+    title: "Add a review queue plugin",
+    provider: "codex" as GangProvider,
     lines: [
       { kind: "you", text: BUILD_PROMPT },
-      { kind: "step", text: "Read plugins/tasks/package.json" },
-      { kind: "step", text: "Opened the Tasks app entry" },
-      { kind: "step", text: "Opened the Tasks server entry" },
       {
         kind: "say",
-        text: "The manifest points to separate app, server, and skills entries. The app registers the Tasks panel, a Task thread action, and task cards.",
+        text: "I'll use the bb-plugin-authoring skill because this adds a bb CLI surface, a skill, and a sidebar panel. First I'll ground in the repo's plugin conventions and the current worktree, then implement and verify.",
+      },
+      { kind: "step", text: "Read the bb-plugin-authoring skill" },
+      {
+        kind: "say",
+        text: "The plugin shape is now locked: queue entries point to bb threads, with a pending → reviewing → completed lifecycle; bb review-queue supports add, list, start, done, reopen, and remove; the sidebar row opens the thread.",
+      },
+      { kind: "step", text: "Edited server.ts" },
+      { kind: "step", text: "Edited app.tsx" },
+      { kind: "step", text: "Edited skills/review-queue/SKILL.md" },
+      {
+        kind: "say",
+        text: "Focused behavior is green: backend lifecycle, CLI, and RPC coverage plus the frontend panel and navigation all pass — 4 tests.",
       },
       {
         kind: "say",
-        text: "The server separately registers the bb tasks CLI, delegation, mentions, lifecycle, and RPC. Tasks is open in the sidebar.",
+        text: "Implemented and committed the review queue plugin. It includes bb review-queue lifecycle commands, a bundled review-queue skill, and a sidebar panel.",
+      },
+    ] satisfies readonly TranscriptLine[],
+  },
+  {
+    id: "build-claude",
+    project: "storefront",
+    title: "Add a review queue plugin",
+    provider: "claude" as GangProvider,
+    lines: [
+      { kind: "you", text: BUILD_PROMPT },
+      { kind: "step", text: "Read the bb-plugin-authoring skill" },
+      {
+        kind: "say",
+        text: "Manifest, server, app, and the skill are written. Build succeeded — now installing into the running bb.",
+      },
+      { kind: "step", text: "Edited server.ts" },
+      { kind: "step", text: "Edited app.tsx" },
+      { kind: "step", text: "Edited skills/review-queue/SKILL.md" },
+      {
+        kind: "say",
+        text: "Typecheck clean. The suite runs without the bb server and passes.",
+      },
+      {
+        kind: "say",
+        text: "Done. The plugin is built, installed, running in this bb, and committed — one durable queue behind three surfaces: a bb review-queue command, a review-queue skill, and a sidebar panel.",
       },
     ] satisfies readonly TranscriptLine[],
   },
@@ -3844,7 +3880,12 @@ const BUILD_DEMO_THREADS = [
     id: thread.id,
     title: thread.title,
     tone: "normal",
-    leading: { kind: "none" },
+    leading:
+      thread.id === "build-codex"
+        ? { kind: "glyph", Icon: OpenAiIcon, size: 16, label: "Codex" }
+        : thread.id === "build-claude"
+          ? { kind: "glyph", Icon: ClaudeIcon, size: 16, label: "Claude Code" }
+          : { kind: "none" },
     activity: { kind: "idle" },
     attentionRevision: 1,
     initialReadThroughRevision: 0,
@@ -3855,9 +3896,27 @@ const BUILD_DEMO_THREADS = [
 
 const BUILD_PROJECT_IDS = ["storefront", "checkout-api"] as const;
 
-type BuildPanelKey = "extensions" | "automations" | "tasks";
+type BuildPanelKey = "review" | "extensions" | "automations" | "tasks";
 
 const BUILD_PANEL_ROWS = {
+  review: [
+    {
+      id: "review-checkout",
+      meta: "Reviewing",
+      title: "Trace order checkout flow",
+    },
+    { id: "review-promo", meta: "Pending", title: "Audit promo code coverage" },
+    {
+      id: "review-cart",
+      meta: "Pending",
+      title: "Summarize checkout cart integration",
+    },
+    {
+      id: "review-release",
+      meta: "Completed",
+      title: "Cut the 1.4 release notes",
+    },
+  ],
   extensions: [
     { id: "plugins-browse", meta: "Plugins", title: "Browse plugins" },
     { id: "plugins-installed", meta: "Plugins", title: "Installed plugins" },
@@ -3884,6 +3943,8 @@ const BUILD_PANEL_ROWS = {
 } as const;
 
 const BUILD_PANEL_DESCRIPTIONS: Record<BuildPanelKey, string | null> = {
+  review:
+    "Queue bb threads for review and move them through pending, reviewing, and completed.",
   extensions: null,
   automations: "Schedule recurring and one-shot agent or script work.",
   tasks:
@@ -3892,9 +3953,9 @@ const BUILD_PANEL_DESCRIPTIONS: Record<BuildPanelKey, string | null> = {
 
 function BuildDemo() {
   const [railOpen, setRailOpen] = useState(true);
-  const [activeThreadId, setActiveThreadId] = useState("build");
-  const [activePanel, setActivePanel] = useState<BuildPanelKey>("tasks");
-  const [selectedPanelRow, setSelectedPanelRow] = useState("task-audit");
+  const [activeThreadId, setActiveThreadId] = useState("build-codex");
+  const [activePanel, setActivePanel] = useState<BuildPanelKey>("review");
+  const [selectedPanelRow, setSelectedPanelRow] = useState("review-checkout");
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const buildSearchRef = useRef<HTMLInputElement>(null);
@@ -3934,6 +3995,10 @@ function BuildDemo() {
               : (BUILD_THREADS.find(
                   (thread) => thread.id === selectedThread?.id,
                 ) ?? BUILD_THREADS[0]);
+          const activeProviderMeta =
+            "provider" in activeThread
+              ? GANG_PROVIDER_META[activeThread.provider]
+              : null;
 
           return (
             <div
@@ -4004,6 +4069,22 @@ function BuildDemo() {
                             placeholder="Search threads"
                           />
                         ) : null}
+                        <button
+                          type="button"
+                          className={
+                            activePanel === "review"
+                              ? "side-act active-act"
+                              : "side-act"
+                          }
+                          aria-pressed={activePanel === "review"}
+                          onClick={() => {
+                            setActivePanel("review");
+                            setSelectedPanelRow("review-checkout");
+                          }}
+                        >
+                          <CheckGlyph className="sa-ic" />
+                          Review
+                        </button>
                         <button
                           type="button"
                           className={
@@ -4083,8 +4164,12 @@ function BuildDemo() {
                   </div>
                   <div className="gang-ctx" aria-hidden>
                     <span className="gang-ctx-item">
-                      <ClaudeIcon className="gang-ctx-ic" />
-                      Opus 4.8
+                      {activeProviderMeta ? (
+                        <activeProviderMeta.Icon className="gang-ctx-ic" />
+                      ) : (
+                        <ClaudeIcon className="gang-ctx-ic" />
+                      )}
+                      {activeProviderMeta ? activeProviderMeta.label : "Opus 4.8"}
                       <ChevronDown className="gang-commit-chev" />
                     </span>
                     <span className="gang-ctx-item">
@@ -4100,7 +4185,9 @@ function BuildDemo() {
                   aria-label={`${activePanel} panel`}
                 >
                   <div className="build-panel-bar">
-                    {activePanel === "tasks" ? (
+                    {activePanel === "review" ? (
+                      <CheckGlyph className="build-panel-ic" />
+                    ) : activePanel === "tasks" ? (
                       <ChecklistGlyph className="build-panel-ic" />
                     ) : activePanel === "automations" ? (
                       <ClockIcon className="build-panel-ic" />
@@ -4108,11 +4195,13 @@ function BuildDemo() {
                       <ToolboxGlyph className="build-panel-ic" />
                     )}
                     <span className="build-panel-title">
-                      {activePanel === "tasks"
-                        ? "Tasks"
-                        : activePanel === "automations"
-                          ? "Automations"
-                          : "Extensions"}
+                      {activePanel === "review"
+                        ? "Review"
+                        : activePanel === "tasks"
+                          ? "Tasks"
+                          : activePanel === "automations"
+                            ? "Automations"
+                            : "Extensions"}
                     </span>
                     <span className="build-panel-actions" aria-hidden>
                       <HugeiconsIcon
@@ -5584,8 +5673,8 @@ function LandingPage() {
           <div className="act-lead">
             <p>
               Ask for a review queue. bb scaffolds the plugin, registers{" "}
-              <code>bb review</code>, writes the skill, and adds the panel to
-              your sidebar.
+              <code>bb review-queue</code>, writes the skill, and adds the panel
+              to your sidebar.
             </p>
             <p className="act-claim">
               The result is a normal plugin you can read, change, and commit.
