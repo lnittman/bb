@@ -301,6 +301,13 @@
   --surface-recessed: color-mix(in oklab, var(--ink) 8%, var(--bg));
   --state-hover: color-mix(in oklab, var(--ink) 9%, var(--bg));
 
+  /* The sidebar's selected and hover tints need more ink on a dark ground, the
+     same as the mixes above. The app's dark sidebar uses 22.5%/12% (its
+     --state-active / --sidebar-accent), not the light 11.8%/8% — so a demo row
+     selected in dark reads at the app's strength instead of a fainter one. */
+  --state-active: color-mix(in oklab, var(--ink) 22.5%, transparent);
+  --sidebar-accent: color-mix(in oklch, var(--ink) 12%, var(--canvas));
+
   /* Re-picked for a dark ground, matching the app's own dark tokens. */
   --accent: oklch(0.72 0.09 250);
   --ok: oklch(0.74 0.15 155);
