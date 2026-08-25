@@ -1126,7 +1126,10 @@ code,
   }
 
   .hero-stage .mock-body {
-    height: 700px;
+    /* Sized to its content, not to a full app viewport: the thread's messages
+       and the Changes panel both nearly fill it, so the window reads as a busy
+       slice of the product rather than a mostly-empty one. */
+    height: 544px;
   }
 }
 

@@ -898,18 +898,22 @@ function AskQuestion({ ask }: { ask: Ask }) {
 
 type DiffLine = { t: "ctx" | "add" | "del"; text: string };
 type DiffGutter = { oldNo: number | null; newNo: number | null };
+// The Changes panel shows the same edit the thread describes: the sidebar
+// search filter landing in ProjectList.tsx. Panel and thread tell one story.
 const DIFF_LINES: DiffLine[] = [
-  { t: "ctx", text: 'it("applies a valid promo", () => {' },
-  { t: "ctx", text: "  const cart = makeCart([item]);" },
-  { t: "del", text: '  expect(applyPromo(cart, "SAVE10"))' },
-  { t: "add", text: '  expect(applyPromo(cart, "SAVE10").total)' },
-  { t: "add", text: "    .toBeCloseTo(8.99);" },
-  { t: "ctx", text: "});" },
+  { t: "ctx", text: "function ProjectList({ threads }: Props) {" },
+  { t: "ctx", text: '  const [query, setQuery] = useState("");' },
   { t: "ctx", text: "" },
-  { t: "add", text: 'it("ignores a null cart", () => {' },
-  { t: "add", text: '  expect(() => applyPromo(null, "SAVE10"))' },
-  { t: "add", text: "    .not.toThrow();" },
-  { t: "add", text: "});" },
+  { t: "ctx", text: "  const visible = useMemo(() => {" },
+  { t: "del", text: "    return threads;" },
+  { t: "add", text: "    if (!query) return threads;" },
+  { t: "add", text: "    return threads.filter((thread) =>" },
+  { t: "add", text: "      thread.title.toLowerCase().includes(query)," },
+  { t: "add", text: "    );" },
+  { t: "ctx", text: "  }, [threads, query]);" },
+  { t: "ctx", text: "" },
+  { t: "ctx", text: "  return <ThreadList rows={visible} />;" },
+  { t: "ctx", text: "}" },
 ];
 
 // The prompt box — used for follow-ups (with a thread) and the new-thread page
@@ -1130,7 +1134,7 @@ function DiffPanel({ onClose }: { onClose: () => void }) {
           }
         />
         <FolderGitIcon className="diff-file-ic" />
-        promo.test.ts
+        ProjectList.tsx
       </button>
       {!collapsed ? (
         <div
