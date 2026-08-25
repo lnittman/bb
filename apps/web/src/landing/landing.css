@@ -3988,6 +3988,24 @@ code,
     border-top: 1px solid var(--border-soft);
     border-radius: 0;
   }
+
+  /* Stacked, the window grows to fit its content instead of holding the
+     desktop's fixed viewport. There is no thread switching at this width — the
+     rail is gone — so the height can be natural and nothing scrolls inside; the
+     page scrolls. This also stops the stacked panel's rows from being squeezed
+     under the fixed height and spilling over its footer. */
+  .build-demo,
+  .gang-demo,
+  .spawn-demo {
+    height: auto;
+  }
+
+  .build-demo .gang-feed,
+  .gang-demo .gang-feed,
+  .spawn-demo .gang-feed,
+  .build-demo .build-panel {
+    overflow: visible;
+  }
 }
 
 /* The context row carries three chips that only fit a wide pane. Narrow, the
@@ -7041,41 +7059,17 @@ html:not(.dark) .cg-plate {
     );
   }
 
-  /* Mobile shows the desktop layout at a legible scale, anchored left, so only
-     its left portion is on screen — the rest bleeds off the right edge.
-     Full-bleed the card across the viewport: pull both edges out to cancel
-     .wrap's 28px side padding, then re-inset the card with padding-left so it
-     still lines up with the page content. overflow-x clips the card's right
-     bleed, but because the clip box now reaches the left screen edge too, the
-     card's drop shadow fades into the left gutter instead of being shaved off
-     at the card's own edge. overflow-y stays visible so the bottom shadow and
-     the scroll-in entrance still show. */
+  /* The hero mock reflows like the other demos on a phone: its rail and
+     changes pane are already hidden below their tiers, so the conversation
+     fills the width and wraps — legibly, the way the app's own thread does on
+     a phone — aligned with the page content rather than kept at real 980px
+     width and faded off the right edge. overflow-x clip is kept as a guard. */
   .mockup-wrap {
-    margin-left: -28px;
-    margin-right: -28px;
-    padding-left: 28px;
     overflow-x: clip;
   }
 
-  /* Real size. Scaling the window to fit put a mandated 32px row at 20.7px
-     and body text near 8.7px; a legible slice of the product beats an
-     illegible whole of it. The window is as wide as it needs to be and the
-     wrap dissolves whatever runs past the edge. */
   .mockup-wrap .mock {
-    width: 980px;
-  }
-
-  .mockup-wrap {
-    -webkit-mask-image: linear-gradient(
-      to right,
-      black calc(100% - 48px),
-      transparent 100%
-    );
-    mask-image: linear-gradient(
-      to right,
-      black calc(100% - 48px),
-      transparent 100%
-    );
+    width: 100%;
   }
 
   /* Left-align the centered statement on mobile so it reads like the bands
