@@ -44,6 +44,10 @@ const outputs = {
     pkgRoot,
     "src/provider-bridge.ts",
   ),
+  "bb-plugin-sdk-provider-bridge-testing.d.ts": path.join(
+    pkgRoot,
+    "src/provider-bridge-testing.ts",
+  ),
   "bb-plugin-sdk-host.d.ts": path.join(pkgRoot, "src/host.ts"),
   "bb-plugin-sdk-internal-composer-customization-validation.d.ts": path.join(
     pkgRoot,
@@ -52,6 +56,10 @@ const outputs = {
   "bb-plugin-sdk-internal-composer-view.d.ts": path.join(
     pkgRoot,
     "src/internal/composer-view.ts",
+  ),
+  "bb-plugin-sdk-internal-file-navigation-validation.d.ts": path.join(
+    pkgRoot,
+    "src/internal/file-navigation-validation.ts",
   ),
   "bb-plugin-sdk-internal-host-policy.d.ts": path.join(
     pkgRoot,

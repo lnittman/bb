@@ -1,7 +1,4 @@
-import {
-  ArrowRight01Icon,
-  CheckmarkCircle02Icon,
-} from "@hugeicons/core-free-icons";
+import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
@@ -11,7 +8,6 @@ import type { CtaPlacement } from "./site";
 import {
   DISCORD_URL,
   GITHUB_URL,
-  PRODUCT_HUNT_URL,
   X_URL,
   SUBSCRIBE_PATH,
   downloadMacosHref,
@@ -91,31 +87,6 @@ export function XLink({ placement, className, children }: CtaLinkProps) {
   );
 }
 
-/** Launch-day announcement pill, in the same shape as the release-notes
- *  callout it replaces. This is bb's own markup rather than Product Hunt's
- *  embed, so it inherits the page's type and color and can ask for the vote
- *  outright. */
-export function ProductHuntCallout({ placement }: { placement: CtaPlacement }) {
-  return (
-    <a
-      className="updates-callout ph-callout"
-      href={PRODUCT_HUNT_URL}
-      target="_blank"
-      rel="noreferrer"
-      onClick={() =>
-        trackLandingEvent({
-          name: "landing_product_hunt_clicked",
-          properties: { placement },
-        })
-      }
-    >
-      <span className="updates-label ph-callout-label">Today</span>
-      <span className="updates-title">Vote for bb on Product Hunt</span>
-      <HugeiconsIcon icon={ArrowRight01Icon} className="updates-arrow" />
-    </a>
-  );
-}
-
 /* ── Email signup ─────────────────────────────────────────────────── */
 
 type SubscribeStatus = "idle" | "submitting" | "success" | "error";
@@ -129,21 +100,43 @@ export function focusSubscribeEmail() {
   document.getElementById(SUBSCRIBE_EMAIL_ID)?.focus();
 }
 
+/**
+ * The landing page renders this twice, so the input id cannot be a constant.
+ * Only the closer's copy keeps SUBSCRIBE_EMAIL_ID: it is the anchor other
+ * pages link to (`#subscribe-email` from the blog and changelog), and two
+ * elements sharing an id would be invalid HTML and would make
+ * `focusSubscribeEmail` depend on document order.
+ */
+function subscribeInputId(placement: CtaPlacement) {
+  return placement === "footer" || placement === "closer"
+    ? SUBSCRIBE_EMAIL_ID
+    : `${SUBSCRIBE_EMAIL_ID}-${placement}`;
+}
+
+/** Deliberately permissive: one @, something either side, a dotted domain. */
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 export function EmailSignup({ placement }: { placement: CtaPlacement }) {
+  const inputId = subscribeInputId(placement);
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<SubscribeStatus>("idle");
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (inputId !== SUBSCRIBE_EMAIL_ID) {
+      return;
+    }
     const hash = window.location.hash.replace(/^#/, "");
     if (hash === SUBSCRIBE_EMAIL_ID || hash === "subscribe") {
       focusSubscribeEmail();
     }
-  }, []);
+  }, [inputId]);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (status === "submitting") {
+    if (status === "submitting" || !isValidEmail(email)) {
       return;
     }
     setStatus("submitting");
@@ -186,9 +179,14 @@ export function EmailSignup({ placement }: { placement: CtaPlacement }) {
   }
 
   return (
-    <form className="subscribe-form" onSubmit={submit} noValidate>
+    <form
+      className="subscribe-form"
+      data-status={status}
+      onSubmit={submit}
+      noValidate
+    >
       <input
-        id={SUBSCRIBE_EMAIL_ID}
+        id={inputId}
         className="subscribe-input"
         type="email"
         name="email"
@@ -197,7 +195,6 @@ export function EmailSignup({ placement }: { placement: CtaPlacement }) {
         required
         placeholder="you@example.com"
         aria-label="Email address"
-        aria-invalid={status === "error"}
         value={email}
         onChange={(event) => {
           setEmail(event.target.value);
@@ -209,7 +206,7 @@ export function EmailSignup({ placement }: { placement: CtaPlacement }) {
       <button
         type="submit"
         className="btn btn-primary subscribe-btn"
-        disabled={status === "submitting"}
+        disabled={status === "submitting" || !isValidEmail(email)}
       >
         {status === "submitting" ? "Subscribing…" : "Subscribe"}
       </button>
@@ -219,5 +216,37 @@ export function EmailSignup({ placement }: { placement: CtaPlacement }) {
         </span>
       ) : null}
     </form>
+  );
+}
+
+/**
+ * The signup, as a room of its own.
+ *
+ * It appears twice: once below the hero mock, where a reader who is already
+ * convinced by the window can act without scrolling the whole page, and once
+ * in the closer. The two carry different `placement` values, so the
+ * click-through data can say which position actually earns the address rather
+ * than crediting one arbitrarily.
+ */
+export function SubscribeCard({
+  placement,
+  title,
+  description = "Product updates and what we\u2019re building next. No spam.",
+  id,
+}: {
+  placement: CtaPlacement;
+  title: string;
+  /** Each page keeps its own line; the container is what they share. */
+  description?: string;
+  id?: string;
+}) {
+  return (
+    <div className="subscribe-card rail" id={id}>
+      <div className="subscribe-card-head">
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </div>
+      <EmailSignup placement={placement} />
+    </div>
   );
 }

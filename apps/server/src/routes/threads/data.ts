@@ -3,6 +3,7 @@ import { formatCustomAcpAgentProviderId } from "@bb/config/bb-app-managed-config
 import {
   getAppSettings,
   getLatestThreadSequence,
+  getLatestStoredConversationOutlineSequence,
   listQueuedThreadMessages,
 } from "@bb/db";
 import type { Hono } from "hono";
@@ -48,9 +49,11 @@ import {
   buildTimelineTurnSummaryDetails,
   THREAD_TIMELINE_DEFAULT_SEGMENT_LIMIT,
   THREAD_TIMELINE_SEGMENT_LIMIT_MAX,
-  type ThreadTimelinePageKind,
-  type ThreadTimelinePageRequest,
 } from "../../services/threads/timeline.js";
+import type {
+  ThreadTimelinePageKind,
+  ThreadTimelinePageRequest,
+} from "../../services/threads/timeline-pagination.js";
 import { createSlowThreadTimelineBuildLogger } from "../../services/threads/timeline-build-log.js";
 import {
   buildThreadTimelineCacheKey,
@@ -69,7 +72,6 @@ import {
   getLastThreadOutput,
   listThreadEventRows,
 } from "../../services/threads/thread-data.js";
-import { findKnownAcpAgentForProviderId } from "../../services/system/known-acp-agents.js";
 import { listThreadPromptHistory } from "../../services/prompt-history.js";
 import { tryResolveExistingThreadExecutionPlan } from "../../services/threads/thread-execution-plan.js";
 import {
@@ -92,10 +94,6 @@ function resolveThreadProviderDisplayName(
   if (customAcpAgent) {
     return customAcpAgent.displayName;
   }
-  const knownAcpAgent = findKnownAcpAgentForProviderId(providerId);
-  if (knownAcpAgent) {
-    return knownAcpAgent.displayName;
-  }
   return deps.providerRegistry.get(providerId)?.info.displayName;
 }
 
@@ -109,7 +107,7 @@ function validateFilePath(filePath: string): void {
   }
 }
 
-export interface ThreadStorageTarget {
+interface ThreadStorageTarget {
   hostId: string;
   storagePath: string;
 }
@@ -197,7 +195,7 @@ function parseThreadTimelinePage(
   };
 }
 
-export async function requireThreadStorageTarget(
+async function requireThreadStorageTarget(
   deps: WorkSessionDeps,
   args: RequireThreadStorageTargetArgs,
 ): Promise<ThreadStorageTarget> {
@@ -315,19 +313,17 @@ export function registerThreadDataRoutes(app: Hono, deps: AppDeps): void {
   const slowTimelineBuildLogger = createSlowThreadTimelineBuildLogger({
     logger: deps.logger,
   });
-  // The conversation outline reprojects the entire thread, so memoize it per
-  // (thread, maxSeq): repeated polls at a stable revision are served from
-  // cache. Any appended event bumps maxSeq and forces a rebuild, so a thread
-  // streaming many deltas rebuilds per batch — acceptable because the client
-  // only fetches the outline when the minimap is mounted and refetches are
-  // driven by the (debounced) realtime invalidation, not per token. The key
-  // omits the provider/env inputs the timeline cache tracks because the outline
-  // emits only event-derived fields (id/role/preview/attachment counts); add
-  // them here if the outline ever surfaces a provider- or workspace-derived
-  // value. A small LRU bounds memory across many viewed threads.
+  // The conversation outline reprojects the entire thread, so memoize it by
+  // the newest event that can affect the outline. Command output, reasoning,
+  // and usage events still advance maxSeq in the response but do not invalidate
+  // the expensive projection. The client also refreshes this full projection
+  // at turn boundaries and overlays the live timeline window while a turn
+  // streams. The key includes thread metadata that can affect grouping; add
+  // provider/env inputs if the outline ever surfaces them. A small LRU bounds
+  // memory across many viewed threads.
   const conversationOutlineCache = new Map<
     string,
-    ThreadConversationOutlineResponse
+    ThreadConversationOutlineResponse["items"]
   >();
   const CONVERSATION_OUTLINE_CACHE_MAX_ENTRIES = 128;
 
@@ -422,13 +418,23 @@ export function registerThreadDataRoutes(app: Hono, deps: AppDeps): void {
   get(routes.conversationOutline, (context) => {
     const thread = requirePublicThread(deps.db, context.req.param("id"));
     const maxSeq = getLatestThreadSequence(deps.db, { threadId: thread.id });
-    const cacheKey = `${thread.id}:${maxSeq}`;
+    const outlineSequence = getLatestStoredConversationOutlineSequence(
+      deps.db,
+      { threadId: thread.id },
+    );
+    const cacheKey = JSON.stringify([
+      thread.id,
+      outlineSequence,
+      thread.status,
+      thread.title,
+      thread.titleFallback,
+    ]);
     const cached = conversationOutlineCache.get(cacheKey);
     if (cached !== undefined) {
       // Re-insert to mark most-recently-used.
       conversationOutlineCache.delete(cacheKey);
       conversationOutlineCache.set(cacheKey, cached);
-      return context.json(cached);
+      return context.json({ items: cached, maxSeq });
     }
     const response = buildThreadConversationOutline(deps.db, thread, {
       maxSeq,
@@ -437,7 +443,7 @@ export function registerThreadDataRoutes(app: Hono, deps: AppDeps): void {
         thread.providerId,
       ),
     });
-    conversationOutlineCache.set(cacheKey, response);
+    conversationOutlineCache.set(cacheKey, response.items);
     while (
       conversationOutlineCache.size > CONVERSATION_OUTLINE_CACHE_MAX_ENTRIES
     ) {
@@ -566,7 +572,7 @@ export function registerThreadDataRoutes(app: Hono, deps: AppDeps): void {
           input: {},
           threadId,
         })
-      )?.defaultView ?? null,
+      )?.resolvedExecution ?? null,
     );
   });
 
@@ -613,6 +619,16 @@ export function registerThreadDataRoutes(app: Hono, deps: AppDeps): void {
       }
       throw error;
     }
+  });
+
+  get(routes.storageLocation, async (context) => {
+    const target = await requireThreadStorageTarget(deps, {
+      threadId: context.req.param("id"),
+    });
+    return context.json({
+      hostId: target.hostId,
+      storageRootPath: target.storagePath,
+    });
   });
 
   get(routes.storageFile, async (context) =>

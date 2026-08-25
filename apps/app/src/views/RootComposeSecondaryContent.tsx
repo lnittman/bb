@@ -43,7 +43,7 @@ export const ROOT_COMPOSE_PINNED_PANEL_TOGGLE_POSITION_CLASS =
 
 type RootSecondaryPanelProps = Omit<
   ComponentProps<typeof LazyThreadSecondaryPanel>,
-  | "browserDeck"
+  | "renderBrowserDeck"
   | "drawerFallback"
   | "isConversationCollapsed"
   | "onToggleConversationCollapse"
@@ -51,7 +51,10 @@ type RootSecondaryPanelProps = Omit<
   | "showNewTabButton"
 > & {
   renderBrowserDeck?: (args: {
+    activeBrowserTabId: string | null;
+    canHandleBrowserCommands: boolean;
     canShowNativeBrowserView: boolean;
+    onNativeFocus: () => void;
   }) => ReactNode;
 };
 
@@ -60,7 +63,6 @@ interface RootComposeSecondaryContentProps {
   contentClassName?: string;
   isSecondaryPanelOpen: boolean;
   onToggleSecondaryPanel: () => void;
-  panelTogglePositionClassName: string;
   secondaryPanel: RootSecondaryPanelProps;
 }
 
@@ -82,7 +84,6 @@ export function RootComposeSecondaryContent({
   contentClassName,
   isSecondaryPanelOpen,
   onToggleSecondaryPanel,
-  panelTogglePositionClassName,
   secondaryPanel,
 }: RootComposeSecondaryContentProps) {
   const paneContext = useOptionalPaneContext();
@@ -114,7 +115,7 @@ export function RootComposeSecondaryContent({
               data-testid="root-compose-drag-strip-toggle-cutout"
               className={cn(
                 "absolute",
-                panelTogglePositionClassName,
+                ROOT_COMPOSE_PINNED_PANEL_TOGGLE_POSITION_CLASS,
                 COARSE_POINTER_HEADER_ICON_BUTTON_CLASS,
                 MACOS_APP_REGION_NO_DRAG_CLASS,
               )}
@@ -160,7 +161,15 @@ export function RootComposeSecondaryContent({
           <LazyThreadSecondaryPanel
             {...threadSecondaryPanelProps}
             drawerFallback={<DrawerPanelLoadingSkeleton />}
-            browserDeck={renderBrowserDeck?.({ canShowNativeBrowserView })}
+            renderBrowserDeck={(activeBrowserTabId, pane) =>
+              renderBrowserDeck?.({
+                activeBrowserTabId,
+                canHandleBrowserCommands:
+                  canShowNativeBrowserView && pane.isFocused,
+                canShowNativeBrowserView,
+                onNativeFocus: pane.onFocusPane,
+              })
+            }
             renderAsDrawer={presentation === "drawer"}
             isConversationCollapsed={false}
             onToggleConversationCollapse={onToggleMainCollapse}

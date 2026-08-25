@@ -1,0 +1,128 @@
+[
+  {
+    "title": "Share vitest workers for node-environment tests and cut fixed per-file costs",
+    "login": "SawyerHood",
+    "number": 2303,
+    "url": "https://github.com/get-bb/bb/pull/2303",
+    "date": "Aug 22"
+  },
+  {
+    "title": "Land the mobile-performance batch (#2277-#2281) and fix a scroll re-attach edge",
+    "login": "SawyerHood",
+    "number": 2300,
+    "url": "https://github.com/get-bb/bb/pull/2300",
+    "date": "Aug 22"
+  },
+  {
+    "title": "Let markdown tables and code blocks scroll sideways in mobile messages",
+    "login": "SawyerHood",
+    "number": 2283,
+    "url": "https://github.com/get-bb/bb/pull/2283",
+    "date": "Aug 22"
+  },
+  {
+    "title": "Bubble plugin statuses into collapsed sections",
+    "login": "brsbl",
+    "number": 2274,
+    "url": "https://github.com/get-bb/bb/pull/2274",
+    "date": "Aug 22"
+  },
+  {
+    "title": "Bump the plugin SDK version, and fail CI when it is missed",
+    "login": "andrewkchan",
+    "number": 2271,
+    "url": "https://github.com/get-bb/bb/pull/2271",
+    "date": "Aug 21"
+  },
+  {
+    "title": "Let plugins add rows to the quick palette",
+    "login": "andrewkchan",
+    "number": 2270,
+    "url": "https://github.com/get-bb/bb/pull/2270",
+    "date": "Aug 21"
+  },
+  {
+    "title": "Fix MachineSettingsView response mock flake",
+    "login": "ymichael",
+    "number": 2267,
+    "url": "https://github.com/get-bb/bb/pull/2267",
+    "date": "Aug 21"
+  },
+  {
+    "title": "Wait for machine project counts in settings test",
+    "login": "ymichael",
+    "number": 2266,
+    "url": "https://github.com/get-bb/bb/pull/2266",
+    "date": "Aug 21"
+  },
+  {
+    "title": "Add Plugin API Tester",
+    "login": "ymichael",
+    "number": 2265,
+    "url": "https://github.com/get-bb/bb/pull/2265",
+    "date": "Aug 21"
+  },
+  {
+    "title": "Fix windowed timeline outline navigation",
+    "login": "ymichael",
+    "number": 2260,
+    "url": "https://github.com/get-bb/bb/pull/2260",
+    "date": "Aug 21"
+  },
+  {
+    "title": "Show the drawer glyph on every right-panel trigger",
+    "login": "ymichael",
+    "number": 2259,
+    "url": "https://github.com/get-bb/bb/pull/2259",
+    "date": "Aug 21"
+  },
+  {
+    "title": "Migrate linting and formatting to Oxc",
+    "login": "smsunarto",
+    "number": 2258,
+    "url": "https://github.com/get-bb/bb/pull/2258",
+    "date": "Aug 21"
+  },
+  {
+    "title": "Keep each timeline message's action row inside its message",
+    "login": "brsbl",
+    "number": 2257,
+    "url": "https://github.com/get-bb/bb/pull/2257",
+    "date": "Aug 22"
+  },
+  {
+    "title": "Drop the desktop About dialog tests",
+    "login": "andrewkchan",
+    "number": 2256,
+    "url": "https://github.com/get-bb/bb/pull/2256",
+    "date": "Aug 21"
+  },
+  {
+    "title": "Show full build details in the desktop About dialog",
+    "login": "andrewkchan",
+    "number": 2255,
+    "url": "https://github.com/get-bb/bb/pull/2255",
+    "date": "Aug 21"
+  },
+  {
+    "title": "Replace composer zen mode with collapse control",
+    "login": "ymichael",
+    "number": 2254,
+    "url": "https://github.com/get-bb/bb/pull/2254",
+    "date": "Aug 21"
+  },
+  {
+    "title": "Use login-shell PATH for daemon user tools",
+    "login": "ymichael",
+    "number": 2252,
+    "url": "https://github.com/get-bb/bb/pull/2252",
+    "date": "Aug 21"
+  },
+  {
+    "title": "Stop the dev launcher's ~/.local/bin from shadowing the selected Node",
+    "login": "andrewkchan",
+    "number": 2251,
+    "url": "https://github.com/get-bb/bb/pull/2251",
+    "date": "Aug 21"
+  }
+]

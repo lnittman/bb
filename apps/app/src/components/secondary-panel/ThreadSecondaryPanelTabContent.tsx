@@ -1,4 +1,5 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect } from "react";
+import type { DiffPresentation } from "@/components/code/code-rendering";
 import type { WorkspaceDiffTarget } from "@bb/domain";
 import type { MarkdownLinkRouting } from "@/components/ui/markdown-link-routing.js";
 import { Skeleton } from "@bb/shared-ui/skeleton";
@@ -12,6 +13,7 @@ import {
   useThreadHostFilePreview,
   useThreadStorageFilePreview,
 } from "@/hooks/queries/thread-queries";
+import { useHostFilePreview } from "@/hooks/queries/host-file-preview-query";
 import {
   buildRawFilesystemHtmlContentUrl,
   buildThreadWorktreeRawContentUrl,
@@ -20,7 +22,7 @@ import type {
   EnvironmentFilePreviewSource,
   FilePreviewLineRange,
   WorkspaceFilePreviewStatusLabel,
-} from "@/lib/file-preview";
+} from "@bb/client-core";
 import { cn } from "@bb/shared-ui/lib/utils";
 import { DiffFilesPanel } from "./git-diff/DiffFilesPanel";
 import { clearDiffFileCardStates } from "./git-diff/diffFilesStore";
@@ -35,11 +37,7 @@ const GIT_DIFF_SKELETON_FILE_COUNT = 3;
 const PANEL_SCROLL_SLOT_CLASS =
   "min-h-0 flex-1 overflow-x-auto overflow-y-auto";
 
-interface ThreadDiffSkeletonProps {
-  count?: number;
-}
-
-export interface GitDiffTabContentProps {
+interface GitDiffTabContentProps {
   environmentId?: string;
   target: WorkspaceDiffTarget | undefined;
   isDiffPanelActive: boolean;
@@ -50,7 +48,7 @@ export interface GitDiffTabContentProps {
    * and refetching into an off-screen panel is wasted network and diff work.
    */
   isPanelOpen: boolean;
-  gitDiffViewOptions: Record<string, string | boolean | number>;
+  gitDiffPresentation: DiffPresentation;
   onClearPendingGitDiffIntent?: () => void;
   onOpenFileInEditor?: (path: string) => void;
   onOpenFilePreview?: (path: string) => void;
@@ -59,11 +57,7 @@ export interface GitDiffTabContentProps {
   workspaceRootPath?: string | null;
 }
 
-export interface ThreadInfoTabContentProps {
-  metadataContent: ReactNode;
-}
-
-export interface WorkspaceFilePreviewTabContentProps {
+interface WorkspaceFilePreviewTabContentProps {
   activePath: string;
   /**
    * Whether the secondary panel is open. The preview stays mounted while the
@@ -85,7 +79,7 @@ export interface WorkspaceFilePreviewTabContentProps {
   threadId?: string | null;
 }
 
-export interface ProjectFilePreviewTabContentProps {
+interface ProjectFilePreviewTabContentProps {
   activePath: string;
   /**
    * Whether the secondary panel is open. The preview stays mounted while the
@@ -105,7 +99,7 @@ export interface ProjectFilePreviewTabContentProps {
   projectId: string;
 }
 
-export interface HostFilePreviewTabContentProps {
+interface HostFilePreviewTabContentProps {
   activePath: string;
   /**
    * Whether the secondary panel is open. The preview stays mounted while the
@@ -125,7 +119,19 @@ export interface HostFilePreviewTabContentProps {
   threadId: string;
 }
 
-export interface ThreadStorageFilePreviewTabContentProps {
+interface HostScopedFilePreviewTabContentProps {
+  activePath: string;
+  hostId: string;
+  /**
+   * Whether the secondary panel is open. The retained panel body stays
+   * mounted while closed, but its host read must pause until it is visible.
+   */
+  isPanelOpen: boolean;
+  lineRange: FilePreviewLineRange | null;
+  onOpenInEditor?: (path: string) => void;
+}
+
+interface ThreadStorageFilePreviewTabContentProps {
   activePath: string;
   /**
    * Whether the secondary panel is open. The preview stays mounted while the
@@ -144,12 +150,10 @@ export interface ThreadStorageFilePreviewTabContentProps {
   threadId: string;
 }
 
-function ThreadDiffSkeleton({
-  count = GIT_DIFF_SKELETON_FILE_COUNT,
-}: ThreadDiffSkeletonProps) {
+function ThreadDiffSkeleton() {
   return (
     <div className="space-y-2 pt-2">
-      {Array.from({ length: count }).map((_, index) => (
+      {Array.from({ length: GIT_DIFF_SKELETON_FILE_COUNT }).map((_, index) => (
         <div
           key={`git-diff-skeleton-${index}`}
           className="rounded-lg border border-border bg-surface-raised"
@@ -188,7 +192,7 @@ export function GitDiffTabContent({
   target,
   isDiffPanelActive,
   isPanelOpen,
-  gitDiffViewOptions,
+  gitDiffPresentation,
   onClearPendingGitDiffIntent,
   onOpenFileInEditor,
   onOpenFilePreview,
@@ -236,8 +240,7 @@ export function GitDiffTabContent({
 
   const isPreparing =
     isQueryEnabled &&
-    (target === undefined ||
-      isDiffFilesLoading ||
+    (isDiffFilesLoading ||
       (diffFilesResponse === undefined && diffFilesError === null));
 
   if (isPreparing) {
@@ -333,7 +336,7 @@ export function GitDiffTabContent({
         files={diffFilesResponse.files}
         initialPatches={diffFilesResponse.initialPatches}
         filesUpdatedAt={diffFilesUpdatedAt}
-        diffViewOptions={gitDiffViewOptions}
+        presentation={gitDiffPresentation}
         filePathRoot={workspaceRootPath}
         isPanelOpen={isPanelOpen}
         isPlaceholderData={isDiffFilesPlaceholder}
@@ -346,12 +349,6 @@ export function GitDiffTabContent({
       />
     </div>
   );
-}
-
-export function ThreadInfoTabContent({
-  metadataContent,
-}: ThreadInfoTabContentProps) {
-  return <div className="flex min-h-0 flex-1 flex-col">{metadataContent}</div>;
 }
 
 export function WorkspaceFilePreviewTabContent({
@@ -476,6 +473,37 @@ export function HostFilePreviewTabContent({
       onSelectionAddToChat={onSelectionAddToChat}
       onOpenInEditor={onOpenInEditor}
       onRefresh={() => void refetchHostFilePreview()}
+      statusLabel={null}
+    />
+  );
+}
+
+export function HostScopedFilePreviewTabContent({
+  activePath,
+  hostId,
+  isPanelOpen,
+  lineRange,
+  onOpenInEditor,
+}: HostScopedFilePreviewTabContentProps) {
+  const {
+    data: hostFilePreview,
+    error,
+    isFetching,
+    isLoading,
+    refetch,
+  } = useHostFilePreview(hostId, activePath, { enabled: isPanelOpen });
+  return (
+    <SecondaryPanelFilePreview
+      activePath={activePath}
+      copyPath={activePath}
+      error={error}
+      filePreview={hostFilePreview}
+      htmlPreviewUrl={hostFilePreview?.url ?? null}
+      isLoading={isLoading}
+      isRefreshing={isFetching}
+      lineRange={lineRange}
+      onOpenInEditor={onOpenInEditor}
+      onRefresh={() => void refetch()}
       statusLabel={null}
     />
   );

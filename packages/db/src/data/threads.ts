@@ -237,7 +237,7 @@ export function upsertThreadSearchSegments(
   }
 }
 
-export function upsertThreadTitleSearchSegments(
+function upsertThreadTitleSearchSegments(
   db: ThreadWriteConnection,
   args: UpsertThreadTitleSearchSegmentsArgs,
 ): void {
@@ -641,10 +641,6 @@ export interface ThreadEnvironmentAssignmentRow {
 }
 
 export interface HasPendingThreadShutdownInEnvironmentArgs {
-  environmentId: string;
-}
-
-export interface HasNonTerminalThreadInEnvironmentArgs {
   environmentId: string;
 }
 
@@ -1452,19 +1448,6 @@ export function hasPendingThreadShutdownInEnvironment(
   return row !== undefined;
 }
 
-export function hasNonTerminalThreadInEnvironment(
-  db: DbConnection,
-  args: HasNonTerminalThreadInEnvironmentArgs,
-): boolean {
-  return hasThreadWhere(
-    db,
-    nonDeletedThreads(
-      eq(threads.environmentId, args.environmentId),
-      inArray(threads.status, [...NON_TERMINAL_THREAD_STATUSES]),
-    ),
-  );
-}
-
 export function pinThread(
   db: ThreadWriteConnection,
   notifier: DbNotifier,
@@ -1948,8 +1931,8 @@ export function requireThreadLifecycleEventApplied(
   return outcome.thread;
 }
 
-function applyThreadLifecycleEventRecord(
-  db: ThreadWriteConnection,
+export function applyThreadLifecycleEventInTransaction(
+  db: DbTransaction,
   args: ApplyThreadLifecycleEventArgs,
 ): ApplyThreadLifecycleEventOutcome {
   const thread = db
@@ -2018,29 +2001,16 @@ function applyThreadLifecycleEventRecord(
  * event against THREAD_LIFECYCLE and its supersession predicates, and applies
  * the transition with a status compare-and-set — all in one transaction.
  * Never throws on stale or illegal events; returns a typed outcome for the
- * caller to log. Use applyThreadLifecycleEventInTransaction from inside an
- * existing transaction (the caller then owns notification).
+ * caller to log. The caller owns the `status-changed` notification: its
+ * metadata carries the post-transition runtime, which only the server can
+ * resolve (host connectivity lives outside the database).
  */
 export function applyThreadLifecycleEvent(
   db: DbConnection,
-  notifier: DbNotifier,
   args: ApplyThreadLifecycleEventArgs,
 ): ApplyThreadLifecycleEventOutcome {
-  const outcome = db.transaction(
-    (tx) => applyThreadLifecycleEventRecord(tx, args),
+  return db.transaction(
+    (tx) => applyThreadLifecycleEventInTransaction(tx, args),
     { behavior: "immediate" },
   );
-  if (outcome.applied) {
-    notifier.notifyThread(args.threadId, ["status-changed"], {
-      projectId: outcome.thread.projectId,
-    });
-  }
-  return outcome;
-}
-
-export function applyThreadLifecycleEventInTransaction(
-  tx: DbTransaction,
-  args: ApplyThreadLifecycleEventArgs,
-): ApplyThreadLifecycleEventOutcome {
-  return applyThreadLifecycleEventRecord(tx, args);
 }

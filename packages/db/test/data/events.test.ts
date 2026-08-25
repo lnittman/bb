@@ -31,17 +31,15 @@ import {
   listContextWindowUsageRows,
   listCompletedTurnsByThreadIds,
   listEvents,
-  listLatestGoalEventRowsByThreadIds,
+  listLatestThreadStateEventRowsByThreadIds,
   listRecentStoredEventRows,
   listStoredConversationOutlineEventRows,
   listTimelineSegmentAnchorsDescending,
-  findTimelineSegmentAnchorSequenceAfter,
   getTimelineSegmentAnchorAtSequence,
   listOpenTurnInputAcceptedRowsByThreadIds,
   listStoredClientTurnRequestIdsInRange,
   listStoredClientTurnRequestRowsByKeys,
   listStoredEventRows,
-  listStoredEventRowsInRange,
   listStoredThreadProvisioningRowsByProvisioningId,
   findUnfinishedTurnCoveringSequence,
   hasParentedEventCrossingSequence,
@@ -59,6 +57,7 @@ import {
   pruneResolvedItemDeltas,
   pruneThreadEventsBeforeSequence,
   listLatestOpenBackgroundTaskStateRowsForThread,
+  STORED_TIMELINE_BYTE_PREFLIGHT_EVENT_LIMIT,
 } from "../../src/data/events.js";
 import { createEnvironment } from "../../src/data/environments.js";
 import { createProject } from "../../src/data/projects.js";
@@ -652,6 +651,79 @@ describe("events", () => {
     });
   });
 
+  it("skips turn/started when a daemon replays an already-committed batch", () => {
+    const { db, thread } = setup();
+    const turnStarted = {
+      threadId: thread.id,
+      type: "turn/started" as const,
+      ...createTurnEventFields({ turnId: "turn_replayed" }),
+      environmentId: null,
+      providerThreadId: "provider_thr_replayed",
+      data: JSON.stringify({
+        providerThreadId: "provider_thr_replayed",
+        turnId: "turn_replayed",
+      }),
+    };
+    const turnCompleted = {
+      threadId: thread.id,
+      type: "turn/completed" as const,
+      ...createTurnEventFields({ turnId: "turn_replayed" }),
+      environmentId: null,
+      providerThreadId: "provider_thr_replayed",
+      data: JSON.stringify({
+        providerThreadId: "provider_thr_replayed",
+        status: "completed",
+        turnId: "turn_replayed",
+      }),
+    };
+
+    const first = db.transaction(
+      (tx) => appendDaemonEventsInTransaction(tx, [turnStarted, turnCompleted]),
+      { behavior: "immediate" },
+    );
+    // The server committed the batch but the acknowledgement was lost, so the
+    // daemon posts the identical batch again.
+    const replay = db.transaction(
+      (tx) => appendDaemonEventsInTransaction(tx, [turnStarted, turnCompleted]),
+      { behavior: "immediate" },
+    );
+
+    expect(first.insertedInputIndexes).toEqual([0, 1]);
+    expect(replay).toEqual({
+      acceptedEvents: [{ threadId: thread.id, sequence: 3 }],
+      insertedInputIndexes: [1],
+      skippedTurnUnstartedInputIndexes: [],
+    });
+    expect(
+      listEvents(db, { threadId: thread.id }).map((event) => event.type),
+    ).toEqual(["turn/started", "turn/completed", "turn/completed"]);
+  });
+
+  it("skips a turn/started repeated inside one daemon batch", () => {
+    const { db, thread } = setup();
+    const turnStarted = {
+      threadId: thread.id,
+      type: "turn/started" as const,
+      ...createTurnEventFields({ turnId: "turn_twice" }),
+      environmentId: null,
+      providerThreadId: "provider_thr_twice",
+      data: JSON.stringify({
+        providerThreadId: "provider_thr_twice",
+        turnId: "turn_twice",
+      }),
+    };
+
+    const result = db.transaction(
+      (tx) => appendDaemonEventsInTransaction(tx, [turnStarted, turnStarted]),
+      { behavior: "immediate" },
+    );
+
+    expect(result.insertedInputIndexes).toEqual([0]);
+    expect(
+      listEvents(db, { threadId: thread.id }).map((event) => event.type),
+    ).toEqual(["turn/started"]);
+  });
+
   it("rejects daemon turn-scoped events before turn/started is stored", () => {
     const { db, thread } = setup();
 
@@ -1144,14 +1216,6 @@ describe("events", () => {
     ]);
 
     expect(
-      listStoredEventRowsInRange(db, {
-        seqEnd: 2,
-        seqStart: 1,
-        threadId: thread.id,
-      }),
-    ).toHaveLength(2);
-
-    expect(
       listRecentStoredEventRows(db, {
         excludedTypes: ["system/error"],
         maxInlineOutputChars: null,
@@ -1397,24 +1461,6 @@ describe("events", () => {
         threadId: thread.id,
       }),
     ).toEqual({ rowId: `${thread.id}:user-seed:2`, sequence: 2 });
-    expect(
-      findTimelineSegmentAnchorSequenceAfter(db, {
-        sequence: 7,
-        threadId: thread.id,
-      }),
-    ).toBe(8);
-    expect(
-      findTimelineSegmentAnchorSequenceAfter(db, {
-        sequence: 10,
-        threadId: thread.id,
-      }),
-    ).toBe(11);
-    expect(
-      findTimelineSegmentAnchorSequenceAfter(db, {
-        sequence: 11,
-        threadId: thread.id,
-      }),
-    ).toBeUndefined();
   });
 
   it("loads timeline event windows with sequence bounds and exclusions", () => {
@@ -1747,7 +1793,7 @@ describe("events", () => {
     ).toEqual([4]);
   });
 
-  it("lists only the latest goal event row per thread", () => {
+  it("lists only the latest goal-state row per thread, legacy and extension rows alike", () => {
     const { db, project, thread } = setup();
     const otherThread = createThread(db, noopNotifier, {
       projectId: project.id,
@@ -1791,20 +1837,48 @@ describe("events", () => {
           timeUsedSeconds: 2,
         }),
       },
+      // The live form: the codex plugin's goal state. A later snapshot of a
+      // different kind must not shadow it.
+      {
+        threadId: otherThread.id,
+        sequence: 2,
+        type: "thread/extensionState/updated",
+        ...threadEventFields,
+        providerThreadId: "provider-thread-2",
+        data: JSON.stringify({
+          kind: "provider-codex/goal",
+          payload: {
+            objective: "Newer goal",
+            status: "active",
+            tokenBudget: null,
+            tokensUsed: 3,
+            timeUsedSeconds: 3,
+          },
+        }),
+      },
+      {
+        threadId: otherThread.id,
+        sequence: 3,
+        type: "thread/extensionState/updated",
+        ...threadEventFields,
+        providerThreadId: "provider-thread-2",
+        data: JSON.stringify({ kind: "other-plugin/widget", payload: {} }),
+      },
     ]);
 
     const rowsByThreadId = new Map(
-      listLatestGoalEventRowsByThreadIds(db, {
+      listLatestThreadStateEventRowsByThreadIds(db, {
         threadIds: [thread.id, otherThread.id, thread.id],
+        kind: "provider-codex/goal",
       }).map((row) => [row.threadId, row]),
     );
 
     expect(rowsByThreadId.get(thread.id)?.type).toBe("thread/goal/cleared");
     expect(rowsByThreadId.get(thread.id)?.sequence).toBe(2);
     expect(rowsByThreadId.get(otherThread.id)?.type).toBe(
-      "thread/goal/updated",
+      "thread/extensionState/updated",
     );
-    expect(rowsByThreadId.get(otherThread.id)?.sequence).toBe(1);
+    expect(rowsByThreadId.get(otherThread.id)?.sequence).toBe(2);
   });
 
   it("batches latest goal lookups above the SQLite variable limit", () => {
@@ -1814,7 +1888,12 @@ describe("events", () => {
       (_, index) => `thr_missing_goal_${index}`,
     );
 
-    expect(listLatestGoalEventRowsByThreadIds(db, { threadIds })).toEqual([]);
+    expect(
+      listLatestThreadStateEventRowsByThreadIds(db, {
+        threadIds,
+        kind: "provider-codex/goal",
+      }),
+    ).toEqual([]);
   });
 
   it("lists only open accepted turn inputs after the latest interruption", () => {
@@ -2924,6 +3003,48 @@ describe("events", () => {
     expect(
       listEvents(db, { threadId: thread.id }).map((event) => event.sequence),
     ).toEqual([1, 4]);
+  });
+
+  it("bounds each resolved delta prune pass", () => {
+    const { db, thread } = setup();
+    const deltas = Array.from({ length: 502 }, (_, index) => ({
+      threadId: thread.id,
+      sequence: index + 1,
+      scope: turnScope("turn-bounded-prune"),
+      type: "item/agentMessage/delta" as const,
+      itemId: "msg-bounded-prune",
+      itemKind: null,
+      parentToolCallId: null,
+      data: JSON.stringify({
+        itemId: "msg-bounded-prune",
+        delta: `chunk-${index}`,
+      }),
+    }));
+    insertEvents(db, noopNotifier, [
+      ...deltas,
+      {
+        threadId: thread.id,
+        sequence: 503,
+        scope: turnScope("turn-bounded-prune"),
+        type: "item/completed",
+        itemId: "msg-bounded-prune",
+        itemKind: "agentMessage",
+        parentToolCallId: null,
+        data: JSON.stringify({
+          item: {
+            id: "msg-bounded-prune",
+            type: "agentMessage",
+            text: "Complete response",
+          },
+        }),
+      },
+    ]);
+
+    expect(pruneResolvedItemDeltas(db, { threadId: thread.id })).toBe(500);
+    expect(pruneResolvedItemDeltas(db, { threadId: thread.id })).toBe(1);
+    expect(
+      listEvents(db, { threadId: thread.id }).map((event) => event.sequence),
+    ).toEqual([1, 503]);
   });
 
   it("keeps unresolved assistant deltas", () => {
@@ -4623,6 +4744,44 @@ describe("timeline read-boundary output truncation", () => {
       sequenceStart: 3,
       turnId: null,
     }));
+  });
+
+  it("bounds the byte-total preflight before using the early-stopping iterator", () => {
+    const { db, thread } = setup();
+    const validData = JSON.stringify({ message: "valid" });
+    insertEvents(
+      db,
+      noopNotifier,
+      Array.from(
+        { length: STORED_TIMELINE_BYTE_PREFLIGHT_EVENT_LIMIT + 2 },
+        (_, index) => ({
+          threadId: thread.id,
+          sequence: index + 1,
+          type: "system/error" as const,
+          ...threadEventFields,
+          data: validData,
+        }),
+      ),
+    );
+    db.$client
+      .prepare("UPDATE events SET data = ? WHERE thread_id = ? AND sequence = 1")
+      .run(`{"item":{"resultText":"${"x".repeat(1_100)}`, thread.id);
+
+    expect(
+      findStoredTimelineWindowByteBudgetFloor(db, {
+        maxDataBytes: 1,
+        maxInlineOutputChars: 1_000,
+        sequenceStart: 1,
+        threadId: thread.id,
+      }),
+    ).toEqual({
+      createdAt: expect.any(Number),
+      eventDataBytes: Buffer.byteLength(validData),
+      hasOlderRows: true,
+      kind: "single-event-too-large",
+      sequenceStart: STORED_TIMELINE_BYTE_PREFLIGHT_EVENT_LIMIT + 2,
+      turnId: null,
+    });
   });
 
   it.each(["floor", "single-event-too-large"] as const)(

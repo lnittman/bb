@@ -10,6 +10,8 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { AuthCallbackView } from "./views/AuthCallbackView";
 import { QuickCreateProjectProvider } from "./hooks/useQuickCreateProject";
 import { RouteNavigationProvider } from "./components/ui/app-route-anchor";
+import { AppNavigationUrlHost } from "./lib/url-open-routing";
+import { AppFileExternalNavigationHost } from "./components/plugin/AppFileExternalNavigationHost";
 import { useAppTheme } from "./hooks/useAppTheme";
 import { useFaviconColorSync } from "./lib/favicon-color-preference";
 import { useDesktopThemeSync } from "./hooks/useDesktopThemeSync";
@@ -35,7 +37,6 @@ import {
   SETTINGS_PLUGIN_ROUTE_PATH,
   SETTINGS_PLUGINS_ROUTE_PATH,
   SETTINGS_MACHINE_ROUTE_PATH,
-  SETTINGS_PROVIDER_ROUTE_PATH,
   SETTINGS_ROUTE_PATH,
   SETTINGS_SECTION_ROUTE_PATH,
   SKILLS_ROUTE_PATH,
@@ -53,7 +54,6 @@ import {
   getSkillDetailRoutePath,
 } from "./lib/route-paths";
 import { AppCommandProvider } from "./components/commands/AppCommandProvider";
-import { OnboardingHost } from "@/components/onboarding/OnboardingHost";
 import { ProviderCliInstallLogDialogHost } from "./components/provider-cli/provider-cli-install";
 import { PluginSettingsCompatibilityRoute } from "./components/settings/PluginSettingsCompatibilityRoute";
 import { RouteLoadingSkeleton } from "./components/ui/route-loading-skeleton";
@@ -165,10 +165,6 @@ export function LegacyToolsPathRedirect() {
   );
 }
 
-export function LegacyPluginBrowseRedirect() {
-  return <Navigate to={TOOLS_PLUGINS_ROUTE_PATH} replace />;
-}
-
 function hashTargetId(hash: string): string | null {
   if (hash.length <= 1) return null;
   try {
@@ -257,10 +253,6 @@ function AppRoutes() {
             element={<MachineSettingsView />}
           />
           <Route
-            path={SETTINGS_PROVIDER_ROUTE_PATH}
-            element={<SettingsView />}
-          />
-          <Route
             path={PROJECT_SETTINGS_ROUTE_PATH}
             element={<ProjectSettingsView />}
           />
@@ -325,7 +317,7 @@ function AppRoutes() {
           <Route path={TOOLS_PLUGINS_ROUTE_PATH} element={<ToolsView />} />
           <Route
             path={TOOLS_PLUGIN_BROWSE_ROUTE_PATH}
-            element={<LegacyPluginBrowseRedirect />}
+            element={<ExtensionsLandingRedirect />}
           />
           <Route
             path={TOOLS_PLUGIN_DETAIL_ROUTE_PATH}
@@ -385,21 +377,22 @@ export function App() {
     <QuickCreateProjectProvider>
       <AppCommandProvider>
         <RouteNavigationProvider>
-          <HashNavigationScroll />
-          <Routes>
-            <Route
-              path={AUTH_CALLBACK_ROUTE_PATH}
-              element={<AuthCallbackView />}
-            />
-            <Route path="*" element={<AppRoutes />} />
-          </Routes>
-          {/* Outside <Routes>: a provider CLI install outlives the page that
-              started it, so its failure toast can be clicked from any route —
-              including auth callback, which renders no app shell. */}
-          <ProviderCliInstallLogDialogHost />
-          {/* First-run onboarding. Outside <Routes> so it is not tied to a
-              page. It self-gates on the experiment and completion timestamp. */}
-          <OnboardingHost />
+          <AppNavigationUrlHost>
+            <AppFileExternalNavigationHost>
+              <HashNavigationScroll />
+              <Routes>
+                <Route
+                  path={AUTH_CALLBACK_ROUTE_PATH}
+                  element={<AuthCallbackView />}
+                />
+                <Route path="*" element={<AppRoutes />} />
+              </Routes>
+              {/* Outside <Routes>: a provider CLI install outlives the page that
+                started it, so its failure toast can be clicked from any route —
+                including auth callback, which renders no app shell. */}
+               <ProviderCliInstallLogDialogHost />
+             </AppFileExternalNavigationHost>
+          </AppNavigationUrlHost>
         </RouteNavigationProvider>
       </AppCommandProvider>
     </QuickCreateProjectProvider>

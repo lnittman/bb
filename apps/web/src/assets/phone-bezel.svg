@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 800" fill="none" preserveAspectRatio="none" aria-hidden="true">
+  <!-- Device hardware, drawn as one overlay so live DOM can sit behind the
+       screen aperture. Geometry follows a modern 6.1" handset: 390pt wide,
+       a 55pt corner radius on the body and 47pt on the display, which is the
+       concentric pair that keeps the bezel an even 8pt all the way round. -->
+  <defs>
+    <linearGradient id="rail" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b3b3e"/>
+      <stop offset=".35" stop-color="#8e8e93"/>
+      <stop offset=".55" stop-color="#5a5a5f"/>
+      <stop offset="1" stop-color="#2c2c2e"/>
+    </linearGradient>
+    <mask id="aperture">
+      <rect width="390" height="800" rx="55" fill="#fff"/>
+      <rect x="8" y="8" width="374" height="784" rx="47" fill="#000"/>
+    </mask>
+  </defs>
+  <!-- The band itself: everything except the display aperture. -->
+  <rect width="390" height="800" rx="55" fill="url(#rail)" mask="url(#aperture)"/>
+  <!-- Inner and outer edges, so the frame reads as metal rather than a stroke. -->
+  <rect x="0.5" y="0.5" width="389" height="799" rx="54.5" stroke="#1c1c1e" stroke-opacity=".9"/>
+  <rect x="8.5" y="8.5" width="373" height="783" rx="46.5" stroke="#000" stroke-opacity=".55"/>
+  <!-- Side buttons. -->
+  <rect x="-1.5" y="150" width="3" height="26" rx="1.5" fill="url(#rail)"/>
+  <rect x="-1.5" y="196" width="3" height="46" rx="1.5" fill="url(#rail)"/>
+  <rect x="-1.5" y="256" width="3" height="46" rx="1.5" fill="url(#rail)"/>
+  <rect x="388.5" y="212" width="3" height="72" rx="1.5" fill="url(#rail)"/>
+</svg>

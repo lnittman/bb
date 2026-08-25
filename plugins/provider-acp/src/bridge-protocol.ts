@@ -19,6 +19,9 @@ import {
   turnStartParamsSchema as canonicalTurnStartParamsSchema,
   turnSteerParamsSchema as canonicalTurnSteerParamsSchema,
   skillsConfigureParamsSchema,
+  experimental_providerMaintenanceParamsSchema,
+  experimental_providerInstallationRunParamsSchema,
+  experimental_providerInstallationStatusParamsSchema,
 } from "@get-bb/plugin-sdk/provider-bridge";
 import { z } from "zod";
 import { acpSessionUpdateSchema, acpStopReasonSchema } from "./wire.js";
@@ -26,14 +29,6 @@ import { acpSessionUpdateSchema, acpStopReasonSchema } from "./wire.js";
 // ---------------------------------------------------------------------------
 // Runtime → bridge commands
 // ---------------------------------------------------------------------------
-
-const acpBridgeAgentCommandSchema = z.object({
-  command: z.string().min(1),
-  args: z.array(z.string()),
-  cwd: z.string().min(1).optional(),
-  envVars: z.record(z.string(), z.string()).optional(),
-});
-export type AcpBridgeAgentCommand = z.infer<typeof acpBridgeAgentCommandSchema>;
 
 /**
  * Id of the synthetic "Agent default" model the bridge serves when the agent's
@@ -74,6 +69,22 @@ export const acpBridgeCommandSchema = z.discriminatedUnion("method", [
   z.object({
     method: z.literal("model/list"),
     params: acpModelListParamsSchema,
+  }),
+  z.object({
+    method: z.literal("provider/health"),
+    params: experimental_providerMaintenanceParamsSchema,
+  }),
+  z.object({
+    method: z.literal("provider/usage"),
+    params: experimental_providerMaintenanceParamsSchema,
+  }),
+  z.object({
+    method: z.literal("provider/installation/status"),
+    params: experimental_providerInstallationStatusParamsSchema,
+  }),
+  z.object({
+    method: z.literal("provider/installation/run"),
+    params: experimental_providerInstallationRunParamsSchema,
   }),
   z.object({
     method: z.literal("thread/start"),

@@ -38,6 +38,7 @@ import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import { ImageLightbox } from "./image-lightbox.js";
+import { normalizeMathFences } from "./markdown-math-fences.js";
 import {
   markdownMayContainMath,
   useRehypeKatex,
@@ -105,18 +106,16 @@ import {
   useRawThreadMentionResources,
 } from "@/components/thread/ThreadTitleMentions.js";
 
-export interface MarkdownPreviewProps {
+interface MarkdownPreviewProps {
   allowHtml?: boolean;
   className?: string;
   content: string;
-  expandedImageAlt?: string;
   /**
    * Controls whether Markdown image nodes mount browser image subresources.
    * Use `"alt-text"` for untrusted generated previews that should retain a
    * readable placeholder without issuing a request to the image URL.
    */
   imagePolicy?: MarkdownImagePolicy;
-  imageLightboxTitle?: string;
   linkRouting?: MarkdownLinkRouting;
   /**
    * When supplied, serialized `@thread:<id>` tokens and exact raw persisted
@@ -151,7 +150,7 @@ export interface MarkdownPreviewProps {
   urlTransform?: UrlTransform;
 }
 
-export type MarkdownImagePolicy = "alt-text" | "render";
+type MarkdownImagePolicy = "alt-text" | "render";
 
 export interface MarkdownThreadMentions {
   mentions: readonly PromptTextMention[];
@@ -475,11 +474,7 @@ const areMarkdownPreviewPropsEqual: MarkdownPreviewPropsEqual = (
   (previous.allowHtml ?? false) === (next.allowHtml ?? false) &&
   previous.className === next.className &&
   previous.content === next.content &&
-  (previous.expandedImageAlt ?? "Expanded image") ===
-    (next.expandedImageAlt ?? "Expanded image") &&
   (previous.imagePolicy ?? "render") === (next.imagePolicy ?? "render") &&
-  (previous.imageLightboxTitle ?? "Expanded image preview") ===
-    (next.imageLightboxTitle ?? "Expanded image preview") &&
   previous.urlTransform === next.urlTransform &&
   areMarkdownThreadMentionsEqual({
     next: next.threadMentions,
@@ -671,19 +666,19 @@ function MarkdownAnchor({
       return;
     }
 
-    // Let timeline/terminal hosts claim web links first. Absolute app-origin
-    // URLs can still be browser destinations even though they resolve to an
-    // app route.
+    // Internal BB destinations belong to RouteAnchor so they participate in
+    // SPA history. URL preference routing only sees non-route destinations.
+    if (isAppRouteHref) {
+      return;
+    }
+
+    // Let timeline/terminal/navigation hosts claim ordinary web links.
     if (
       linkRouting?.onOpenLink &&
       rewrittenHref &&
       linkRouting.onOpenLink({ href: rewrittenHref })
     ) {
       event.preventDefault();
-      return;
-    }
-
-    if (isAppRouteHref) {
       return;
     }
   };
@@ -1370,6 +1365,116 @@ function setMarkdownContentWidthVariable({
   element.style.setProperty(MARKDOWN_CONTENT_WIDTH_VARIABLE, `${width}px`);
 }
 
+interface MarkdownTableGeometryRegistration {
+  breakout: HTMLElement;
+  clip: HTMLElement | null;
+  content: HTMLElement;
+  lastClipWidth: number;
+  lastContentWidth: number;
+}
+
+type MarkdownTableBreakoutLimitMeasurement =
+  | { kind: "remove" }
+  | { kind: "set"; value: string }
+  | { kind: "unchanged" };
+
+interface MarkdownTableGeometryMeasurement {
+  breakout: HTMLElement;
+  breakoutLimit: MarkdownTableBreakoutLimitMeasurement;
+  contentWidth: number;
+}
+
+const markdownTableRegistrationsByElement = new Map<
+  HTMLElement,
+  Set<MarkdownTableGeometryRegistration>
+>();
+let sharedMarkdownTableResizeObserver: ResizeObserver | null = null;
+
+function measureMarkdownTableGeometry(
+  registrations: Iterable<MarkdownTableGeometryRegistration>,
+): void {
+  // Complete every geometry read before writing either CSS variable. Writing
+  // one table's variables first would make the next table's read recalculate
+  // layout while a long timeline's initial observer delivery is in progress.
+  const measurements: MarkdownTableGeometryMeasurement[] = [];
+  for (const registration of registrations) {
+    const { breakout, clip, content } = registration;
+    const contentWidth = content.getBoundingClientRect().width;
+    const clipWidth = clip?.clientWidth ?? -1;
+    if (
+      contentWidth === registration.lastContentWidth &&
+      clipWidth === registration.lastClipWidth
+    ) {
+      continue;
+    }
+    registration.lastContentWidth = contentWidth;
+    registration.lastClipWidth = clipWidth;
+    measurements.push({
+      breakout,
+      breakoutLimit: readMarkdownTableBreakoutLimit({ breakout, clip }),
+      contentWidth,
+    });
+  }
+
+  for (const { breakout, breakoutLimit, contentWidth } of measurements) {
+    setMarkdownContentWidthVariable({
+      element: breakout,
+      width: contentWidth,
+    });
+    applyMarkdownTableBreakoutLimit({ breakout, measurement: breakoutLimit });
+  }
+}
+
+function getSharedMarkdownTableResizeObserver(): ResizeObserver {
+  sharedMarkdownTableResizeObserver ??= new ResizeObserver((entries) => {
+    const registrations = new Set<MarkdownTableGeometryRegistration>();
+    for (const entry of entries) {
+      if (!(entry.target instanceof HTMLElement)) continue;
+      for (const registration of markdownTableRegistrationsByElement.get(
+        entry.target,
+      ) ?? []) {
+        registrations.add(registration);
+      }
+    }
+    measureMarkdownTableGeometry(registrations);
+  });
+  return sharedMarkdownTableResizeObserver;
+}
+
+function observeMarkdownTableGeometry(
+  registration: MarkdownTableGeometryRegistration,
+): () => void {
+  const elements =
+    registration.clip === null || registration.clip === registration.content
+      ? [registration.content]
+      : [registration.content, registration.clip];
+  const observer = getSharedMarkdownTableResizeObserver();
+  for (const element of elements) {
+    let registrations = markdownTableRegistrationsByElement.get(element);
+    if (!registrations) {
+      registrations = new Set();
+      markdownTableRegistrationsByElement.set(element, registrations);
+      observer.observe(element);
+    }
+    registrations.add(registration);
+  }
+
+  return () => {
+    for (const element of elements) {
+      const registrations = markdownTableRegistrationsByElement.get(element);
+      registrations?.delete(registration);
+      if (registrations?.size === 0) {
+        markdownTableRegistrationsByElement.delete(element);
+        sharedMarkdownTableResizeObserver?.unobserve(element);
+      }
+    }
+    if (markdownTableRegistrationsByElement.size === 0) {
+      sharedMarkdownTableResizeObserver?.disconnect();
+      sharedMarkdownTableResizeObserver = null;
+    }
+  };
+}
+
 function useMarkdownTableContentWidthVariable() {
   const breakoutRef = useRef<HTMLDivElement>(null);
 
@@ -1380,38 +1485,22 @@ function useMarkdownTableContentWidthVariable() {
       return;
     }
     const clip = findHorizontalClipAncestor(content);
-
-    // Streamed text grows the preview and the clip ancestor in height only.
-    // Skip those events: every table would otherwise read layout and write a
-    // style, and the write forces the next table's read to recalculate.
-    let lastContentWidth = -1;
-    let lastClipWidth = -1;
-    const measure = () => {
-      const contentWidth = content.getBoundingClientRect().width;
-      const clipWidth = clip?.clientWidth ?? -1;
-      if (contentWidth === lastContentWidth && clipWidth === lastClipWidth) {
-        return;
-      }
-      lastContentWidth = contentWidth;
-      lastClipWidth = clipWidth;
-      setMarkdownContentWidthVariable({
-        element: breakout,
-        width: contentWidth,
-      });
-      setMarkdownTableBreakoutLimitVariable({ breakout, clip });
+    const registration: MarkdownTableGeometryRegistration = {
+      breakout,
+      clip,
+      content,
+      lastClipWidth: -1,
+      lastContentWidth: -1,
     };
-    measure();
 
     if (typeof ResizeObserver === "undefined") {
+      measureMarkdownTableGeometry([registration]);
       return;
     }
 
-    const observer = new ResizeObserver(measure);
-    observer.observe(content);
-    if (clip) {
-      observer.observe(clip);
-    }
-    return () => observer.disconnect();
+    // The initial observer delivery gives us the geometry before paint without
+    // a synchronous layout read for every table while a long timeline mounts.
+    return observeMarkdownTableGeometry(registration);
   }, []);
 
   return breakoutRef;
@@ -1445,21 +1534,20 @@ function findHorizontalClipAncestor(element: HTMLElement): HTMLElement | null {
 }
 
 /**
- * Sets the widest breakout that keeps the table inside `clip`. The breakout is
- * centered on its containing block (the breakout's parent), so the usable
+ * Reads the widest breakout that keeps the table inside `clip`. The breakout
+ * is centered on its containing block (the breakout's parent), so the usable
  * width is the parent content width plus twice the smaller side gap.
  */
-function setMarkdownTableBreakoutLimitVariable({
+function readMarkdownTableBreakoutLimit({
   breakout,
   clip,
 }: {
   breakout: HTMLElement;
   clip: HTMLElement | null;
-}): void {
+}): MarkdownTableBreakoutLimitMeasurement {
   const parent = breakout.parentElement;
   if (!clip || !parent) {
-    breakout.style.removeProperty(MARKDOWN_TABLE_BREAKOUT_LIMIT_VARIABLE);
-    return;
+    return { kind: "remove" };
   }
   // Positions are taken at scroll offset 0 of `clip`, so a horizontally
   // scrolled container does not change the result.
@@ -1473,7 +1561,7 @@ function setMarkdownTableBreakoutLimitVariable({
     cssPixels(parentStyle.paddingRight);
   const parentWidth = parentRight - parentLeft;
   if (parentWidth <= 0) {
-    return;
+    return { kind: "unchanged" };
   }
   const clipLeft = clip.getBoundingClientRect().left + clip.clientLeft;
   const clipRight = clipLeft + clip.clientWidth;
@@ -1481,10 +1569,24 @@ function setMarkdownTableBreakoutLimitVariable({
     0,
     Math.min(parentLeft - clipLeft, clipRight - parentRight),
   );
-  breakout.style.setProperty(
-    MARKDOWN_TABLE_BREAKOUT_LIMIT_VARIABLE,
-    `${parentWidth + 2 * room}px`,
-  );
+  return { kind: "set", value: `${parentWidth + 2 * room}px` };
+}
+
+function applyMarkdownTableBreakoutLimit({
+  breakout,
+  measurement,
+}: {
+  breakout: HTMLElement;
+  measurement: MarkdownTableBreakoutLimitMeasurement;
+}): void {
+  if (measurement.kind === "remove") {
+    breakout.style.removeProperty(MARKDOWN_TABLE_BREAKOUT_LIMIT_VARIABLE);
+  } else if (measurement.kind === "set") {
+    breakout.style.setProperty(
+      MARKDOWN_TABLE_BREAKOUT_LIMIT_VARIABLE,
+      measurement.value,
+    );
+  }
 }
 
 function cssPixels(value: string): number {
@@ -1558,9 +1660,7 @@ function MarkdownPreviewComponent({
   allowHtml = false,
   className,
   content,
-  expandedImageAlt = "Expanded image",
   imagePolicy = "render",
-  imageLightboxTitle = "Expanded image preview",
   linkRouting,
   threadMentions,
   promptMentions,
@@ -1611,10 +1711,13 @@ function MarkdownPreviewComponent({
         : markdownContent,
     [markdownContent, promptMentions],
   );
-  const { frontmatter, body } = useMemo(
-    () => splitMarkdownFrontmatter(promptMarkdownContent),
-    [promptMarkdownContent],
-  );
+  const { frontmatter, body } = useMemo(() => {
+    const split = splitMarkdownFrontmatter(promptMarkdownContent);
+    return {
+      frontmatter: split.frontmatter,
+      body: normalizeMathFences(split.body),
+    };
+  }, [promptMarkdownContent]);
   // The remark transform fills this shared mount table on every parse. Keep it
   // stable while assistant text streams so the custom React component type
   // also stays stable and an already-complete directive does not remount when
@@ -1761,8 +1864,8 @@ function MarkdownPreviewComponent({
 
       <ImageLightbox
         imageSrc={expandedImageUrl}
-        imageAlt={expandedImageAlt}
-        title={imageLightboxTitle}
+        imageAlt="Expanded image"
+        title="Expanded image preview"
         onClose={() => setExpandedImageUrl(null)}
       />
     </>

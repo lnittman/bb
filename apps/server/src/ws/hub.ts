@@ -49,9 +49,8 @@ const THREAD_LIST_EVENTS_APPENDED_COALESCE_MS = 1_000;
  * Event types the thread-list client path reacts to individually (prompt
  * history recall, pull-request refresh), so they bypass coalescing.
  */
-const LIST_RELEVANT_THREAD_EVENT_TYPES: ReadonlySet<ThreadEventType> = new Set<
-  ThreadEventType
->(["client/turn/requested", "turn/completed"]);
+const LIST_RELEVANT_THREAD_EVENT_TYPES: ReadonlySet<ThreadEventType> =
+  new Set<ThreadEventType>(["client/turn/requested", "turn/completed"]);
 
 interface HubSocket {
   close(code?: number, reason?: string): void;
@@ -139,13 +138,6 @@ function subscriptionKeysForMessage(message: ChangedMessage): string[] {
 }
 
 interface ThreadEventWaiter {
-  reject: (reason?: Error) => void;
-  resolve: (notified: boolean) => void;
-  timeout: ReturnType<typeof setTimeout>;
-}
-
-interface HostEventWaiter {
-  reject: (reason?: Error) => void;
   resolve: (notified: boolean) => void;
   timeout: ReturnType<typeof setTimeout>;
 }
@@ -162,12 +154,12 @@ interface HostOnlineRpcWaiter {
   timeout: ReturnType<typeof setTimeout>;
 }
 
-export interface RecordHostOnlineRpcResponseArgs {
+interface RecordHostOnlineRpcResponseArgs {
   message: HostDaemonOnlineRpcResponseMessage;
   sessionId: string;
 }
 
-export type HostOnlineRpcResponseDisposition =
+type HostOnlineRpcResponseDisposition =
   | { handled: true }
   | { handled: false; reason: "stale" }
   | {
@@ -195,7 +187,16 @@ export class NotificationHub implements DbNotifier {
   private readonly clientSocketsByKey = new Map<string, Set<HubSocket>>();
   private readonly daemonSessions = new Map<
     string,
-    { hostId: string; platform: HostPlatform; socket: HubSocket }
+    {
+      hostId: string;
+      localApiPort: number | null;
+      platform: HostPlatform;
+      socket: HubSocket;
+    }
+  >();
+  private readonly daemonSessionLocalApiPortsBySessionId = new Map<
+    string,
+    number | null
   >();
   private readonly daemonSessionPlatformsBySessionId = new Map<
     string,
@@ -206,7 +207,6 @@ export class NotificationHub implements DbNotifier {
     Set<DaemonRegistrationWaiter>
   >();
   private readonly daemonSessionIdsByHost = new Map<string, string>();
-  private readonly hostEventWaiters = new Map<string, Set<HostEventWaiter>>();
   private readonly hostOnlineRpcWaiters = new Map<
     string,
     HostOnlineRpcWaiter
@@ -507,6 +507,13 @@ export class NotificationHub implements DbNotifier {
     this.daemonSessionPlatformsBySessionId.set(sessionId, platform);
   }
 
+  recordDaemonSessionLocalApiPort(
+    sessionId: string,
+    localApiPort: number | null,
+  ): void {
+    this.daemonSessionLocalApiPortsBySessionId.set(sessionId, localApiPort);
+  }
+
   registerDaemon(sessionId: string, hostId: string, socket: HubSocket): void {
     this.cancelPendingDaemonDisconnect(sessionId);
     const existingSessionId = this.daemonSessionIdsByHost.get(hostId);
@@ -516,6 +523,8 @@ export class NotificationHub implements DbNotifier {
     }
     this.daemonSessions.set(sessionId, {
       hostId,
+      localApiPort:
+        this.daemonSessionLocalApiPortsBySessionId.get(sessionId) ?? null,
       platform:
         this.daemonSessionPlatformsBySessionId.get(sessionId) ?? "unknown",
       socket,
@@ -535,6 +544,7 @@ export class NotificationHub implements DbNotifier {
       return;
     }
     this.daemonSessions.delete(sessionId);
+    this.daemonSessionLocalApiPortsBySessionId.delete(sessionId);
     this.daemonSessionPlatformsBySessionId.delete(sessionId);
     this.rejectHostOnlineRpcWaitersForSession(sessionId);
     if (this.daemonSessionIdsByHost.get(entry.hostId) === sessionId) {
@@ -561,6 +571,16 @@ export class NotificationHub implements DbNotifier {
       return null;
     }
     return this.daemonSessions.get(sessionId)?.platform ?? null;
+  }
+
+  listDaemonLocalApiPorts(): number[] {
+    const ports = new Set<number>();
+    for (const session of this.daemonSessions.values()) {
+      if (session.localApiPort !== null) {
+        ports.add(session.localApiPort);
+      }
+    }
+    return [...ports].sort((left, right) => left - right);
   }
 
   async waitForDaemonForHost(
@@ -660,31 +680,6 @@ export class NotificationHub implements DbNotifier {
     this.cancelPendingDaemonActiveWorkDisconnect(sessionId);
   }
 
-  async waitForThreadEvent(
-    threadId: string,
-    timeoutMs: number,
-  ): Promise<boolean> {
-    const { promise } = this.registerThreadEventWaiter(threadId, timeoutMs);
-    return promise;
-  }
-
-  async waitForHostEvent(hostId: string, timeoutMs: number): Promise<boolean> {
-    return new Promise<boolean>((resolve, reject) => {
-      const waiter: HostEventWaiter = {
-        reject,
-        resolve: (notified) => resolve(notified),
-        timeout: setTimeout(() => {
-          this.deleteHostEventWaiter(hostId, waiter);
-          resolve(false);
-        }, timeoutMs),
-      };
-      const waiters =
-        this.hostEventWaiters.get(hostId) ?? new Set<HostEventWaiter>();
-      waiters.add(waiter);
-      this.hostEventWaiters.set(hostId, waiters);
-    });
-  }
-
   requestHostOnlineRpc(args: {
     hostId: string;
     message: HostDaemonOnlineRpcRequestMessage;
@@ -745,9 +740,8 @@ export class NotificationHub implements DbNotifier {
     timeoutMs: number,
   ): { promise: Promise<boolean>; cancel: () => void } {
     let waiter: ThreadEventWaiter;
-    const promise = new Promise<boolean>((resolve, reject) => {
+    const promise = new Promise<boolean>((resolve) => {
       waiter = {
-        reject,
         resolve: (notified) => resolve(notified),
         timeout: setTimeout(() => {
           this.deleteThreadEventWaiter(threadId, waiter);
@@ -894,17 +888,6 @@ export class NotificationHub implements DbNotifier {
       id: hostId,
       changes,
     });
-
-    const waiters = this.hostEventWaiters.get(hostId);
-    if (!waiters) {
-      return;
-    }
-
-    for (const waiter of waiters) {
-      clearTimeout(waiter.timeout);
-      waiter.resolve(true);
-    }
-    this.hostEventWaiters.delete(hostId);
   }
 
   requestHostProtocolUpdateRetry(hostId: string): void {
@@ -939,18 +922,6 @@ export class NotificationHub implements DbNotifier {
     waiters.delete(waiter);
     if (waiters.size === 0) {
       this.threadEventWaiters.delete(threadId);
-    }
-  }
-
-  private deleteHostEventWaiter(hostId: string, waiter: HostEventWaiter): void {
-    clearTimeout(waiter.timeout);
-    const waiters = this.hostEventWaiters.get(hostId);
-    if (!waiters) {
-      return;
-    }
-    waiters.delete(waiter);
-    if (waiters.size === 0) {
-      this.hostEventWaiters.delete(hostId);
     }
   }
 
@@ -1069,7 +1040,10 @@ export class NotificationHub implements DbNotifier {
       console.error("Skipping invalid realtime broadcast", parseResult.error);
       return;
     }
-    this.notifyThreadListOnlySockets(threadId, JSON.stringify(parseResult.data));
+    this.notifyThreadListOnlySockets(
+      threadId,
+      JSON.stringify(parseResult.data),
+    );
   }
 
   /** Sockets subscribed to the thread list but not to this thread's detail. */
