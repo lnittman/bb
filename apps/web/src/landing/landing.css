@@ -123,9 +123,11 @@
      pairs with. Add a tier only when a layout genuinely cannot hold at the
      one above it — never to fix a single element. */
   --row-h: 32px;
-  /* Thread rows are their own primitive: --bb-sidebar-row-height,
-     1.75rem, in apps/app/src/components/ui/theme.css:553. The 32px
-     above is SidebarMenuButton, which is project/menu/footer rows. */
+  /* --row-h (32px) is SidebarMenuButton (menu/footer/chrome rows). The sidebar's
+     OWN nav accessories and thread rows are h-7 (28px, --thread-row-h) per
+     apps/app/src/components/sidebar/ProjectList.tsx:798, and its project labels
+     are a tight 20px — measured against the live app, not the menu button. */
+  --project-label-h: 20px;
   --thread-row-h: 28px;
   --thread-row-h-coarse: 40px;
   /* The app's chrome rows (window bar, pane header) are 48px --
@@ -1556,14 +1558,16 @@ code,
 .side-act {
   display: flex;
   align-items: center;
-  height: var(--row-h);
+  /* The app's sidebar nav accessories are 28px rows (= thread-row height), not
+     the 32px menu-button height, and render at 13px. */
+  height: var(--thread-row-h);
   gap: var(--row-gap);
   padding: var(--row-pad);
   border: 0;
   border-radius: var(--r-control);
   background: none;
   font: inherit;
-  font-size: 13.5px;
+  font-size: 13px;
   color: var(--ink);
   cursor: pointer;
 }
@@ -3934,7 +3938,7 @@ code,
 .build-demo {
   display: flex;
   flex-direction: column;
-  min-height: var(--demo-window);
+  height: var(--demo-window);
   border-radius: var(--r-card);
   background: var(--bg);
   box-shadow: var(--ring), var(--shadow-window);
@@ -4004,6 +4008,8 @@ code,
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
   border-left: 1px solid var(--border-soft);
   background: color-mix(in oklab, var(--ink-strong) 1.5%, var(--bg));
   border-radius: 0 0 var(--r-card) 0;
@@ -4154,7 +4160,7 @@ code,
 .gang-demo {
   display: flex;
   flex-direction: column;
-  min-height: var(--demo-window);
+  height: var(--demo-window);
   border-radius: var(--r-card);
   background: var(--bg);
   box-shadow: var(--ring), var(--shadow-window);
@@ -4223,6 +4229,8 @@ code,
   background: color-mix(in oklab, var(--ink-strong) 1.5%, var(--bg));
   border-right: 1px solid var(--border-soft);
   border-radius: 0 0 0 var(--r-card);
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .gang-demo .gang-commit,
@@ -4254,6 +4262,7 @@ code,
   flex-direction: column;
   padding: 16px 18px 16px;
   min-width: 0;
+  min-height: 0;
 }
 
 /* Top-down, as the app's ThreadTimelineSurface is: a short transcript leaves
@@ -4266,7 +4275,11 @@ code,
   display: flex;
   flex-direction: column;
   gap: 11px;
-  min-height: 158px;
+  /* Fixed-height window, timeline scrolls inside — the app's model. `min-height:
+     0` lets the feed shrink below its content so `overflow-y` engages instead of
+     growing the window, so switching threads never changes the window height. */
+  min-height: 0;
+  overflow-y: auto;
   padding-bottom: 14px;
 }
 
@@ -4570,7 +4583,7 @@ code,
 .spawn-demo {
   display: flex;
   flex-direction: column;
-  min-height: var(--demo-window);
+  height: var(--demo-window);
   border-radius: var(--r-card);
   background: var(--bg);
   box-shadow: var(--ring), var(--shadow-window);
@@ -5516,7 +5529,7 @@ code,
 .demo-sidebar-action-row {
   display: flex;
   width: 100%;
-  height: var(--row-h);
+  height: var(--thread-row-h);
   align-items: center;
   gap: var(--row-gap);
   padding: var(--row-pad);
@@ -5525,7 +5538,7 @@ code,
   background: transparent;
   color: var(--ink);
   font: inherit;
-  font-size: 13.5px;
+  font-size: 13px;
   text-align: left;
   cursor: pointer;
   transition: none;
@@ -5565,6 +5578,11 @@ code,
   min-width: 0;
   flex-direction: column;
   gap: var(--thread-branch-gap);
+  /* The app's sidebar renders at 13px; the rail inherits the demo's slightly
+     larger transcript size otherwise. Scope 13px to the rail so nav rows,
+     thread rows, and project labels match the app without touching the
+     conversation text. */
+  font-size: 13px;
 }
 
 .demo-thread-project {
@@ -5580,7 +5598,8 @@ code,
 
 .demo-project-row {
   display: flex;
-  height: var(--row-h);
+  /* The app's project label is a tight 20px row, not a full menu row. */
+  height: var(--project-label-h);
   align-items: center;
   padding: 0 0 0 var(--row-pad);
   color: color-mix(in oklab, var(--subtle) 75%, transparent);

@@ -88,11 +88,12 @@ describe("demo app canonical CSS contract", () => {
     }
   });
 
-  it("sources 28/32/40/48px heights and 1/2/4px structure from tokens", () => {
+  it("sources 20/28/32/40/48px heights and 1/2/4px structure from tokens", () => {
     const canonical = canonicalCss();
 
     expect(tokenValue("thread-row-h")).toBe("28px");
     expect(tokenValue("row-h")).toBe("32px");
+    expect(tokenValue("project-label-h")).toBe("20px");
     expect(tokenValue("thread-row-h-coarse")).toBe("40px");
     expect(tokenValue("chrome-h")).toBe("48px");
     expect(tokenValue("thread-sibling-gap")).toBe("1px");
@@ -104,10 +105,10 @@ describe("demo app canonical CSS contract", () => {
       "height: var(--thread-row-h);",
     );
     expect(ruleBody(canonical, ".demo-project-row")).toContain(
-      "height: var(--row-h);",
+      "height: var(--project-label-h);",
     );
     expect(ruleBody(canonical, ".demo-sidebar-action-row")).toContain(
-      "height: var(--row-h);",
+      "height: var(--thread-row-h);",
     );
     expect(ruleBody(canonical, ".demo-window__chrome")).toContain(
       "height: var(--chrome-h);",
